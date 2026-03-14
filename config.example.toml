@@ -1,0 +1,31 @@
+# Axis NAS 配置文件示例
+
+# 服务器配置
+[server]
+host = "0.0.0.0"
+port = 8080
+workers = 12
+
+# JWT 配置
+[jwt]
+secret_key = "YOUR_SECRET_KEY_HERE_CHANGE_IN_PRODUCTION"
+issuer = "axis-nas"
+audience = "axis-nas-users"
+expiration_minutes = 10080 # 7 天
+refresh_enabled = false
+
+# 数据库配置（默认 SQLite）
+[database]
+type = "sqlite"  # 可选：sqlite, postgres
+path = "NAS.db"  # SQLite 路径（type=sqlite 时使用）
+
+# PostgreSQL 连接配置（type=postgres 时使用）
+# postgres_host = "localhost"
+# postgres_port = 5432
+# postgres_user = "axis"
+# postgres_password = "your_password"
+# postgres_database = "axis"
+
+# 日志配置
+[logging]
+level = "info"
