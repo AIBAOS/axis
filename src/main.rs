@@ -9,8 +9,11 @@ mod middleware {
 }
 mod handlers {
     pub mod auth;
+    pub mod files;
+    pub mod rbac;
 }
 mod services {
+    pub mod file_service;
     pub mod jwt_service;
     pub mod rbac_service;
 }
