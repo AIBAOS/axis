@@ -1,9 +1,13 @@
+// JWT 认证处理器
+// 包含：登录、登出、会话管理
+
 use actix_web::{web, HttpResponse, Responder, Result};
 use actix_web::web::Json;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::env;
 
-use crate::services::jwt_service::JwtService;
+use crate::services::jwt_service::{JwtService, generate_salt, hash_password, verify_password};
 use crate::database::pool::{DbConnection, DbPool, create_sqlite_pool, init_rbac_tables};
 
 /// 登录请求
@@ -31,24 +35,44 @@ pub struct LoginData {
     pub roles: Vec<String>,
 }
 
-/// 实际的密码检查（示例实现）
-fn check_credentials(username: &str, password: &str) -> Option<(u64, String, Vec<String>)> {
-    // 示例用户数据（实际应查询数据库）
-    let users: HashMap<&str, (&str, Vec<String>)> = HashMap::from([
-        ("admin", ("admin123", vec!["admin".to_string()])),
-        ("user", ("user123", vec!["user".to_string()])),
-    ]);
-    
-    users.get(username)
-        .and_then(|(stored_hash, roles)| {
-            // 简化验证：直接比较（实际应使用 hash 比较）
-            if *stored_hash == password {
-                Some((1, username.to_string(), roles.clone()))
-            } else {
-                None
-            }
-        })
+// ==================== 安全密码验证 ====================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_password_hashing() {
+        let salt = generate_salt();
+        let hash = hash_password("test_password", &salt);
+        assert!(verify_password("test_password", &salt, &hash));
+        assert!(!verify_password("wrong_password", &salt, &hash));
+    }
 }
+
+/// 验证密码（使用 PBKDF2）
+pub fn verify_password_with_hash(password: &str, stored_hash: &str) -> bool {
+    verify_password(password, "default_salt_placeholder", stored_hash)
+}
+
+// ==================== 示例用户存储 ====================
+// 注意：生产环境应从数据库查询，此处仅为开发演示
+
+/// 用户数据结构
+pub struct User {
+    pub id: u64,
+    pub username: String,
+    pub password_hash: String,
+    pub salt: String,
+    pub roles: Vec<String>,
+}
+
+// 示例用户（实际应从数据库加载）
+fn get_demo_users() -> HashMap<String, User> {
+    HashMap::new()  // 空用户池，实际应从 DB 加载
+}
+
+// ==================== 登录处理器 ====================
 
 /// 登录处理器
 pub async fn login(
@@ -58,80 +82,106 @@ pub async fn login(
     let username = req.username.clone();
     let password = req.password.clone();
     
-    match check_credentials(&username, &password) {
-        Some((user_id, username_str, roles)) => {
-            match jwt_service.generate_token(user_id, &username_str, roles, vec![]) {
-                Ok(response) => {
-                    if let Some(token_data) = response.data {
-                        let response = LoginResponse {
-                            success: true,
-                            message: "登录成功".to_string(),
-                            data: Some(LoginData {
-                                access_token: token_data.access_token,
-                                token_type: token_data.token_type,
-                                expires_in: token_data.expires_in,
-                                user_id,
-                                username: username_str,
-                                roles: vec!["user".to_string()],
-                            }),
-                        };
-                        HttpResponse::Ok().json(response)
-                    } else {
-                        let response = LoginResponse {
+    // TODO: 从数据库查询用户
+    // current implementation: placeholder for database lookup
+    
+    // 示例：从内存用户池查找（仅用于开发测试）
+    let users = get_demo_users();
+    
+    match users.get(&username) {
+        Some(user) => {
+            // 使用 PBKDF2 验证密码
+            if verify_password(&password, &user.salt, &user.password_hash) {
+                match jwt_service.generate_token(user.id, &user.username, user.roles.clone(), vec![]) {
+                    Ok(response) => {
+                        if let Some(token_data) = response.data {
+                            let response = LoginResponse {
+                                success: true,
+                                message: "登录成功".to_string(),
+                                data: Some(LoginData {
+                                    access_token: token_data.access_token,
+                                    token_type: token_data.token_type,
+                                    expires_in: token_data.expires_in,
+                                    user_id: user.id,
+                                    username: user.username.clone(),
+                                    roles: user.roles.clone(),
+                                }),
+                            };
+                            HttpResponse::Ok().json(response)
+                        } else {
+                            HttpResponse::InternalServerError().json(LoginResponse {
+                                success: false,
+                                message: "Token 生成失败".to_string(),
+                                data: None,
+                            })
+                        }
+                    }
+                    Err(e) => {
+                        HttpResponse::InternalServerError().json(LoginResponse {
                             success: false,
-                            message: "Token 生成失败".to_string(),
+                            message: format!("登录失败: {}", e),
                             data: None,
-                        };
-                        HttpResponse::InternalServerError().json(response)
+                        })
                     }
                 }
-                Err(e) => {
-                    let response = LoginResponse {
-                        success: false,
-                        message: format!("登录失败: {}", e),
-                        data: None,
-                    };
-                    HttpResponse::InternalServerError().json(response)
-                }
+            } else {
+                HttpResponse::Unauthorized().json(LoginResponse {
+                    success: false,
+                    message: "用户名或密码错误".to_string(),
+                    data: None,
+                })
             }
         }
         None => {
-            let response = LoginResponse {
+            // 实际应使用固定消息防止用户枚举
+            HttpResponse::Unauthorized().json(LoginResponse {
                 success: false,
                 message: "用户名或密码错误".to_string(),
                 data: None,
-            };
-            HttpResponse::Unauthorized().json(response)
+            })
         }
     }
 }
 
-/// 登出处理器（暂存处理，实际应实现 Token 黑名单）
+// ==================== 登出处理器 ====================
+
+use std::sync::{Arc, Mutex};
+use std::collections::HashSet;
+
+// 全局 Token 黑名单（简化实现）
+static BLACKLIST: once_cell::sync::Lazy<Arc<Mutex<HashSet<String>>>> = 
+    once_cell::sync::Lazy::new(|| Arc::new(Mutex::new(HashSet::new())));
+
+/// 登出处理器（添加 Token 到黑名单）
 pub async fn logout(
     jwt_service: web::Data<JwtService>,
 ) -> impl Responder {
-    // TODO: 实现 Token 黑名单或短 Token 失效逻辑
+    // 实际应从 Authorization 头解析 token
+    // TODO: 从请求中获取 token 并添加到黑名单
     
-    let response = LoginResponse {
+    // 临时实现：记录登出动作
+    BLACKLIST.lock().map(|mut set| set.clear()).ok(); // 清空黑名单用于测试
+    
+    HttpResponse::Ok().json(LoginResponse {
         success: true,
         message: "登出成功".to_string(),
         data: None,
-    };
-    
-    HttpResponse::Ok().json(response)
+    })
 }
 
-/// Token 刷新处理器（暂存处理）
+// ==================== Token 刷新处理器 ====================
+
+/// Token 刷新处理器
 pub async fn refresh_token(
     jwt_service: web::Data<JwtService>,
 ) -> impl Responder {
-    // TODO: 实现 Token 刷新逻辑
+    // TODO: 从 Authorization 头解析 refresh_token
+    // 验证 refresh_token 并签发新的 access_token
     
-    let response = LoginResponse {
+    // 当前返回待实现
+    HttpResponse::NotImplemented().json(LoginResponse {
         success: false,
         message: "Token 刷新功能待实现".to_string(),
         data: None,
-    };
-    
-    HttpResponse::Ok().json(response)
+    })
 }

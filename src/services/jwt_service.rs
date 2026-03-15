@@ -79,7 +79,7 @@ impl JwtService {
 pub fn generate_salt() -> String {
     let mut buffer = [0u8; 16];
     let rng = ring::rand::SystemRandom::new();
-    rng.fill(&mut buffer).expect("Failed to generate random salt");
+    rng.fill(&mut buffer).ok().expect("Failed to generate random salt");
     buffer.iter().map(|b| format!("{:02x}", b)).collect()
 }
 
@@ -96,4 +96,10 @@ pub fn hash_password(password: &str, salt: &str) -> String {
         &mut output,
     );
     output.iter().map(|b| format!("{:02x}", b)).collect()
+}
+
+/// 验证密码（PBKDF2）
+pub fn verify_password(password: &str, salt: &str, expected_hash: &str) -> bool {
+    let computed_hash = hash_password(password, salt);
+    computed_hash == expected_hash
 }
