@@ -6,7 +6,6 @@ use actix_web::web::Json;
 use serde::{Deserialize, Serialize};
 
 use crate::services::jwt_service::JwtService;
-use crate::models::jwt::JwtClaims;
 
 /// 登录请求
 #[derive(Deserialize)]

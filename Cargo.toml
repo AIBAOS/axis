@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = []
+default = ["sqlite"]
 sqlite = ["rusqlite"]
 postgres = ["r2d2_postgres"]
 

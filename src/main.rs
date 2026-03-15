@@ -4,6 +4,25 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::SystemTime;
 
+mod middleware {
+    pub mod jwt_auth;
+}
+mod handlers {
+    pub mod auth;
+}
+mod services {
+    pub mod jwt_service;
+    pub mod rbac_service;
+}
+mod models {
+    pub mod jwt;
+    pub mod rbac;
+}
+mod database {
+    pub mod pool;
+    pub mod rbac_store;
+}
+
 // 数据库连接池预留接口（支持 SQLite/PostgreSQL 切换）
 pub trait DbConnection: Send + Sync + 'static {
     fn version(&self) -> &str;
@@ -98,6 +117,16 @@ async fn main() -> std::io::Result<()> {
 
     log::info!("Starting Axis NAS API Server v0.1.0");
 
+    // 初始化 JWT 服务配置
+    let jwt_config = models::jwt::JwtConfig {
+        secret_key: std::env::var("JWT_SECRET_KEY").unwrap_or_else(|_| "default_secret_key".to_string()),
+        issuer: "axis-nas".to_string(),
+        audience: "axis-nas-users".to_string(),
+        expiration_minutes: 60,
+        refresh_enabled: false, // Phase 2.1: 未启用刷新
+    };
+    let jwt_service = web::Data::new(services::jwt_service::JwtService::new(jwt_config));
+
     // 初始化数据库连接（预留 SQLite）
     let sqlite = SqliteConn::new("NAS.db");
     let state = Arc::new(AppState {
@@ -107,8 +136,12 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(state.clone()))
+            .app_data(state.clone())
+            .app_data(jwt_service.clone())
             .route("/api/v1/health", web::get().to(health_check))
+            .route("/api/v1/auth/login", web::post().to(handlers::auth::login))
+            .route("/api/v1/auth/logout", web::post().to(handlers::auth::logout))
+            .route("/api/v1/auth/refresh", web::post().to(handlers::auth::refresh_token))
     })
     .bind("0.0.0.0:8080")?
     .run()

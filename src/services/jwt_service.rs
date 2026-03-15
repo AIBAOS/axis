@@ -86,9 +86,11 @@ pub fn generate_salt() -> String {
 /// 密码哈希（PBKDF2）
 pub fn hash_password(password: &str, salt: &str) -> String {
     let mut output = [0u8; 32];
+    use std::num::NonZeroU32;
+    let iterations = NonZeroU32::new(10000).expect("Invalid iterations");
     pbkdf2::derive(
         pbkdf2::PBKDF2_HMAC_SHA256,
-        10000,
+        iterations,
         salt.as_bytes(),
         password.as_bytes(),
         &mut output,
