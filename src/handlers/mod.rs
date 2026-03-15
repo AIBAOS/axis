@@ -4,3 +4,4 @@
 pub mod auth;
 pub mod files;
 pub mod rbac;
+pub mod sessions;

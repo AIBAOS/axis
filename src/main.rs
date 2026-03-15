@@ -16,10 +16,12 @@ mod services {
     pub mod file_service;
     pub mod jwt_service;
     pub mod rbac_service;
+    pub mod session_service;
 }
 mod models {
     pub mod jwt;
     pub mod rbac;
+    pub mod session;
 }
 mod database {
     pub mod pool;
@@ -137,10 +139,14 @@ async fn main() -> std::io::Result<()> {
         request_count: Arc::new(AtomicU64::new(0)),
     });
 
+    // 初始化 Session 服务
+    let session_store = web::Data::new(services::session_service::SessionService::new());
+
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
             .app_data(jwt_service.clone())
+            .app_data(session_store.clone())
             .route("/api/v1/health", web::get().to(health_check))
             .route("/api/v1/auth/login", web::post().to(handlers::auth::login))
             .route("/api/v1/auth/logout", web::post().to(handlers::auth::logout))
@@ -150,6 +156,10 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/files/download/{filename}", web::get().to(handlers::files::download_file))
             .route("/api/v1/files/delete/{filename}", web::delete().to(handlers::files::delete_file))
             .route("/api/v1/files/list", web::get().to(handlers::files::list_files))
+            // 会话管理 API routes
+            .route("/api/v1/sessions/current", web::get().to(handlers::sessions::get_current_session))
+            .route("/api/v1/sessions/list", web::get().to(handlers::sessions::list_sessions))
+            .route("/api/v1/sessions/{session_id}", web::delete().to(handlers::sessions::delete_session))
     })
     .bind("0.0.0.0:8080")?
     .run()
