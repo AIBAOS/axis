@@ -36,5 +36,5 @@ pub async fn get_user_roles() -> Result<HttpResponse> {
 
 /// 创建新角色
 pub async fn create_role() -> Result<HttpResponse> {
-    Ok(HttpResponse::Created().json(vec![]))
+    Ok(HttpResponse::Created().json(serde_json::json!([])))
 }

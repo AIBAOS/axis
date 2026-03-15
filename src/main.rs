@@ -9,8 +9,11 @@ mod middleware {
 }
 mod handlers {
     pub mod auth;
+    pub mod files;
+    pub mod rbac;
 }
 mod services {
+    pub mod file_service;
     pub mod jwt_service;
     pub mod rbac_service;
 }
@@ -142,6 +145,11 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/auth/login", web::post().to(handlers::auth::login))
             .route("/api/v1/auth/logout", web::post().to(handlers::auth::logout))
             .route("/api/v1/auth/refresh", web::post().to(handlers::auth::refresh_token))
+            // 文件 API routes
+            .route("/api/v1/files/upload/{filename}", web::post().to(handlers::files::upload_file))
+            .route("/api/v1/files/download/{filename}", web::get().to(handlers::files::download_file))
+            .route("/api/v1/files/delete/{filename}", web::delete().to(handlers::files::delete_file))
+            .route("/api/v1/files/list", web::get().to(handlers::files::list_files))
     })
     .bind("0.0.0.0:8080")?
     .run()
