@@ -1,3 +1,6 @@
+// 文件上传/下载/删除/列表接口实现
+// 注意：文件类型白名单校验暂未实现（需要完整 multipart 解析），待后续 PR 补全
+
 use actix_web::{web, HttpResponse, Error};
 use futures_util::stream::StreamExt;
 use std::path::PathBuf;
@@ -5,6 +8,14 @@ use serde::Serialize;
 use std::fs;
 use std::time::SystemTime;
 use tracing::{error, debug};
+
+// 允许的文件类型白名单
+fn is_allowed_content_type(content_type: &str) -> bool {
+    matches!(content_type,
+        "image/jpeg" | "image/png" | "image/gif" | "image/webp" |
+        "application/pdf" | "text/plain" | "application/zip"
+    )
+}
 
 // 初始化文件目录
 pub fn ensure_upload_dir() -> Result<PathBuf, String> {
@@ -53,6 +64,9 @@ pub async fn upload_file(
         return Ok(HttpResponse::BadRequest().json(serde_json::json!({"error": "Invalid filename"})));
     }
     
+    // TODO: 文件类型白名单校验 - 需要从 multipart 解析获取 content_type
+    // 临时返回成功，待后续 PR 完善
+    
     let mut buffer = Vec::new();
     let mut size: u64 = 0;
     let mut stream = payload.into_inner();
@@ -65,6 +79,9 @@ pub async fn upload_file(
         }
         buffer.extend_from_slice(&chunk);
     }
+    
+    // TODO: 文件类型白名单校验 - 需要从 multipart 解析获取 content_type
+    // 临时跳过，待后续 PR 完善
     
     let upload_path = ensure_upload_dir().map_err(|_| {
         error!("Failed to ensure upload dir");
@@ -165,7 +182,8 @@ pub async fn list_files() -> Result<HttpResponse, Error> {
                 if let Some(name_str) = name.to_str() {
                     let metadata = fs::metadata(entry.path()).ok();
                     let modified = metadata.as_ref().and_then(|m| m.modified().ok())
-                        .map(|t| t.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs()).unwrap_or(0);
+                        .and_then(|t| t.duration_since(SystemTime::UNIX_EPOCH).ok())
+                        .map(|d| d.as_secs()).unwrap_or(0);
                     files.push(FileMeta {
                         filename: name_str.to_string(),
                         size: metadata.map(|m| m.len()).unwrap_or(0),
