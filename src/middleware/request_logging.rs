@@ -47,6 +47,13 @@ impl actix_web::dev::Service<ServiceRequest> for RequestLoggingMiddleware {
             .and_then(|h| h.to_str().ok())
             .unwrap_or("unknown")
             .to_string();
+        let content_length = req
+            .headers()
+            .get("content-length")
+            .and_then(|h| h.to_str().ok())
+            .map(|s| s.parse::<u64>().ok())
+            .flatten()
+            .unwrap_or(0);
         let start_time = Instant::now();
 
         debug!(
@@ -69,7 +76,8 @@ impl actix_web::dev::Service<ServiceRequest> for RequestLoggingMiddleware {
                 request_id = request_id,
                 status = status,
                 latency_ms = latency,
-                path = path
+                path = path,
+                content_length = content_length
             );
 
             Ok(res)
