@@ -147,26 +147,70 @@ pub async fn login(
 
 use std::sync::{Arc, Mutex};
 use std::collections::HashSet;
+use actix_web::web::Data;
+use actix_web::http::header::AUTHORIZATION;
 
 // 全局 Token 黑名单（简化实现）
 static BLACKLIST: once_cell::sync::Lazy<Arc<Mutex<HashSet<String>>>> = 
     once_cell::sync::Lazy::new(|| Arc::new(Mutex::new(HashSet::new())));
 
-/// 登出处理器（添加 Token 到黑名单）
+/// 从 Authorization 头提取 token
+fn extract_token_from_header(auth_header: &str) -> Result<String, String> {
+    let parts: Vec<&str> = auth_header.split_whitespace().collect();
+    if parts.len() != 2 || parts[0] != "Bearer" {
+        return Err("Invalid Authorization header format".to_string());
+    }
+    Ok(parts[1].to_string())
+}
+
+/// 登出处理器（将 token 加入黑名单）
 pub async fn logout(
-    jwt_service: web::Data<JwtService>,
+    jwt_service: Data<JwtService>,
+    req: actix_web::HttpRequest,
 ) -> impl Responder {
-    // 实际应从 Authorization 头解析 token
-    // TODO: 从请求中获取 token 并添加到黑名单
+    // 从 Authorization 头提取 token
+    let auth_header = match req.headers().get(AUTHORIZATION) {
+        Some(h) => match h.to_str() {
+            Ok(s) => s.to_string(),
+            Err(_) => return HttpResponse::Unauthorized().json(LoginResponse {
+                success: false,
+                message: "Invalid header encoding".to_string(),
+                data: None,
+            }),
+        },
+        None => return HttpResponse::Unauthorized().json(LoginResponse {
+            success: false,
+            message: "Missing Authorization header".to_string(),
+            data: None,
+        }),
+    };
     
-    // 临时实现：记录登出动作
-    BLACKLIST.lock().map(|mut set| set.clear()).ok(); // 清空黑名单用于测试
+    let token = match extract_token_from_header(&auth_header) {
+        Ok(t) => t,
+        Err(e) => return HttpResponse::Unauthorized().json(LoginResponse {
+            success: false,
+            message: format!("Invalid token: {}", e),
+            data: None,
+        }),
+    };
     
-    HttpResponse::Ok().json(LoginResponse {
-        success: true,
-        message: "登出成功".to_string(),
-        data: None,
-    })
+    // 验证 token 并加入黑名单
+    if jwt_service.validate_token(&token).is_ok() {
+        if let Ok(mut blacklist) = BLACKLIST.lock() {
+            blacklist.insert(token.clone());
+        }
+        HttpResponse::Ok().json(LoginResponse {
+            success: true,
+            message: "登出成功".to_string(),
+            data: None,
+        })
+    } else {
+        HttpResponse::Unauthorized().json(LoginResponse {
+            success: false,
+            message: "Invalid or expired token".to_string(),
+            data: None,
+        })
+    }
 }
 
 // ==================== Token 刷新处理器 ====================
