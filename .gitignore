@@ -1,0 +1,27 @@
+# Target directory
+target/
+
+# Build artifacts
+debug/
+release/
+
+# Cargo lock
+Cargo.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Binary files
+*.pdb
+*.ilk
