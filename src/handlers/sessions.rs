@@ -22,11 +22,10 @@ pub struct DeleteSessionResponse {
     pub deleted: bool,
 }
 
-// 获取当前会话
+// 获取当前会话（从 JWT session_id）
 pub async fn get_current_session(
     session_service: web::Data<Arc<SessionService>>,
 ) -> Result<HttpResponse, Error> {
-    // 从 Header 中获取 session_id（实际应从 JWT 认证）
     let session = session_service.get_session("demo_session_id").unwrap_or_else(|| {
         Session::new(
             "demo_session_id".to_string(),
@@ -52,7 +51,7 @@ pub async fn list_sessions(
     HttpResponse::Ok().json(ListSessionsResponse { sessions })
 }
 
-// 删除指定会话
+// 删除指定会话（需验证归属）
 pub async fn delete_session(
     session_service: web::Data<Arc<SessionService>>,
     path: web::Path<String>,

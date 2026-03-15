@@ -40,4 +40,17 @@ impl SessionService {
         let mut store = self.sessions.lock().unwrap();
         store.remove(session_id).is_some()
     }
+
+    pub fn delete_session_by_owner(&self, session_id: &str, user_id: u64) -> bool {
+        let mut store = self.sessions.lock().unwrap();
+        if let Some(session) = store.get(session_id) {
+            if session.user_id == user_id {
+                store.remove(session_id).is_some()
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
 }
