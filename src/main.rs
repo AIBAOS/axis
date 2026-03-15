@@ -121,12 +121,14 @@ async fn main() -> std::io::Result<()> {
     log::info!("Starting Axis NAS API Server v0.1.0");
 
     // 初始化 JWT 服务配置
+    // 生产环境强制环境变量，禁止 fallback
     let jwt_config = models::jwt::JwtConfig {
-        secret_key: std::env::var("JWT_SECRET_KEY").unwrap_or_else(|_| "default_secret_key".to_string()),
+        secret_key: std::env::var("JWT_SECRET_KEY")
+            .expect("JWT_SECRET_KEY environment variable must be set in production"),
         issuer: "axis-nas".to_string(),
         audience: "axis-nas-users".to_string(),
         expiration_minutes: 60,
-        refresh_enabled: false, // Phase 2.1: 未启用刷新
+        refresh_enabled: false, // Phase 3-3: 未启用刷新
     };
     let jwt_service = web::Data::new(services::jwt_service::JwtService::new(jwt_config));
 
