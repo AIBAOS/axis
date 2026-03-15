@@ -30,3 +30,58 @@ pub fn create_pool(config: &DatabaseConfig) -> Result<DbPool, String> {
         _ => Err("Invalid database type".to_string())
     }
 }
+
+// 初始化 RBAC 表
+pub fn init_rbac_tables(pool: &DbPool) -> Result<(), String> {
+    let conn = pool.get().map_err(|e| format!("Failed to get connection: {}", e))?;
+    
+    // users 表
+    conn.execute_batch(r#"
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            salt TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        )
+    "#)?;
+    
+    // roles 表
+    conn.execute_batch(r#"
+        CREATE TABLE IF NOT EXISTS roles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            description TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        )
+    "#)?;
+    
+    // permissions 表
+    conn.execute_batch(r#"
+        CREATE TABLE IF NOT EXISTS permissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            description TEXT NOT NULL,
+            resource TEXT NOT NULL,
+            action TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        )
+    "#)?;
+    
+    // user_roles 表（用户角色关联）
+    conn.execute_batch(r#"
+        CREATE TABLE IF NOT EXISTS user_roles (
+            user_id INTEGER NOT NULL,
+            role_id INTEGER NOT NULL,
+            assigned_at INTEGER NOT NULL,
+            PRIMARY KEY (user_id, role_id),
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            FOREIGN KEY (role_id) REFERENCES roles(id)
+        )
+    "#)?;
+    
+    Ok(())
+}

@@ -2,8 +2,6 @@ use actix_web::{web, App, HttpResponse, HttpServer, Result};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use std::thread;
-use std::time::Duration;
 use std::time::SystemTime;
 
 // 数据库连接池预留接口（支持 SQLite/PostgreSQL 切换）
@@ -31,7 +29,6 @@ impl DbConnection for SqliteConn {
     }
 
     fn health_check(&self) -> bool {
-        // 实际健康检查需实现数据库连接测试
         true
     }
 }
@@ -74,14 +71,6 @@ struct HealthResponse {
     request_count: u64,
 }
 
-#[derive(Serialize, Deserialize)]
-struct PressureTestResponse {
-    qps: f64,
-    total_requests: u64,
-    duration_ms: u64,
-    success: bool,
-}
-
 async fn health_check(state: web::Data<Arc<AppState>>) -> Result<HttpResponse> {
     let db_version = state
         .db_pool
@@ -103,43 +92,6 @@ async fn health_check(state: web::Data<Arc<AppState>>) -> Result<HttpResponse> {
     }))
 }
 
-async fn pressure_test(state: web::Data<Arc<AppState>>) -> Result<HttpResponse> {
-    let start = SystemTime::now();
-    let total_requests = 100; // 压测请求数
-
-    // 并发发送请求
-    let mut handles = vec![];
-    for _ in 0..total_requests {
-        let state_clone = state.clone();
-        let handle = actix_web::rt::spawn(async move {
-            let _ = health_check(state_clone).await;
-        });
-        handles.push(handle);
-    }
-
-    // 等待所有请求完成
-    for handle in handles {
-        let _ = handle.await;
-    }
-
-    let duration = start.elapsed().unwrap_or(Duration::new(0, 0));
-    let duration_ms = duration.as_millis() as u64;
-    let qps = if duration_ms > 0 {
-        (total_requests as u64 * 1000) as f64 / duration_ms as f64
-    } else {
-        0.0
-    };
-
-    let success = qps >= 100.0; // QPS ≥ 100 为达标
-
-    Ok(HttpResponse::Ok().json(PressureTestResponse {
-        qps,
-        total_requests,
-        duration_ms,
-        success,
-    }))
-}
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
@@ -157,7 +109,6 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::new(state.clone()))
             .route("/api/v1/health", web::get().to(health_check))
-            .route("/api/v1/pressure-test", web::get().to(pressure_test))
     })
     .bind("0.0.0.0:8080")?
     .run()
