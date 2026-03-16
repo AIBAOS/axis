@@ -1,4 +1,4 @@
-// User model (shared with settings)
+// User model - 统一定义（移除重复）
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

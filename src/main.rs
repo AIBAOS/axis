@@ -133,7 +133,7 @@ async fn main() -> std::io::Result<()> {
 
     // 初始化 JWT 服务配置
     let jwt_config = models::jwt::JwtConfig {
-        secret_key: env::var("JWT_SECRET_KEY").unwrap_or_else(|_| "default_secret_key".to_string()),
+        secret_key: env::var("JWT_SECRET_KEY").expect("JWT_SECRET_KEY environment variable must be set"),
         issuer: "axis-nas".to_string(),
         audience: "axis-nas-users".to_string(),
         expiration_minutes: 60,
