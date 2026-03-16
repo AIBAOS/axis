@@ -1,0 +1,72 @@
+# 政策监控系统配置文件
+# 翰林院编制 - 中国政府政策监控
+
+# RSS 源配置
+rss_sources:
+  - name: "新华社政治新闻"
+    url: "http://www.xinhuanet.com/politicsnews/rss_politics.xml"
+    priority: "P0"
+    enabled: true
+    category: "权威媒体"
+  
+  # 待添加更多源（需验证后启用）
+  # - name: "国务院政策文件"
+  #   url: "待确认"
+  #   priority: "P0"
+  #   enabled: false
+
+# 抓取配置
+crawler:
+  # 抓取频率（小时）
+  check_interval_hours: 8  # 每日 3 次
+  # 单次请求间隔（秒）
+  request_delay_seconds: 300  # 5 分钟，遵守 robots.txt
+  # 用户代理
+  user_agent: "Mozilla/5.0 (compatible; PolicyMonitor/1.0)"
+  # 超时设置（秒）
+  timeout_seconds: 30
+
+# 重大政策判定关键词
+policy_keywords:
+  # 一级（立刻推送）
+  level1:
+    - "国务院令"
+    - "指导意见"
+    - "实施方案"
+    - "专项资金"
+    - "准入管理"
+    - "监管办法"
+    - "发展规划"
+    - "若干政策"
+  
+  # 二级（周报汇总）
+  level2:
+    - "通知"
+    - "公告"
+    - "答复"
+    - "征求意见稿"
+    - "解读"
+
+# 推送配置
+push:
+  # Discord 频道 ID（#新闻）
+  channel_id: "1482386996998443100"
+  # 推送格式模板
+  template: |
+    🚨【政策速报】{title}
+    发布机构：{source}
+    核心内容：{summary}
+    影响范围：{impact}
+
+# 存储配置
+storage:
+  # SQLite 数据库路径
+  database: "policy_monitor/database.db"
+  # 日志路径
+  log_dir: "policy_monitor/logs"
+
+# 运行模式
+mode:
+  # debug: 测试运行，不推送
+  # production: 正式运行
+  current: "debug"

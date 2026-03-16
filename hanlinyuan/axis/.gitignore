@@ -1,0 +1,53 @@
+# Rust
+/target/
+**/target/
+debug/
+build/
+**/*.rs.bk
+Cargo.lock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Test artifacts
+*.profraw
+*.profdata
+coverage/
+tarpaulin-report.html
+
+# Config (keep examples, ignore actual configs)
+config.toml
+config.yaml
+config.json
+!config.example.toml
+!config.example.yaml
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Secrets (should never be committed)
+*.pem
+*.key
+*.crt
+.env
+.env.local
+
+# Benchmark results
+criterion/
+
+# Documentation build
+docs/_build/
