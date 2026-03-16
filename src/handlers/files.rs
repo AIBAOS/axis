@@ -1,5 +1,5 @@
 // 文件上传/下载/删除/列表接口实现
-// 权限校验：从 JWT 提取 user_id，用户只能访问自己的文件
+// 权限校验：从 JWT Claims 提取 user_id，用户只能访问自己的文件
 // 存储路径：/data/uploads/{user_id}/{filename}
 
 use actix_web::{web, HttpResponse, Error, Result};
@@ -67,20 +67,26 @@ pub struct DeleteResponse {
     pub deleted: usize,
 }
 
+// 从 JWT Claims 提取 user_id
+fn extract_user_id(req: &actix_web::dev::ServiceRequest) -> Result<u64, Error> {
+    if let Some(claims) = req.extensions().get::<crate::models::jwt::JwtClaims>() {
+        let user_id = claims.sub.parse::<u64>()
+            .map_err(|_| Error::from(actix_web::error::ErrorBadRequest("Invalid user_id in token")))?;
+        return Ok(user_id);
+    }
+    Err(Error::from(actix_web::error::ErrorUnauthorized("Missing authentication")))
+}
+
 // 上传文件接口（支持多文件）
 pub async fn upload_file(
-    jwt_service: web::Data<crate::services::jwt_service::JwtService>,
+    req: actix_web::dev::ServiceRequest,
     payload: web::Payload,
 ) -> Result<HttpResponse, Error> {
-    use actix_web::http::header::{CONTENT_TYPE, CONTENT_DISPOSITION};
-    
-    // 从 JWT 提取 user_id（简化实现，实际应从 Header 中解析 JWT）
-    let user_id = extract_user_id_from_jwt(&jwt_service, payload.get_ref())?;
-    
+    let user_id = extract_user_id(&req)?;
     let user_dir = ensure_user_dir(user_id)?;
     
     let mut files = Vec::new();
-    let mut stream = actix_multipart::Multipart::new(payload.get_ref().clone());
+    let mut stream = Multipart::new(&mut req.into_inner());
     
     while let Ok(Some(mut field)) = stream.next().await {
         let content_type = field.content_disposition();
@@ -112,7 +118,7 @@ pub async fn upload_file(
             Error::from(actix_web::error::ErrorInternalServerError("Failed to write file"))
         })?;
         
-        let content_type_str = field.headers().get(CONTENT_TYPE)
+        let content_type_str = field.headers().get("Content-Type")
             .and_then(|h| h.to_str().ok())
             .unwrap_or("application/octet-stream")
             .to_string();
@@ -134,22 +140,14 @@ pub async fn upload_file(
     Ok(HttpResponse::Ok().json(UploadResponse { success: true, files }))
 }
 
-// 从 JWT 提取 user_id（简化实现）
-fn extract_user_id_from_jwt(jwt_service: &crate::services::jwt_service::JwtService, _payload: &actix_web::web::Payload) -> Result<u64, Error> {
-    // 实际应从 Authorization Header 中解析 JWT token
-    // 简化：返回默认 user_id = 1（生产环境需从 JWT claims 解析）
-    debug!("Extracting user_id from JWT (placeholder implementation)");
-    Ok(1)
-}
-
 // 下载文件接口（验证用户权限）
 pub async fn download_file(
-    jwt_service: web::Data<crate::services::jwt_service::JwtService>,
+    req: actix_web::dev::ServiceRequest,
     path: web::Path<(String,)>,
 ) -> Result<HttpResponse, Error> {
-    let user_id = extract_user_id_from_jwt(&jwt_service, &web::TypedPayload::default())?;
-    
+    let user_id = extract_user_id(&req)?;
     let file_id = path.into_inner().0;
+    
     let user_dir = get_upload_root().join(user_id.to_string());
     let file_path = user_dir.join(&file_id);
     
@@ -175,12 +173,12 @@ pub async fn download_file(
 
 // 删除文件接口（验证用户权限）
 pub async fn delete_file(
-    jwt_service: web::Data<crate::services::jwt_service::JwtService>,
+    req: actix_web::dev::ServiceRequest,
     path: web::Path<(String,)>,
 ) -> Result<HttpResponse, Error> {
-    let user_id = extract_user_id_from_jwt(&jwt_service, &web::TypedPayload::default())?;
-    
+    let user_id = extract_user_id(&req)?;
     let file_id = path.into_inner().0;
+    
     let user_dir = get_upload_root().join(user_id.to_string());
     let file_path = user_dir.join(&file_id);
     
@@ -200,10 +198,10 @@ pub async fn delete_file(
 
 // 列出文件接口（用户私有文件 + 分页）
 pub async fn list_files(
-    jwt_service: web::Data<crate::services::jwt_service::JwtService>,
-    query: web::Query<crate::handlers::files::ListQuery>,
+    req: actix_web::dev::ServiceRequest,
+    query: web::Query<ListQuery>,
 ) -> Result<HttpResponse, Error> {
-    let user_id = extract_user_id_from_jwt(&jwt_service, &web::TypedPayload::default())?;
+    let user_id = extract_user_id(&req)?;
     
     let user_dir = get_upload_root().join(user_id.to_string());
     
@@ -211,17 +209,22 @@ pub async fn list_files(
         return Ok(HttpResponse::Ok().json(ListResponse {
             files: Vec::new(),
             has_more: false,
-            page: query.page,
-            page_size: query.page_size,
+            page: query.page.unwrap_or(1),
+            page_size: query.page_size.unwrap_or(DEFAULT_PAGE_SIZE),
         }));
     }
     
     let mut files = Vec::new();
-    let mut page = query.page.unwrap_or(1);
+    let page = query.page.unwrap_or(1);
     let page_size = query.page_size.unwrap_or(DEFAULT_PAGE_SIZE);
     
     if page == 0 {
-        page = 1;
+        return Ok(HttpResponse::Ok().json(ListResponse {
+            files: Vec::new(),
+            has_more: false,
+            page: 1,
+            page_size: page_size,
+        }));
     }
     
     let offset = (page - 1) * page_size;
