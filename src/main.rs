@@ -15,6 +15,8 @@ mod handlers {
     pub mod files;
     pub mod rbac;
     pub mod sessions;
+    pub mod settings;
+    pub mod users;
 }
 mod services {
     pub mod file_service;
@@ -26,6 +28,7 @@ mod models {
     pub mod jwt;
     pub mod rbac;
     pub mod session;
+    pub mod settings;
 }
 mod database {
     pub mod pool;
@@ -167,6 +170,15 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/sessions/current", web::get().to(handlers::sessions::get_current_session))
             .route("/api/v1/sessions/list", web::get().to(handlers::sessions::list_sessions))
             .route("/api/v1/sessions/{session_id}", web::delete().to(handlers::sessions::delete_session))
+            // 系统设置 API routes
+            .route("/api/v1/settings", web::get().to(handlers::settings::get_settings))
+            .route("/api/v1/settings", web::put().to(handlers::settings::update_settings))
+            .route("/api/v1/settings/storage", web::get().to(handlers::settings::get_storage))
+            // 用户管理 API routes
+            .route("/api/v1/users", web::get().to(handlers::users::list_users))
+            .route("/api/v1/users/{user_id}", web::get().to(handlers::users::get_user))
+            .route("/api/v1/users/{user_id}/quota", web::put().to(handlers::users::update_user_quota))
+            .route("/api/v1/users/{user_id}", web::delete().to(handlers::users::delete_user))
     })
     .bind("0.0.0.0:8080")?
     .run()
