@@ -1,5 +1,1 @@
-# HEARTBEAT.md
-
-# Keep this file empty (or with only comments) to skip heartbeat API calls.
-
-# Add tasks below when you want the agent to check something periodically.
+（兵部在主工作区正常提交 Phase 3-7 代码，正在推送 feature/phase3-7-settings 分支）
