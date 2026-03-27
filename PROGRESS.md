@@ -73,6 +73,13 @@
 
 ## ✅ 已完成事项
 
+- [x] 存储卷详情 API (Phase 188) - 2026-03-27 16:30
+  - GET /api/v1/storage/volumes/{id} — 获取单个存储卷详情
+  - JWT 认证，登录用户可访问
+  - 返回字段：id/name/total_bytes/used_bytes/available_bytes/usage_percent/status/filesystem_type/mount_point/created_at/updated_at
+  - 卷不存在返回 404 Not Found
+  - 文档：docs/storage_volume_detail_api.md
+
 - [x] 存储卷列表 API (Phase 187) - 2026-03-27 16:17
   - GET /api/v1/storage/volumes — 获取所有存储卷列表
   - JWT 认证，登录用户可访问

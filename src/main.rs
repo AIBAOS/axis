@@ -103,6 +103,7 @@ use handlers::network_interfaces_create::create_network_interface;
 use handlers::network_interface_update::update_network_interface;
 use handlers::network_interface_delete::delete_network_interface;
 use handlers::storage_volumes_list::list_storage_volumes;
+use handlers::storage_volume_detail::get_storage_volume_detail;
 use handlers::printers_list::list_printers;
 use handlers::printers_jobs_list::list_printer_jobs as list_print_jobs;
 use handlers::printers_jobs_detail::get_print_job_detail as get_job_detail;
@@ -116,7 +117,6 @@ use handlers::printers_get::get_printer_detail as get_printer_2;
 use handlers::printers_delete::delete_printer;
 use handlers::system_health::get_system_health;
 use handlers::storage_volumes::list_volumes;
-use handlers::storage_volume_detail::get_volume as get_storage_volume;
 use handlers::storage_volumes_create::create_volume as create_storage_volume;
 use handlers::storage_volumes_update::update_storage_volume;
 use handlers::storage_volumes_delete::delete_storage_volume;
@@ -623,11 +623,6 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/users", web::get().to(list_users))
             .route("/api/v1/users", web::post().to(create_user))
             .route("/api/v1/users/{id}", web::get().to(get_user_by_id))
-            .route("/api/v1/storage/volumes", web::get().to(list_volumes))
-            .route("/api/v1/storage/volumes", web::post().to(create_storage_volume))
-            .route("/api/v1/storage/volumes/{id}", web::get().to(get_storage_volume))
-            .route("/api/v1/storage/volumes/{id}", web::put().to(update_storage_volume))
-            .route("/api/v1/storage/volumes/{id}", web::delete().to(delete_storage_volume))
             .route("/api/v1/storage/volumes/{id}/snapshots", web::get().to(list_volume_snapshots))
             .route("/api/v1/storage/volumes/{id}/snapshots", web::post().to(create_volume_snapshot))
             .route("/api/v1/storage/volumes/{volume_id}/snapshots/{snapshot_id}", web::get().to(get_volume_snapshot))
@@ -745,6 +740,7 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/storage/disks/{id}", web::get().to(get_storage_disk_detail))
             // 存储卷 API routes
             .route("/api/v1/storage/volumes", web::get().to(list_storage_volumes))
+            .route("/api/v1/storage/volumes/{id}", web::get().to(get_storage_volume_detail))
             // 缓存管理 API routes
             .route("/api/v1/cache/stats", web::get().to(handlers::cache::get_cache_stats))
             // 日志管理 API routes
