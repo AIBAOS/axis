@@ -73,6 +73,16 @@
 
 ## ✅ 已完成事项
 
+- [x] 存储卷创建 API (Phase 189) - 2026-03-27 16:56
+  - POST /api/v1/storage/volumes — 创建存储卷
+  - JWT 认证，admin 角色可访问
+  - 请求字段：name/size_bytes/filesystem_type/mount_point/description
+  - 验证文件系统类型（ext4/xfs/btrfs/zfs）
+  - 验证挂载点格式（以/开头，最大 256 字符）
+  - 验证卷名称唯一性（409 Conflict）
+  - 创建成功返回 201 Created + 卷详情
+  - 文档：docs/storage_volumes_create_api.md
+
 - [x] 磁盘 S.M.A.R.T. 信息 API (Phase 188) - 2026-03-27 16:43
   - GET /api/v1/storage/disks/{id}/smart — 获取磁盘 S.M.A.R.T. 健康信息
   - JWT 认证，登录用户可访问
