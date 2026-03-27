@@ -175,6 +175,7 @@ use handlers::backups_detail::get_backup_task_detail;
 use handlers::backups_execute::execute_backup_task;
 use handlers::backups_update::update_backup;
 use handlers::backups_delete::delete_backup;
+use handlers::backups_restore::restore_backup;
 use handlers::backups::run_backup;
 use handlers::users::{
     get_users,
@@ -792,6 +793,7 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/backups/{id}/execute", web::post().to(execute_backup_task))
             .route("/api/v1/backups/{id}", web::put().to(update_backup))
             .route("/api/v1/backups/{id}", web::delete().to(delete_backup))
+            .route("/api/v1/backups/{id}/restore", web::post().to(restore_backup))
             .route("/api/v1/backups/{id}/run", web::post().to(run_backup))
             // 计划任务管理 API routes
             .route("/api/v1/scheduled-tasks", web::get().to(list_scheduled_tasks))

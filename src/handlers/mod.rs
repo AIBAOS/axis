@@ -160,6 +160,7 @@ pub mod backups_create;
 pub mod backups_execute;
 pub mod backups_update;
 pub mod backups_delete;
+pub mod backups_restore;
 pub mod scheduled_tasks;
 pub mod storage_pool_create;
 pub mod storage_pool_update;
