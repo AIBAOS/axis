@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-27 14:00 UTC
+> 最后更新：2026-03-27 23:45 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | [待提交] |
-| 提交时间 | 2026-03-27 14:00 UTC |
-| 当前阶段 | Phase 180 存储磁盘列表 API |
+| 最新 commit | eeefbe3 |
+| 提交时间 | 2026-03-27 23:45 UTC |
+| 当前阶段 | Phase 192 备份任务删除 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -72,6 +72,15 @@
 ---
 
 ## ✅ 已完成事项
+
+- [x] 备份任务删除 API (Phase 192) - 2026-03-27 23:45
+  - DELETE /api/v1/backups/{id} — 删除备份任务
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteBackupRepository 实现真实数据库删除
+  - 添加运行中任务保护（409 Conflict）
+  - 完善错误处理（404 Not Found / 409 Conflict / 500 Database Error）
+  - 删除成功返回 200 OK + 确认消息
+  - Commit: eeefbe3
 
 - [x] 备份任务更新 API (Phase 191) - 2026-03-27 19:58
   - PUT /api/v1/backups/{id} — 更新备份任务配置
