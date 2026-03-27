@@ -1,0 +1,277 @@
+// 网络共享存储实现（基于 SQLite）
+use crate::database::pool::{DbConnectionType};
+use rusqlite::{params, OptionalExtension};
+use std::sync::{Arc, Mutex};
+
+/// 网络共享模型
+#[derive(Debug, Clone)]
+pub struct Share {
+    pub id: u64,
+    pub name: String,
+    pub path: String,
+    pub protocol: String, // "smb" or "nfs"
+    pub status: String,   // "active" or "inactive"
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+/// SQLite 网络共享存储实现
+pub struct SqliteShareRepository {
+    db: Arc<Mutex<DbConnectionType>>,
+}
+
+impl SqliteShareRepository {
+    pub fn new(db: Arc<Mutex<DbConnectionType>>) -> Self {
+        Self { db }
+    }
+
+    /// 从数据库连接获取连接
+    fn get_connection(&self) -> Result<rusqlite::Connection, String> {
+        let guard = self.db.lock().map_err(|e| format!("Lock failed: {}", e))?;
+        match &*guard {
+            DbConnectionType::Sqlite(pool) => {
+                rusqlite::Connection::open(&pool.path)
+                    .map_err(|e| format!("Open failed: {}", e))
+            }
+            #[cfg(feature = "postgres")]
+            DbConnectionType::Postgres(_) => Err("PostgreSQL not implemented".to_string()),
+        }
+    }
+
+    /// 初始化共享表
+    pub fn init_tables(&self) -> Result<(), String> {
+        let conn = self.get_connection()?;
+        conn.execute_batch(
+            r#"
+            CREATE TABLE IF NOT EXISTS shares (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                path TEXT NOT NULL,
+                protocol TEXT NOT NULL CHECK(protocol IN ('smb', 'nfs')),
+                status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'inactive')),
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL
+            )
+            "#,
+        ).map_err(|e| format!("Create table failed: {}", e))?;
+        Ok(())
+    }
+
+    /// 获取所有共享（分页 + 筛选）
+    pub fn get_shares(&self, page: u32, per_page: u32, protocol: Option<String>, status: Option<String>) -> Result<Vec<Share>, String> {
+        let conn = self.get_connection()?;
+        
+        let offset = (page - 1) * per_page;
+        let mut query = String::from(
+            r#"
+            SELECT id, name, path, protocol, status, created_at, updated_at
+            FROM shares WHERE 1=1
+            "#
+        );
+        
+        if let Some(proto) = protocol {
+            query.push_str(&format!(" AND protocol = '{}'", proto));
+        }
+        
+        if let Some(st) = status {
+            query.push_str(&format!(" AND status = '{}'", st));
+        }
+        
+        query.push_str(" ORDER BY id LIMIT ?1 OFFSET ?2");
+        
+        let mut stmt = conn.prepare(&query)
+            .map_err(|e| format!("Prepare failed: {}", e))?;
+        
+        let shares = stmt
+            .query_map(params![per_page, offset], |row| {
+                Ok(Share {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    path: row.get(2)?,
+                    protocol: row.get(3)?,
+                    status: row.get(4)?,
+                    created_at: row.get(5)?,
+                    updated_at: row.get(6)?,
+                })
+            })
+            .map_err(|e| format!("Query failed: {}", e))?
+            .filter_map(|r| r.ok())
+            .collect();
+        
+        Ok(shares)
+    }
+
+    /// 根据 ID 获取单个共享
+    pub fn get_share_by_id(&self, id: u64) -> Result<Option<Share>, String> {
+        let conn = self.get_connection()?;
+        let mut stmt = conn.prepare(
+            r#"
+            SELECT id, name, path, protocol, status, created_at, updated_at
+            FROM shares WHERE id = ?1
+            "#
+        ).map_err(|e| format!("Prepare failed: {}", e))?;
+        
+        let result = stmt
+            .query_row(params![id], |row| {
+                Ok(Share {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    path: row.get(2)?,
+                    protocol: row.get(3)?,
+                    status: row.get(4)?,
+                    created_at: row.get(5)?,
+                    updated_at: row.get(6)?,
+                })
+            })
+            .optional()
+            .map_err(|e| format!("Query failed: {}", e))?;
+        
+        Ok(result)
+    }
+
+    /// 创建共享
+    pub fn create_share(&self, name: &str, path: &str, protocol: &str) -> Result<Share, String> {
+        let conn = self.get_connection()?;
+        
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|_| "Invalid time")?
+            .as_secs() as i64;
+        
+        let mut stmt = conn.prepare(
+            r#"
+            INSERT INTO shares (name, path, protocol, status, created_at, updated_at)
+            VALUES (?1, ?2, ?3, 'active', ?4, ?5)
+            "#
+        ).map_err(|e| format!("Prepare failed: {}", e))?;
+        
+        let id = stmt.execute(params![name, path, protocol, now, now])
+            .map_err(|e| format!("Insert failed: {}", e))?;
+        
+        Ok(Share {
+            id: id as u64,
+            name: name.to_string(),
+            path: path.to_string(),
+            protocol: protocol.to_string(),
+            status: "active".to_string(),
+            created_at: now,
+            updated_at: now,
+        })
+    }
+
+    /// 更新共享
+    pub fn update_share(&self, id: u64, name: Option<String>, path: Option<String>, protocol: Option<String>, status: Option<String>) -> Result<Share, String> {
+        let share = self.get_share_by_id(id)?
+            .ok_or_else(|| format!("Share {} not found", id))?;
+        
+        if share.status == "active" && status == Some("inactive".to_string()) {
+            // 使用中禁删/停用（可选业务逻辑）
+            // 暂时不阻塞，仅记录
+        }
+        
+        let conn = self.get_connection()?;
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|_| "Invalid time")?
+            .as_secs() as i64;
+        
+        // 动态构建 UPDATE 语句
+        let mut sets = vec![];
+        let mut params: Vec<Box<dyn rusqlite::ToSql>> = vec![];
+        
+        if let Some(ref n) = name {
+            sets.push("name = ?1");
+            params.push(Box::new(n));
+        }
+        if let Some(ref p) = path {
+            sets.push("path = ?2");
+            params.push(Box::new(p));
+        }
+        if let Some(ref pr) = protocol {
+            sets.push("protocol = ?3");
+            params.push(Box::new(pr));
+        }
+        if let Some(ref s) = status {
+            sets.push("status = ?4");
+            params.push(Box::new(s));
+        }
+        
+        if sets.is_empty() {
+            return Ok(share); // 没有更新内容
+        }
+        
+        sets.push("updated_at = ?5");
+        params.push(Box::new(now));
+        
+        let set_clause = sets.join(", ");
+        let query = format!("UPDATE shares SET {} WHERE id = ?{}", set_clause, sets.len());
+        
+        let mut stmt = conn.prepare(&query)
+            .map_err(|e| format!("Prepare failed: {}", e))?;
+        
+        stmt.execute(rusqlite::params_from_iter(params.iter()))
+            .map_err(|e| format!("Update failed: {}", e))?;
+        
+        Ok(Share {
+            id,
+            name: name.clone().unwrap_or(share.name),
+            path: path.clone().unwrap_or(share.path),
+            protocol: protocol.clone().unwrap_or(share.protocol),
+            status: status.clone().unwrap_or(share.status),
+            created_at: share.created_at,
+            updated_at: now,
+        })
+    }
+
+    /// 删除共享
+    pub fn delete_share(&self, id: u64) -> Result<bool, String> {
+        let share = self.get_share_by_id(id)?
+            .ok_or_else(|| format!("Share {} not found", id))?;
+        
+        if share.status == "active" {
+            return Err("Share is active, cannot delete".to_string()); // 使用中禁删 409
+        }
+        
+        let conn = self.get_connection()?;
+        conn.execute("DELETE FROM shares WHERE id = ?1", params![id])
+            .map_err(|e| format!("Delete failed: {}", e))?;
+        
+        Ok(true)
+    }
+
+    /// 切换共享启用/禁用状态
+    pub fn toggle_share(&self, id: u64) -> Result<Share, String> {
+        let share = self.get_share_by_id(id)?
+            .ok_or_else(|| format!("Share {} not found", id))?;
+        
+        let new_status = if share.status == "active" { "inactive" } else { "active" };
+        let conn = self.get_connection()?;
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|_| "Invalid time")?
+            .as_secs() as i64;
+        
+        let mut stmt = conn.prepare(
+            "UPDATE shares SET status = ?1, updated_at = ?2 WHERE id = ?3"
+        ).map_err(|e| format!("Prepare failed: {}", e))?;
+        
+        stmt.execute(params![new_status, now, id])
+            .map_err(|e| format!("Update failed: {}", e))?;
+        
+        Ok(Share {
+            id,
+            name: share.name,
+            path: share.path,
+            protocol: share.protocol,
+            status: new_status.to_string(),
+            created_at: share.created_at,
+            updated_at: now,
+        })
+    }
+}
+
+impl Default for SqliteShareRepository {
+    fn default() -> Self {
+        panic!("SqliteShareRepository requires database connection");
+    }
+}

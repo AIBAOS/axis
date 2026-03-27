@@ -1,0 +1,17 @@
+# Axis 项目配置文件
+# 此文件包含 JWT 服务器、数据库和应用配置
+
+[jwt]
+secret_key = "your-secret-key-here"  # JWT 密钥（生产环境请使用强密钥）
+issuer = "axis-nas"                   # JWT 签发者
+audience = "axis-nas-users"           # JWT 受众
+expiration_minutes = 60               # Token 过期时间（分钟）
+refresh_enabled = false               # 是否启用刷新 Token
+
+[database]
+path = "NAS.db"                    # SQLite 数据库路径
+max_connections = 10               # 最大连接数
+
+[server]
+host = "0.0.0.0"   # 服务器监听地址
+port = 8080         # 服务器监听端口
