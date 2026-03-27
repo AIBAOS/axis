@@ -1,12 +1,37 @@
 // Phase 193: 备份恢复 API
-// POST /api/v1/backups/{id}/restore — 恢复备份任务
+// POST /api/v1/backups/{id}/restore — 恢复备份任务（状态从 archived → active）
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
-
-use crate::services::jwt_service::JwtService;
+use std::sync::{Arc, Mutex};
 use crate::database::backup_store::SqliteBackupRepository;
+use crate::services::jwt_service::JwtService;
+
+/// 备份恢复响应
+#[derive(Serialize, Clone)]
+pub struct RestoreBackupResponse {
+    pub success: bool,
+    pub message: String,
+    pub data: BackupInfo,
+}
+
+/// 备份信息
+#[derive(Serialize, Clone)]
+pub struct BackupInfo {
+    pub id: u64,
+    pub name: String,
+    pub description: String,
+    pub backup_type: String,
+    pub source_path: String,
+    pub destination_path: String,
+    pub schedule: Option<String>,
+    pub status: String,
+    pub last_run_at: Option<i64>,
+    pub last_run_status: Option<String>,
+    pub last_run_size_bytes: Option<i64>,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
 
 /// 错误响应
 #[derive(Serialize)]
@@ -19,17 +44,18 @@ pub struct ErrorResponse {
 /// 恢复备份任务（Phase 193）
 /// - JWT 认证，admin 角色可访问
 /// - 验证备份 ID 存在性（404 Not Found）
-/// - 验证备份状态为 archived（409 Conflict）
-/// - 恢复成功返回 200 OK + 备份完整信息
+/// - 验证备份状态（仅 archived 状态可恢复，400 Bad Request）
+/// - 检查是否存在同名活跃备份（409 Conflict）
+/// - 恢复成功返回 200 OK + 备份详情
 pub async fn restore_backup(
     req: HttpRequest,
-    path: web::Path<i64>,
+    path: web::Path<u64>,
+    backup_repo: web::Data<Arc<SqliteBackupRepository>>,
     jwt_service: web::Data<JwtService>,
-    repo: web::Data<Arc<SqliteBackupRepository>>,
 ) -> Result<HttpResponse, Error> {
-    let backup_id = path.into_inner();
+    let backup_id = path.into_inner() as i64;
 
-    // 1. JWT 认证 - 提取并验证 token
+    // 1. JWT 认证
     let token = req
         .headers()
         .get("Authorization")
@@ -37,12 +63,11 @@ pub async fn restore_backup(
         .and_then(|s| s.strip_prefix("Bearer "))
         .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing or invalid Authorization header"))?;
 
-    // 2. 验证 token 有效性
     let claims = jwt_service
         .validate_token(token)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))?;
 
-    // 3. 验证 admin 权限
+    // 2. 验证 admin 权限
     let is_admin = claims.roles.iter().any(|r| r == "admin");
     if !is_admin {
         return Ok(HttpResponse::Forbidden().json(ErrorResponse {
@@ -52,75 +77,71 @@ pub async fn restore_backup(
         }));
     }
 
-    // 4. 执行恢复操作
-    match repo.restore_backup(backup_id) {
-        Ok(Some(backup)) => Ok(HttpResponse::Ok().json(serde_json::json!({
-            "success": true,
-            "message": format!("备份任务 '{}' 已恢复", backup.name),
-            "data": backup
-        }))),
-        Ok(None) => {
-            // 备份不存在或状态不是 archived
-            match repo.get_backup_by_id(backup_id) {
-                Ok(Some(backup)) => {
-                    // 备份存在但状态不是 archived
-                    Ok(HttpResponse::Conflict().json(ErrorResponse {
-                        success: false,
-                        error: format!("备份状态为 '{}'，仅 archived 状态的备份可恢复", backup.status),
-                        code: "CONFLICT".to_string(),
-                    }))
-                }
-                Ok(None) => {
-                    // 备份不存在
-                    Ok(HttpResponse::NotFound().json(ErrorResponse {
-                        success: false,
-                        error: format!("Backup {} not found", backup_id),
-                        code: "NOT_FOUND".to_string(),
-                    }))
-                }
-                Err(e) => {
-                    Ok(HttpResponse::InternalServerError().json(ErrorResponse {
-                        success: false,
-                        error: format!("查询备份任务失败：{}", e),
-                        code: "DATABASE_ERROR".to_string(),
-                    }))
-                }
-            }
-        }
-        Err(e) => {
-            // 恢复失败（如状态校验失败）
-            Ok(HttpResponse::InternalServerError().json(ErrorResponse {
-                success: false,
-                error: format!("恢复备份任务失败：{}", e),
-                code: "DATABASE_ERROR".to_string(),
-            }))
-        }
-    }
-}
+    // 3. 查询备份
+    let backup = backup_repo.get_backup_by_id(backup_id).map_err(|e| {
+        actix_web::error::ErrorInternalServerError(format!("Database error: {}", e))
+    })?;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use actix_web::{test, App};
+    // 4. 验证备份存在性
+    let backup = backup.ok_or_else(|| {
+        actix_web::error::ErrorNotFound("Backup not found")
+    })?;
 
-    #[actix_web::test]
-    async fn test_restore_backup_success() {
-        let jwt_service = web::Data::new(JwtService::new(crate::services::jwt_service::JwtConfig {
-            secret_key: "test_secret".to_string(),
-            issuer: "test".to_string(),
-            audience: "test".to_string(),
-            expiration_minutes: 60,
-            refresh_enabled: false,
+    // 5. 验证备份状态（仅 archived 状态可恢复）
+    if backup.status != "archived" {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: format!("Backup status is '{}'. Only archived backups can be restored", backup.status),
+            code: "INVALID_STATUS".to_string(),
         }));
-
-        let app = test::init_service(
-            App::new()
-                .app_data(jwt_service)
-                .route("/api/v1/backups/{id}/restore", web::post().to(restore_backup))
-        ).await;
-
-        // 注意：实际测试需要有效的 JWT token 和数据库
-        // 这里只是示例测试结构
-        assert!(true);
     }
+
+    // 6. 检查是否存在同名活跃备份（409 Conflict）
+    let all_backups = backup_repo.get_backups(None, None, 1, 1000).map_err(|e| {
+        actix_web::error::ErrorInternalServerError(format!("Database error: {}", e))
+    })?.0;
+
+    let has_conflicting_active = all_backups.iter().any(|b| {
+        b.id != backup_id as i64 && b.status == "active" && b.name == backup.name
+    });
+
+    if has_conflicting_active {
+        return Ok(HttpResponse::Conflict().json(ErrorResponse {
+            success: false,
+            error: format!("A backup with name '{}' is already active", backup.name),
+            code: "CONFLICT".to_string(),
+        }));
+    }
+
+    // 7. 使用存储库更新状态为 active
+    backup_repo.restore_backup(backup_id).map_err(|e| {
+        actix_web::error::ErrorInternalServerError(format!("Restore failed: {}", e))
+    })?;
+
+    let updated_backup = backup_repo.get_backup_by_id(backup_id).map_err(|e| {
+        actix_web::error::ErrorInternalServerError(format!("Database error: {}", e))
+    })?.ok_or_else(|| {
+        actix_web::error::ErrorNotFound("Backup not found after update")
+    })?;
+
+    // 8. 返回恢复成功
+    Ok(HttpResponse::Ok().json(RestoreBackupResponse {
+        success: true,
+        message: format!("Backup '{}' restored successfully", updated_backup.name),
+        data: BackupInfo {
+            id: updated_backup.id as u64,
+            name: updated_backup.name,
+            description: updated_backup.description,
+            backup_type: updated_backup.backup_type,
+            source_path: updated_backup.source_path,
+            destination_path: updated_backup.destination_path,
+            schedule: updated_backup.schedule,
+            status: updated_backup.status,
+            last_run_at: updated_backup.last_run_at,
+            last_run_status: updated_backup.last_run_status,
+            last_run_size_bytes: updated_backup.last_run_size_bytes,
+            created_at: updated_backup.created_at,
+            updated_at: updated_backup.updated_at,
+        },
+    }))
 }

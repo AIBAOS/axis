@@ -1,70 +1,64 @@
-# 备份恢复 API
+# Phase 193: 备份恢复 API
 
-## Phase 193
+## 概述
 
-## 接口说明
+- **接口**: `POST /api/v1/backups/{id}/restore`
+- **功能**: 恢复已归档的备份任务（将状态从 `archived` 更新为 `active`）
+- **权限**: 仅 admin 用户可访问
+- **Phase**: 193
 
-恢复已归档的备份任务，将备份状态从 `archived` 变更为 `active`。
+## 请求参数
 
-## 请求
+| 参数名 | 位置 | 类型 | 必填 | 说明 |
+|--------|------|------|------|------|
+| id | path | integer | 是 | 备份任务 ID |
 
-`POST /api/v1/backups/{id}/restore`
+## 请求示例
 
-### 路径参数
-
-| 字段 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| id | u64 | 是 | 备份 ID |
-
-### 请求头
-
-| 字段 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| Authorization | string | 是 | JWT Token，格式：`Bearer <token>` |
-
-### 请求体
-
-无
+```bash
+curl -X POST http://localhost:8080/api/v1/backups/1/restore \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
 
 ## 响应
 
-### 成功响应（200 OK）
+### 成功响应 (200 OK)
 
 ```json
 {
   "success": true,
-  "message": "备份任务 '每日备份' 已恢复",
-  "backup": {
+  "message": "Backup 'Daily Backup' restored successfully",
+  "data": {
     "id": 1,
-    "name": "每日备份",
-    "description": "每日凌晨备份",
-    "backup_type": "full",
-    "source_path": "/data/source",
-    "destination_path": "/backup/daily",
+    "name": "Daily Backup",
+    "description": "Daily backup of critical data",
+    "backup_type": "daily",
+    "source_path": "/srv/data",
+    "destination_path": "/srv/backups/daily",
     "schedule": "0 2 * * *",
     "status": "active",
-    "last_run_at": 1711584000,
+    "last_run_at": 1711526400,
     "last_run_status": "completed",
     "last_run_size_bytes": 1073741824,
-    "created_at": 1711497600,
-    "updated_at": 1711670400
+    "created_at": 1711500000,
+    "updated_at": 1711530000
   }
 }
 ```
 
 ### 错误响应
 
-#### 401 Unauthorized - 未认证或 Token 无效
+#### 401 Unauthorized
 
 ```json
 {
   "success": false,
-  "error": "Invalid or expired token",
+  "error": "Missing or invalid Authorization header",
   "code": "UNAUTHORIZED"
 }
 ```
 
-#### 403 Forbidden - 权限不足
+#### 403 Forbidden
 
 ```json
 {
@@ -74,131 +68,48 @@
 }
 ```
 
-#### 404 Not Found - 备份不存在
+#### 404 Not Found
 
 ```json
 {
   "success": false,
-  "error": "Backup 999 not found",
+  "error": "Backup not found",
   "code": "NOT_FOUND"
 }
 ```
 
-#### 409 Conflict - 状态冲突
+#### 409 Conflict
 
 ```json
 {
   "success": false,
-  "error": "备份任务 '每日备份' 状态为 'idle'，仅 archived 状态的备份可恢复",
+  "error": "A backup with name 'Daily Backup' is already active",
   "code": "CONFLICT"
 }
 ```
 
-#### 409 Conflict - 活跃备份冲突
+#### 400 Bad Request
 
 ```json
 {
   "success": false,
-  "error": "已有活跃备份任务，无法同时存在多个 active 状态的备份",
-  "code": "CONFLICT"
+  "error": "Backup status is 'completed'. Only archived backups can be restored",
+  "code": "INVALID_STATUS"
 }
 ```
 
-#### 500 Internal Server Error - 数据库错误
+## 业务规则
 
-```json
-{
-  "success": false,
-  "error": "恢复备份任务失败：Update failed: database is locked",
-  "code": "DATABASE_ERROR"
-}
-```
+1. **仅可恢复已归档备份**：只有状态为 `archived` 的备份可以恢复
+2. **同名冲突检查**：恢复时不允许存在同名的 `active` 备份（409 Conflict）
+3. **admin 权限**：仅 admin 用户可执行恢复操作
+4. **状态更新**：成功恢复后，备份状态从 `archived` 变更为 `active`
 
-## 示例
+## 数据库变更
 
-### 恢复归档的备份
+- 更新备份表 `backups` 的 `status` 字段为 `'active'`
+- 更新 `updated_at` 时间戳
 
-```bash
-curl -X POST "http://localhost:8080/api/v1/backups/1/restore" \
-  -H "Authorization: Bearer <jwt_token>"
-```
+## 实现历史
 
-响应（200 OK）：
-```json
-{
-  "success": true,
-  "message": "备份任务 '每日备份' 已恢复",
-  "backup": {
-    "id": 1,
-    "name": "每日备份",
-    "description": "每日凌晨备份",
-    "backup_type": "full",
-    "source_path": "/data/source",
-    "destination_path": "/backup/daily",
-    "schedule": "0 2 * * *",
-    "status": "active",
-    "last_run_at": 1711584000,
-    "last_run_status": "completed",
-    "last_run_size_bytes": 1073741824,
-    "created_at": 1711497600,
-    "updated_at": 1711670400
-  }
-}
-```
-
-### 恢复不存在的备份
-
-```bash
-curl -X POST "http://localhost:8080/api/v1/backups/999/restore" \
-  -H "Authorization: Bearer <jwt_token>"
-```
-
-响应（404 Not Found）：
-```json
-{
-  "success": false,
-  "error": "Backup 999 not found",
-  "code": "NOT_FOUND"
-}
-```
-
-### 恢复非 archived 状态的备份
-
-```bash
-curl -X POST "http://localhost:8080/api/v1/backups/1/restore" \
-  -H "Authorization: Bearer <jwt_token>"
-```
-
-响应（409 Conflict）：
-```json
-{
-  "success": false,
-  "error": "备份任务 '每日备份' 状态为 'idle'，仅 archived 状态的备份可恢复",
-  "code": "CONFLICT"
-}
-```
-
-## 权限要求
-
-- 需要 JWT 认证
-- 仅限 admin 角色访问
-
-## 业务逻辑
-
-1. 验证 JWT Token 有效性
-2. 检查用户角色是否为 admin
-3. 验证备份 ID 存在性（404 Not Found）
-4. 检查备份状态是否为 `archived`（409 Conflict）
-5. 检查是否已有活跃备份（409 Conflict）
-6. 将备份状态从 `archived` 更新为 `active`
-7. 返回恢复后的备份完整信息
-
-## 状态流转
-
-```
-archived ──restore──> active
-```
-
-## 版本历史
-
-- **Phase 193** (2026-03-27): 备份管理模块 - 备份恢复 API
+- **Phase 193**: 备份恢复 API (POST /api/v1/backups/{id}/restore) - 2026-03-27
