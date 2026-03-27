@@ -126,6 +126,7 @@ pub mod network_interface_update;
 pub mod network_interface_delete;
 pub mod storage_volumes_list;
 pub mod storage_volume_detail;
+pub mod disk_smart;
 pub mod network_config_get;
 pub mod network_config_update;
 pub mod dns_config_get;

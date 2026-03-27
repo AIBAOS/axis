@@ -73,7 +73,14 @@
 
 ## ✅ 已完成事项
 
-- [x] 存储卷详情 API (Phase 188) - 2026-03-27 16:30
+- [x] 磁盘 S.M.A.R.T. 信息 API (Phase 188) - 2026-03-27 16:43
+  - GET /api/v1/storage/disks/{id}/smart — 获取磁盘 S.M.A.R.T. 健康信息
+  - JWT 认证，登录用户可访问
+  - 返回字段：disk_id/model/serial_number/firmware_version/temperature/power_on_hours/spin_up_time/reallocated_sectors/pending_sectors/uncorrectable_sectors/wear_leveling/health_status/last_check
+  - 磁盘不存在返回 404 Not Found
+  - 文档：docs/disk_smart_api.md
+
+- [x] 存储卷详情 API (Phase 187) - 2026-03-27 16:30
   - GET /api/v1/storage/volumes/{id} — 获取单个存储卷详情
   - JWT 认证，登录用户可访问
   - 返回字段：id/name/total_bytes/used_bytes/available_bytes/usage_percent/status/filesystem_type/mount_point/created_at/updated_at

@@ -104,6 +104,7 @@ use handlers::network_interface_update::update_network_interface;
 use handlers::network_interface_delete::delete_network_interface;
 use handlers::storage_volumes_list::list_storage_volumes;
 use handlers::storage_volume_detail::get_storage_volume_detail;
+use handlers::disk_smart::get_disk_smart_info;
 use handlers::printers_list::list_printers;
 use handlers::printers_jobs_list::list_printer_jobs as list_print_jobs;
 use handlers::printers_jobs_detail::get_print_job_detail as get_job_detail;
@@ -738,6 +739,7 @@ async fn main() -> std::io::Result<()> {
             // 存储磁盘 API routes
             .route("/api/v1/storage/disks", web::get().to(list_storage_disks))
             .route("/api/v1/storage/disks/{id}", web::get().to(get_storage_disk_detail))
+            .route("/api/v1/storage/disks/{id}/smart", web::get().to(get_disk_smart_info))
             // 存储卷 API routes
             .route("/api/v1/storage/volumes", web::get().to(list_storage_volumes))
             .route("/api/v1/storage/volumes/{id}", web::get().to(get_storage_volume_detail))
