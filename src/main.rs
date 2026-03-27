@@ -101,6 +101,8 @@ use handlers::network_interfaces_list::list_network_interfaces;
 use handlers::network_interface_detail::get_network_interface_detail;
 use handlers::network_interfaces_create::create_network_interface;
 use handlers::network_interface_update::update_network_interface;
+use handlers::network_interface_delete::delete_network_interface;
+use handlers::storage_volumes_list::list_storage_volumes;
 use handlers::printers_list::list_printers;
 use handlers::printers_jobs_list::list_printer_jobs as list_print_jobs;
 use handlers::printers_jobs_detail::get_print_job_detail as get_job_detail;
@@ -258,7 +260,6 @@ use handlers::network_config_get::get_network_config;
 use handlers::network_config_update::update_network_config;
 use handlers::dns_config_get::get_dns_config;
 use handlers::dns_config_update::update_dns_config;
-use handlers::network_interface_delete::delete_network_interface;
 use middleware::jwt_auth::JwtAuth;
 use services::rbac_service::RbacService;
 use crate::config::AppSettings;
@@ -742,6 +743,8 @@ async fn main() -> std::io::Result<()> {
             // 存储磁盘 API routes
             .route("/api/v1/storage/disks", web::get().to(list_storage_disks))
             .route("/api/v1/storage/disks/{id}", web::get().to(get_storage_disk_detail))
+            // 存储卷 API routes
+            .route("/api/v1/storage/volumes", web::get().to(list_storage_volumes))
             // 缓存管理 API routes
             .route("/api/v1/cache/stats", web::get().to(handlers::cache::get_cache_stats))
             // 日志管理 API routes

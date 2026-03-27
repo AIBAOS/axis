@@ -73,6 +73,12 @@
 
 ## ✅ 已完成事项
 
+- [x] 存储卷列表 API (Phase 187) - 2026-03-27 16:17
+  - GET /api/v1/storage/volumes — 获取所有存储卷列表
+  - JWT 认证，登录用户可访问
+  - 返回字段：id/name/total_bytes/used_bytes/available_bytes/usage_percent/status/filesystem_type/mount_point
+  - 文档：docs/storage_volumes_list_api.md
+
 - [x] 网络接口删除 API (Phase 186) - 2026-03-27 15:51
   - DELETE /api/v1/network/interfaces/{id} — 删除网络接口
   - JWT 认证，admin 角色可访问
