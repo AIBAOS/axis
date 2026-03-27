@@ -169,9 +169,9 @@ use handlers::containers_stop::stop_container;
 use handlers::containers_restart::restart_container;
 use handlers::containers_logs::get_container_logs;
 use handlers::containers_stats::get_container_stats;
-use handlers::backups_list::list_backups;
+use handlers::backups_list::list_backup_tasks;
 use handlers::backups_create::create_backup;
-use handlers::backups_detail::get_backup;
+use handlers::backups_detail::get_backup_task_detail;
 use handlers::backups_update::update_backup;
 use handlers::backups_delete::delete_backup;
 use handlers::backups::run_backup;
@@ -785,9 +785,9 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/containers/{id}/logs", web::get().to(get_container_logs))
             .route("/api/v1/containers/{id}/stats", web::get().to(get_container_stats))
             // 备份任务管理 API routes
-            .route("/api/v1/backups", web::get().to(list_backups))
+            .route("/api/v1/backups", web::get().to(list_backup_tasks))
             .route("/api/v1/backups", web::post().to(create_backup))
-            .route("/api/v1/backups/{id}", web::get().to(get_backup))
+            .route("/api/v1/backups/{id}", web::get().to(get_backup_task_detail))
             .route("/api/v1/backups/{id}", web::put().to(update_backup))
             .route("/api/v1/backups/{id}", web::delete().to(delete_backup))
             .route("/api/v1/backups/{id}/run", web::post().to(run_backup))
