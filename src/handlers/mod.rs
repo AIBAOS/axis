@@ -156,6 +156,7 @@ pub mod containers_stats;
 pub mod backups;
 pub mod backups_list;
 pub mod backups_detail;
+pub mod backups_create;
 pub mod backups_execute;
 pub mod backups_update;
 pub mod backups_delete;

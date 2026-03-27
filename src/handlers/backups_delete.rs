@@ -1,10 +1,12 @@
-// Phase 166: 备份删除 API
+// Phase 192: 备份任务删除 API
 // DELETE /api/v1/backups/{id} — 删除备份任务
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::services::jwt_service::JwtService;
+use crate::database::backup_store::SqliteBackupRepository;
 
 /// 错误响应
 #[derive(Serialize)]
@@ -14,14 +16,16 @@ pub struct ErrorResponse {
     pub code: String,
 }
 
-/// 删除备份任务（Phase 166）
+/// 删除备份任务（Phase 192）
 /// - JWT 认证，admin 角色可访问
 /// - 验证备份 ID 存在性（404 Not Found）
-/// - 删除成功返回 204 No Content
+/// - 检查是否正在运行，运行中不可删除（409 Conflict）
+/// - 删除成功返回 200 OK + 确认消息
 pub async fn delete_backup(
     req: HttpRequest,
-    path: web::Path<u64>,
+    path: web::Path<i64>,
     jwt_service: web::Data<JwtService>,
+    repo: web::Data<Arc<SqliteBackupRepository>>,
 ) -> Result<HttpResponse, Error> {
     let backup_id = path.into_inner();
 
@@ -48,23 +52,49 @@ pub async fn delete_backup(
         }));
     }
 
-    // 4. 模拟现有备份数据
-    let mock_backups = vec![1u64, 2u64, 3u64];
+    // 4. 先检查备份任务是否存在及状态
+    match repo.get_backup_by_id(backup_id) {
+        Ok(Some(backup)) => {
+            // 5. 检查是否正在运行，运行中不可删除
+            if backup.status == "running" {
+                return Ok(HttpResponse::Conflict().json(ErrorResponse {
+                    success: false,
+                    error: format!("备份任务 '{}' 正在运行，无法删除", backup.name),
+                    code: "CONFLICT".to_string(),
+                }));
+            }
+        }
+        Ok(None) => {
+            return Ok(HttpResponse::NotFound().json(ErrorResponse {
+                success: false,
+                error: format!("Backup {} not found", backup_id),
+                code: "NOT_FOUND".to_string(),
+            }));
+        }
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("查询备份任务失败：{}", e),
+                code: "DATABASE_ERROR".to_string(),
+            }));
+        }
+    }
 
-    // 5. 验证备份存在性
-    let backup_exists = mock_backups.iter().any(|id| *id == backup_id);
-
-    if !backup_exists {
-        return Ok(HttpResponse::NotFound().json(ErrorResponse {
+    // 6. 执行删除
+    match repo.delete_backup(backup_id) {
+        Ok(true) => Ok(HttpResponse::Ok().json(serde_json::json!({
+            "success": true,
+            "message": format!("Backup task {} deleted", backup_id)
+        }))),
+        Ok(false) => Ok(HttpResponse::NotFound().json(ErrorResponse {
             success: false,
             error: format!("Backup {} not found", backup_id),
             code: "NOT_FOUND".to_string(),
-        }));
+        })),
+        Err(e) => Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+            success: false,
+            error: format!("删除备份任务失败：{}", e),
+            code: "DATABASE_ERROR".to_string(),
+        })),
     }
-
-    // 6. 模拟删除备份
-    // （在实际实现中，这里会调用数据库或文件系统删除备份配置）
-
-    // 7. 返回删除成功（204 No Content）
-    Ok(HttpResponse::NoContent().finish())
 }
