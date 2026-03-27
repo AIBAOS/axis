@@ -73,6 +73,12 @@
 
 ## ✅ 已完成事项
 
+- [x] 备份任务列表 API (Phase 189) - 2026-03-27 17:28
+  - GET /api/v1/backups — 获取所有备份任务列表
+  - JWT 认证，登录用户可访问
+  - 返回字段：id/name/description/source_path/destination_path/schedule/status/last_run/next_run/created_at/updated_at
+  - 文档：docs/backups_list_api.md
+
 - [x] 磁盘 S.M.A.R.T. 信息 API (Phase 188) - 2026-03-27 16:43
   - GET /api/v1/storage/disks/{id}/smart — 获取磁盘 S.M.A.R.T. 健康信息
   - JWT 认证，登录用户可访问
