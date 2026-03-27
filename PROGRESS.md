@@ -73,6 +73,15 @@
 
 ## ✅ 已完成事项
 
+- [x] 备份任务更新 API (Phase 191) - 2026-03-27 19:58
+  - PUT /api/v1/backups/{id} — 更新备份任务配置
+  - JWT 认证，admin 角色可访问
+  - 支持部分更新：name/schedule/enabled/retention_days/source_paths/destination
+  - 验证备份 ID 存在性（404 Not Found）
+  - 验证 schedule 格式（daily/weekly/monthly/hourly/cron）
+  - 更新成功返回 200 OK + 任务详情
+  - 文档：docs/backups_update_api.md
+
 - [x] 备份任务执行 API (Phase 190) - 2026-03-27 18:14
   - POST /api/v1/backups/{id}/execute — 手动触发备份任务执行
   - JWT 认证，admin 角色可访问

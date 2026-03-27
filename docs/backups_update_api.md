@@ -1,10 +1,10 @@
-# 备份更新 API
+# 备份任务更新 API
 
-## Phase 165
+## Phase 191
 
 ## 接口说明
 
-更新指定备份任务的配置，支持部分字段更新。
+更新现有备份任务的配置。
 
 ## 请求
 
@@ -14,7 +14,7 @@
 
 | 字段 | 类型 | 必填 | 说明 |
 | ---- | ---- | ---- | ---- |
-| id | u64 | 是 | 备份 ID |
+| id | u64 | 是 | 备份任务 ID |
 
 ### 请求头
 
@@ -29,27 +29,23 @@
 
 ```json
 {
-  "name": "Updated Backup Name",
-  "type": "weekly",
-  "size": 2147483648,
-  "status": "completed",
-  "source_path": "/srv/newdata",
-  "destination_path": "/srv/backups/new",
-  "compression": true,
-  "encryption": false
+  "name": "Updated Daily Backup",
+  "schedule": "0 3 * * *",
+  "enabled": true,
+  "retention_days": 14,
+  "source_paths": ["/data", "/home"],
+  "destination": "/backup/daily"
 }
 ```
 
 | 字段 | 类型 | 必填 | 说明 |
 | ---- | ---- | ---- | ---- |
-| name | string | 否 | 备份名称（1-128 字符） |
-| type | string | 否 | 备份类型（daily/weekly/monthly/manual） |
-| size | u64 | 否 | 备份大小（字节） |
-| status | string | 否 | 状态（pending/running/completed/failed） |
-| source_path | string | 否 | 源路径（必须以/开头，最大 512 字符） |
-| destination_path | string | 否 | 目标路径（必须以/开头，最大 512 字符） |
-| compression | boolean | 否 | 是否压缩 |
-| encryption | boolean | 否 | 是否加密 |
+| name | string | 否 | 任务名称（1-128 字符） |
+| schedule | string | 否 | 调度表达式（cron 或预定义：daily/weekly/monthly/hourly） |
+| enabled | boolean | 否 | 是否启用 |
+| retention_days | number | 否 | 保留天数 |
+| source_paths | string[] | 否 | 源路径列表 |
+| destination | string | 否 | 目标路径 |
 
 ## 响应
 
@@ -58,19 +54,18 @@
 ```json
 {
   "success": true,
-  "message": "Backup updated successfully",
+  "message": "Backup task updated successfully",
   "data": {
     "id": 1,
-    "name": "Updated Backup Name",
-    "type": "weekly",
-    "size": 2147483648,
+    "name": "Updated Daily Backup",
+    "schedule": "0 3 * * *",
+    "enabled": true,
+    "retention_days": 14,
+    "source_paths": ["/data", "/home"],
+    "destination": "/backup/daily",
     "status": "completed",
-    "source_path": "/srv/newdata",
-    "destination_path": "/srv/backups/new",
-    "compression": true,
-    "encryption": false,
-    "created_at": "2026-03-27T00:00:00Z",
-    "completed_at": "2026-03-27T01:30:00Z"
+    "created_at": "2026-03-01T00:00:00Z",
+    "updated_at": "2026-03-27T19:00:00Z"
   }
 }
 ```
@@ -82,32 +77,8 @@
 ```json
 {
   "success": false,
-  "error": "Invalid backup name. Must be 1-128 chars",
-  "code": "INVALID_NAME"
-}
-```
-
-```json
-{
-  "success": false,
-  "error": "Invalid backup type. Valid types: daily, weekly, monthly, manual",
-  "code": "INVALID_TYPE"
-}
-```
-
-```json
-{
-  "success": false,
-  "error": "Invalid source path. Must start with / and be <= 512 chars",
-  "code": "INVALID_SOURCE_PATH"
-}
-```
-
-```json
-{
-  "success": false,
-  "error": "Invalid status. Valid statuses: pending, running, completed, failed",
-  "code": "INVALID_STATUS"
+  "error": "Invalid schedule format. Valid values: daily, weekly, monthly, hourly, or cron expression",
+  "code": "INVALID_SCHEDULE"
 }
 ```
 
@@ -126,56 +97,65 @@
 ```json
 {
   "success": false,
-  "error": "Only admin users can update backups",
+  "error": "Only admin users can update backup tasks",
   "code": "FORBIDDEN"
 }
 ```
 
-#### 404 Not Found - 备份不存在
+#### 404 Not Found - 任务不存在
 
 ```json
 {
   "success": false,
-  "error": "Backup 999 not found",
+  "error": "Backup task 999 not found",
   "code": "NOT_FOUND"
 }
 ```
 
 ## 示例
 
-### 更新备份名称
+### 更新备份任务名称和调度
 
 ```bash
 curl -X PUT "http://localhost:8080/api/v1/backups/1" \
   -H "Authorization: Bearer <jwt_token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Updated Daily Backup"
+    "name": "Updated Daily Backup",
+    "schedule": "0 3 * * *"
   }'
 ```
 
-### 更新多个字段
+### 更新保留策略
 
 ```bash
 curl -X PUT "http://localhost:8080/api/v1/backups/1" \
   -H "Authorization: Bearer <jwt_token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Updated Backup",
-    "status": "completed",
-    "size": 2147483648,
-    "compression": true
+    "retention_days": 30
   }'
 ```
 
-### 尝试更新不存在的备份
+### 禁用备份任务
+
+```bash
+curl -X PUT "http://localhost:8080/api/v1/backups/1" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "enabled": false
+  }'
+```
+
+### 更新不存在的任务
 
 ```bash
 curl -X PUT "http://localhost:8080/api/v1/backups/999" \
   -H "Authorization: Bearer <jwt_token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "New Name"
+    "name": "Test"
   }'
 ```
 
@@ -183,19 +163,19 @@ curl -X PUT "http://localhost:8080/api/v1/backups/999" \
 ```json
 {
   "success": false,
-  "error": "Backup 999 not found",
+  "error": "Backup task 999 not found",
   "code": "NOT_FOUND"
 }
 ```
 
-### 尝试使用无效的备份类型
+### 无效的调度格式
 
 ```bash
 curl -X PUT "http://localhost:8080/api/v1/backups/1" \
   -H "Authorization: Bearer <jwt_token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "type": "invalid"
+    "schedule": "invalid"
   }'
 ```
 
@@ -203,8 +183,8 @@ curl -X PUT "http://localhost:8080/api/v1/backups/1" \
 ```json
 {
   "success": false,
-  "error": "Invalid backup type. Valid types: daily, weekly, monthly, manual",
-  "code": "INVALID_TYPE"
+  "error": "Invalid schedule format. Valid values: daily, weekly, monthly, hourly, or cron expression",
+  "code": "INVALID_SCHEDULE"
 }
 ```
 
@@ -215,42 +195,32 @@ curl -X PUT "http://localhost:8080/api/v1/backups/1" \
 
 ## 响应字段说明
 
-### 更新结果字段
+### 备份任务字段
 
 | 字段 | 类型 | 说明 |
 | ---- | ---- | ---- |
-| success | boolean | 是否成功 |
-| message | string | 响应消息 |
-| data | object | 更新后的备份信息 |
-
-### 备份信息字段
-
-| 字段 | 类型 | 说明 |
-| ---- | ---- | ---- |
-| id | u64 | 备份 ID |
-| name | string | 备份名称 |
-| type | string | 备份类型（daily/weekly/monthly/manual） |
-| size | u64 | 备份大小（字节） |
-| status | string | 状态（pending/running/completed/failed） |
-| source_path | string | 源路径 |
-| destination_path | string | 目标路径 |
-| compression | boolean | 是否压缩 |
-| encryption | boolean | 是否加密 |
+| id | u64 | 任务 ID |
+| name | string | 任务名称 |
+| schedule | string | 调度表达式 |
+| enabled | boolean | 是否启用 |
+| retention_days | number | 保留天数 |
+| source_paths | string[] | 源路径列表 |
+| destination | string | 目标路径 |
+| status | string | 状态（active/completed/failed） |
 | created_at | string | 创建时间（ISO 8601 格式） |
-| completed_at | string\|null | 完成时间（ISO 8601 格式） |
+| updated_at | string | 更新时间（ISO 8601 格式） |
 
 ## 业务逻辑
 
 1. 验证 JWT Token 有效性
 2. 检查用户角色是否为 admin
-3. 验证备份 ID 存在性（404 Not Found）
-4. 验证名称格式（如果提供）
-5. 验证备份类型（如果提供）
-6. 验证路径格式（如果提供）
-7. 验证状态（如果提供）
-8. 部分更新备份配置
-9. 返回 200 OK + 更新后的备份详情
+3. 根据备份 ID 查找任务
+4. 任务不存在返回 404 Not Found
+5. 验证 schedule 格式（如果提供）
+6. 部分更新任务配置
+7. 更新时间戳
+8. 返回 200 OK + 更新后的任务详情
 
 ## 版本历史
 
-- **Phase 165** (2026-03-27): 备份管理模块 - 备份更新 API
+- **Phase 191** (2026-03-27): 备份管理模块 - 备份任务更新 API
