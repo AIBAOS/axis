@@ -73,14 +73,22 @@
 
 ## ✅ 已完成事项
 
-- [x] 备份任务详情 API (Phase 190) - 2026-03-27 18:12
+- [x] 备份任务执行 API (Phase 190) - 2026-03-27 18:14
+  - POST /api/v1/backups/{id}/execute — 手动触发备份任务执行
+  - JWT 认证，admin 角色可访问
+  - 验证备份 ID 存在性（404 Not Found）
+  - 验证任务状态（仅 completed/failed 可重新执行，400 Bad Request）
+  - 返回字段：backup_id/status/message/started_at
+  - 文档：docs/backups_execute_api.md
+
+- [x] 备份任务详情 API (Phase 189) - 2026-03-27 18:12
   - GET /api/v1/backups/{id} — 获取单个备份任务详情
   - JWT 认证，登录用户可访问
   - 返回字段：id/name/description/source_path/destination_path/schedule/status/last_run/next_run/last_duration/last_status/retention_policy/created_at/updated_at
   - 任务不存在返回 404 Not Found
   - 文档：docs/backups_detail_api.md
 
-- [x] 备份任务列表 API (Phase 189) - 2026-03-27 17:28
+- [x] 备份任务列表 API (Phase 188) - 2026-03-27 17:28
   - GET /api/v1/backups — 获取所有备份任务列表
   - JWT 认证，登录用户可访问
   - 返回字段：id/name/description/source_path/destination_path/schedule/status/last_run/next_run/created_at/updated_at

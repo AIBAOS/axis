@@ -172,6 +172,7 @@ use handlers::containers_stats::get_container_stats;
 use handlers::backups_list::list_backup_tasks;
 use handlers::backups_create::create_backup;
 use handlers::backups_detail::get_backup_task_detail;
+use handlers::backups_execute::execute_backup_task;
 use handlers::backups_update::update_backup;
 use handlers::backups_delete::delete_backup;
 use handlers::backups::run_backup;
@@ -788,6 +789,7 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/backups", web::get().to(list_backup_tasks))
             .route("/api/v1/backups", web::post().to(create_backup))
             .route("/api/v1/backups/{id}", web::get().to(get_backup_task_detail))
+            .route("/api/v1/backups/{id}/execute", web::post().to(execute_backup_task))
             .route("/api/v1/backups/{id}", web::put().to(update_backup))
             .route("/api/v1/backups/{id}", web::delete().to(delete_backup))
             .route("/api/v1/backups/{id}/run", web::post().to(run_backup))
