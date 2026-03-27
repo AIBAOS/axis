@@ -1,15 +1,15 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 00:00 UTC
+> 最后更新：2026-03-28 00:05 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | [待提交] |
-| 提交时间 | 2026-03-28 00:00 UTC |
+| 最新 commit | 20c388f |
+| 提交时间 | 2026-03-28 00:05 UTC |
 | 当前阶段 | Phase 193 备份恢复 API |
-| 状态 | 🟡 开发中 |
+| 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
 ---
@@ -73,14 +73,22 @@
 
 ## 🔄 进行中
 
-- [ ] Phase 193 备份恢复 API (POST /api/v1/backups/{id}/restore)
-  - JWT 认证，admin 角色可访问
-  - 将 archived 状态的备份恢复为 active
-  - 冲突检测：已有活跃备份时返回 409
+无
 
 ---
 
 ## ✅ 已完成事项
+
+- [x] 备份恢复 API (Phase 193) - 2026-03-28 00:05
+  - POST /api/v1/backups/{id}/restore — 恢复已归档的备份任务
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteBackupRepository 实现真实数据库操作
+  - 状态流转：archived → active
+  - 冲突检测：非 archived 状态返回 409 / 已有活跃备份返回 409
+  - 完善错误处理（404 Not Found / 409 Conflict / 500 Database Error）
+  - 恢复成功返回 200 OK + 备份完整信息
+  - 文档：docs/backups_restore_api.md
+  - Commit: 20c388f
 
 - [x] 备份任务删除 API (Phase 192) - 2026-03-27 23:45
   - DELETE /api/v1/backups/{id} — 删除备份任务
