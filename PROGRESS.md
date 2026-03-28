@@ -88,7 +88,7 @@
   - 完善错误处理（404 Not Found / 400 Bad Request / 500 Database Error）
   - 归档成功返回 200 OK + 备份完整信息
   - 文档：docs/backups_archive_api.md
-  - Commit: REMOVE-ME
+  - Commit: c2541a2
 
 - [x] 备份恢复 API (Phase 193) - 2026-03-28 00:05
   - POST /api/v1/backups/{id}/restore — 恢复已归档的备份任务
