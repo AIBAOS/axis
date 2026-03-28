@@ -202,4 +202,5 @@ pub mod system_process_signal;
 pub mod system_cron_jobs_list;
 pub mod system_cron_jobs_create;
 pub mod system_cron_jobs_detail;
+pub mod system_logs_list;
 pub mod system_process_terminate;

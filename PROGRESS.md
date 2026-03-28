@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 15:45 UTC
+> 最后更新：2026-03-28 16:00 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 2516c98 |
-| 提交时间 | 2026-03-28 15:45 UTC |
-| 当前阶段 | Phase 256 系统定时任务详情 API |
+| 最新 commit | [待提交] |
+| 提交时间 | 2026-03-28 16:00 UTC |
+| 当前阶段 | Phase 257 系统日志列表 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -66,6 +66,17 @@
 ---
 
 ## 📋 待办事项
+
+- [x] Phase 257 系统日志列表 API - 2026-03-28 16:00
+  - GET /api/v1/system/logs — 获取系统日志列表
+  - JWT 认证，admin 角色可访问
+  - 支持分页：page(默认 1)/page_size(默认 20, 最大 100)
+  - 支持级别过滤：level(debug/info/warn/error)
+  - 返回字段：id/level/message/source/created_at
+  - 错误处理：401/403/400/500
+  - 单元测试：已编写（3 个测试用例）
+  - 文档：docs/system_logs_list_api.md
+  - Commit: [待提交]
 
 - [x] Phase 256 系统定时任务详情 API - 2026-03-28 15:45
   - GET /api/v1/system/cron-jobs/{id} — 获取单个定时任务详情

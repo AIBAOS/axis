@@ -57,6 +57,7 @@ mod database {
     pub mod update_store;
     pub mod usb_device_store;
     pub mod share_store;
+    pub mod cron_job_store;
 }
 mod config;
 
