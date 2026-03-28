@@ -58,7 +58,7 @@ pub fn init_file_dir() -> Result<(), String> {
 
 // 上传文件接口（待实现）
 pub async fn upload_file(
-    payload: web::Payload,
+    _payload: web::Payload,
     _req: actix_web::HttpRequest,
 ) -> Result<HttpResponse, Error> {
     // TODO: 实现文件上传逻辑

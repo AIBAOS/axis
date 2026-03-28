@@ -91,7 +91,7 @@ pub async fn create_print_job(
     let printer_id = path.into_inner();
 
     // 1. 验证 CUPS 服务连接
-    if let Err(e) = check_cups_connection() {
+    if let Err(_e) = check_cups_connection() {
         return Ok(HttpResponse::ServiceUnavailable().json(ErrorResponse {
             success: false,
             error: "CUPS service is unavailable".to_string(),

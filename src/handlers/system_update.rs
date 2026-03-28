@@ -5,7 +5,6 @@ use actix_web::{web, HttpResponse, Result};
 use actix_web::web::Json;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use chrono::Utc;
 use std::sync::Mutex;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -84,8 +83,8 @@ pub async fn check_update() -> Result<HttpResponse> {
     
     // 模拟检查结果（实际应从服务器获取）
     let has_update = true;
-    let latest_version = "v0.2.0";
-    let current_version = "v0.1.0";
+    let _latest_version = "v0.2.0";
+    let _current_version = "v0.1.0";
     
     let update_info = if has_update {
         Some(UpdateInfo {
@@ -117,7 +116,7 @@ pub async fn check_update() -> Result<HttpResponse> {
 }
 
 pub async fn get_update_info() -> Result<HttpResponse> {
-    let status = UPDATE_STATUS.lock().unwrap();
+    let _status = UPDATE_STATUS.lock().unwrap();
     
     Ok(HttpResponse::Ok().json(json!({
         "current_version": "v0.1.0",
@@ -134,7 +133,7 @@ pub async fn get_update_info() -> Result<HttpResponse> {
 }
 
 pub async fn download_update(
-    Json(payload): web::Json<DownloadRequest>,
+    Json(_payload): web::Json<DownloadRequest>,
 ) -> Result<HttpResponse> {
     let mut status = UPDATE_STATUS.lock().unwrap();
     
@@ -159,7 +158,7 @@ pub async fn download_update(
 }
 
 pub async fn install_update(
-    Json(payload): web::Json<InstallRequest>,
+    Json(_payload): web::Json<InstallRequest>,
 ) -> Result<HttpResponse> {
     let mut status = UPDATE_STATUS.lock().unwrap();
     

@@ -170,5 +170,3 @@ pub mod storage_pool_create;
 pub mod storage_pool_update;
 pub mod storage_volume_snapshots_create;
 pub mod users_logout;
-pub use crate::models::rbac::{RbacRepository, Role};
-pub use crate::models::user::{UserRepository, User};

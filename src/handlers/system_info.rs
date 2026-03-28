@@ -2,7 +2,7 @@
 // Phase 59: 增强 JWT 认证
 // 包含：系统信息、健康检查、资源监控等接口
 
-use actix_web::{web, HttpResponse, Result, HttpRequest};
+use actix_web::{HttpResponse, Result, HttpRequest};
 use serde::{Deserialize, Serialize};
 
 use crate::models::jwt::JwtClaims;

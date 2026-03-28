@@ -2,7 +2,7 @@
 // DELETE /api/v1/shares/nfs/{id} — 删除 NFS 共享
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::services::jwt_service::JwtService;
 

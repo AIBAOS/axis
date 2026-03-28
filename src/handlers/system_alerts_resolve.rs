@@ -52,7 +52,7 @@ pub struct ErrorResponse {
 pub async fn resolve_system_alert(
     req: HttpRequest,
     path: web::Path<u64>,
-    payload: Option<web::Json<ResolveAlertRequest>>,
+    _payload: Option<web::Json<ResolveAlertRequest>>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
     let alert_id = path.into_inner();

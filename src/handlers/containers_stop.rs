@@ -2,7 +2,7 @@
 // POST /api/v1/containers/{id}/stop — 停止容器
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::services::jwt_service::JwtService;
 

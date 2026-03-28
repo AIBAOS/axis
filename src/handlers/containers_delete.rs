@@ -2,7 +2,7 @@
 // DELETE /api/v1/containers/{id} — 删除容器
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::services::jwt_service::JwtService;
 

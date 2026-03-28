@@ -2,8 +2,8 @@
 // POST /api/v1/backups/{id}/restore — 恢复备份任务（状态从 archived → active）
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
-use std::sync::{Arc, Mutex};
+use serde::Serialize;
+use std::sync::Arc;
 use crate::database::backup_store::SqliteBackupRepository;
 use crate::services::jwt_service::JwtService;
 

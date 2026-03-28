@@ -2,7 +2,7 @@
 // GET /api/v1/backups/{id} — 获取备份任务详情
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::services::jwt_service::JwtService;
 

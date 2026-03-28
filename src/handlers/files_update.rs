@@ -86,7 +86,7 @@ pub async fn update_file(
     }
 
     // 4. 模拟文件数据
-    let mut mock_files = vec![
+    let mock_files = vec![
         (1u64, "readme.txt", "/readme.txt", 1024u64, "text/plain", 1u64),
         (2u64, "config.json", "/config.json", 2048u64, "application/json", 1u64),
         (3u64, "photo.jpg", "/Pictures/photo.jpg", 2097152u64, "image/jpeg", 2u64),

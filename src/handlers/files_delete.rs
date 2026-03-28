@@ -2,7 +2,7 @@
 // DELETE /api/v1/files/{id} — 删除文件
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::database::rbac_store::SqliteRbacRepository;
 use crate::models::rbac::RbacRepository;

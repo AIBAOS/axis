@@ -6,7 +6,7 @@ use serde::Serialize;
 use std::sync::Arc;
 
 use crate::services::jwt_service::JwtService;
-use crate::database::backup_store::{SqliteBackupRepository, BackupExecutionRow};
+use crate::database::backup_store::SqliteBackupRepository;
 
 /// 查询参数
 #[derive(Debug, serde::Deserialize)]

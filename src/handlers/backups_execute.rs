@@ -2,7 +2,7 @@
 // POST /api/v1/backups/{id}/execute — 手动触发备份任务执行
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::services::jwt_service::JwtService;
 

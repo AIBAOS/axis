@@ -51,7 +51,7 @@ const ALLOWED_EXTENSIONS: [&str; 10] = ["txt", "pdf", "doc", "docx", "xls", "xls
 pub async fn upload_file(
     req: HttpRequest,
     mut payload: Multipart,
-    rbac_repo: web::Data<SqliteRbacRepository>,
+    _rbac_repo: web::Data<SqliteRbacRepository>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
     // 1. JWT 认证 - 提取并验证 token
@@ -67,7 +67,7 @@ pub async fn upload_file(
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))?;
 
     // 2. 获取当前用户信息
-    let user_id = claims.sub.parse().unwrap_or(0);
+    let _user_id = claims.sub.parse().unwrap_or(0);
     let username = claims.sub.clone();
 
     // 3. 解析 multipart 表单数据

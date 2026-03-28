@@ -2,7 +2,7 @@
 // GET /api/v1/shares/smb/{id} — 获取 SMB 共享详情
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::services::jwt_service::JwtService;
 

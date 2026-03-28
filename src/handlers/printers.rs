@@ -458,7 +458,7 @@ pub async fn create_print_job(
 pub async fn cancel_print_job(
     path: web::Path<(u64, u64)>,
 ) -> Result<HttpResponse> {
-    let (printer_id, job_id) = path.into_inner();
+    let (_printer_id, job_id) = path.into_inner();
 
     // 简化模拟：验证 job_id
     let valid_jobs = vec![101, 102, 103];

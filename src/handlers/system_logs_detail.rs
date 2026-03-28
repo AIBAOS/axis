@@ -2,7 +2,7 @@
 // GET /api/v1/system/logs/{id} — 获取系统日志详情
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::services::jwt_service::JwtService;
 

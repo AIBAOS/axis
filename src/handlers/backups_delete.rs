@@ -2,7 +2,7 @@
 // DELETE /api/v1/backups/{id} — 删除备份任务
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::sync::Arc;
 
 use crate::services::jwt_service::JwtService;

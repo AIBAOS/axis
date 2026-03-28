@@ -1,7 +1,7 @@
 pub mod scanner;
 
 use actix_web::{web, HttpResponse, Result};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::models::media::{MediaFile, MediaMetadata};
 
@@ -16,8 +16,8 @@ pub struct QueryParams {
 pub async fn list_media_files(
     query: web::Query<QueryParams>,
 ) -> Result<HttpResponse> {
-    let page = query.page.unwrap_or(1);
-    let page_size = query.page_size.unwrap_or(20);
+    let _page = query.page.unwrap_or(1);
+    let _page_size = query.page_size.unwrap_or(20);
     
     // 示例数据
     let files = vec![

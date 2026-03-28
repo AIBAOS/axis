@@ -2,7 +2,7 @@
 // GET /api/v1/storage/disks — 获取存储磁盘列表
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::services::jwt_service::JwtService;
 

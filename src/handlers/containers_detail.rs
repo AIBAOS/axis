@@ -2,7 +2,7 @@
 // GET /api/v1/containers/{id} — 获取容器详情
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::services::jwt_service::JwtService;
 

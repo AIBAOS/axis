@@ -28,7 +28,7 @@ pub struct ErrorResponse {
 pub async fn delete_system_alert(
     req: HttpRequest,
     path: web::Path<u64>,
-    payload: Option<web::Json<DeleteAlertRequest>>,
+    _payload: Option<web::Json<DeleteAlertRequest>>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
     let alert_id = path.into_inner();

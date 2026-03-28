@@ -582,7 +582,7 @@ pub async fn update_volume(
 ) -> Result<HttpResponse, Error> {
     let id = path.into_inner();
 
-    let mut mock_volumes = vec![
+    let mock_volumes = vec![
         VolumeInfo {
             volume_id: 1,
             name: "Root Volume".to_string(),

@@ -2,7 +2,7 @@
 // DELETE /api/v1/shared-folders/{id}/permissions/{permission_id} — 删除共享文件夹权限
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::database::rbac_store::SqliteRbacRepository;
 use crate::models::rbac::RbacRepository;

@@ -2,7 +2,7 @@
 // 包含：用户列表、详情、创建、更新、删除接口
 // Phase 47: 实现创建用户接口，支持 bcrypt 密码加密、角色校验、admin 权限校验
 
-use actix_web::{web, HttpResponse, Error, Result, http::StatusCode};
+use actix_web::{web, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -422,7 +422,7 @@ pub async fn create_user(
         .map_err(|e| actix_web::error::ErrorInternalServerError(format!("Create user error: {}", e)))?;
 
     // 7. 如果指定了存储配额，创建配额记录
-    if let Some(quota) = payload.storage_quota {
+    if let Some(_quota) = payload.storage_quota {
         // 配额服务调用（预留）
         // quota_service.set_quota(new_user.id, quota)?;
     }

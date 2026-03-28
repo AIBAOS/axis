@@ -59,7 +59,7 @@ pub async fn create_print_job(
     req: HttpRequest,
     path: web::Path<u64>,
     payload: web::Json<CreatePrintJobRequest>,
-    rbac_repo: web::Data<SqliteRbacRepository>,
+    _rbac_repo: web::Data<SqliteRbacRepository>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
     // 1. JWT 认证 - 提取并验证 token
@@ -75,7 +75,7 @@ pub async fn create_print_job(
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))?;
 
     // 2. 获取当前用户信息
-    let user_id = claims.sub.parse().unwrap_or(0);
+    let _user_id = claims.sub.parse().unwrap_or(0);
     let username = claims.sub.clone().clone();
 
     let printer_id = path.into_inner();

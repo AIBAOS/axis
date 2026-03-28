@@ -2,7 +2,7 @@
 // POST /api/v1/containers/{id}/start — 启动容器
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::services::jwt_service::JwtService;
 

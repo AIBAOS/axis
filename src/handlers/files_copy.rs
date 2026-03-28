@@ -97,7 +97,7 @@ pub async fn copy_file(
     let source_file = mock_files.into_iter().find(|(fid, _, _, _, _, _)| *fid == file_id);
 
     match source_file {
-        Some((fid, name, src_path, size, mime, owner_id)) => {
+        Some((_fid, name, _src_path, size, mime, owner_id)) => {
             // 6. 验证文件归属权（admin 可操作任意文件）
             if !is_admin && owner_id != user_id {
                 return Ok(HttpResponse::Forbidden().json(ErrorResponse {

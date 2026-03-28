@@ -2,7 +2,7 @@
 // DELETE /api/v1/shares/smb/{id} — 删除 SMB 共享
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::services::jwt_service::JwtService;
 

@@ -41,7 +41,7 @@ pub struct ErrorResponse {
 pub async fn get_user_by_id(
     req: HttpRequest,
     path: web::Path<u64>,
-    rbac_repo: web::Data<SqliteRbacRepository>,
+    _rbac_repo: web::Data<SqliteRbacRepository>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
     let user_id = path.into_inner();

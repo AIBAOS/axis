@@ -1,3 +1,7 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+
 use actix_web::{web, App, HttpResponse, HttpServer, Result};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -66,7 +70,6 @@ use handlers::tasks::{
     get_task,
     update_task,
     delete_task,
-    cancel_task,
 };
 use handlers::settings::{get_all_settings, get_setting, update_setting};
 use handlers::notifications::{
@@ -99,7 +102,6 @@ use handlers::network_config_list::list_network_config;
 use handlers::storage_disks_list::list_storage_disks;
 use handlers::storage_disk_detail::get_storage_disk_detail;
 use handlers::network_interfaces_list::list_network_interfaces;
-use handlers::network_interface_detail::get_network_interface_detail;
 use handlers::network_interfaces_create::create_network_interface;
 use handlers::network_interface_update::update_network_interface;
 use handlers::network_interface_delete::delete_network_interface;
@@ -118,11 +120,6 @@ use handlers::printers_update::update_printer;
 use handlers::printers_get::get_printer_detail as get_printer_2;
 use handlers::printers_delete::delete_printer;
 use handlers::system_health::get_system_health;
-use handlers::storage_volumes::list_volumes;
-use handlers::storage_volumes_create::create_volume as create_storage_volume;
-use handlers::storage_volumes_update::update_storage_volume;
-use handlers::storage_volumes_delete::delete_storage_volume;
-use handlers::storage_volume_snapshots::list_snapshots as list_volume_snapshots_old;
 use handlers::storage_volume_snapshot_create::create_volume_snapshot as create_volume_snapshot;
 use handlers::storage_volume_snapshots_list::list_volume_snapshots as list_volume_snapshots;
 use handlers::storage_volume_snapshot_detail::get_volume_snapshot as get_volume_snapshot;
@@ -140,7 +137,6 @@ use handlers::shared_folder_permissions_add::add_shared_folder_permission as add
 use handlers::shared_folder_permissions_update::update_shared_folder_permission as update_shared_folder_permission;
 use handlers::shared_folder_permissions_delete::delete_shared_folder_permission as delete_shared_folder_permission;
 use handlers::firewall_rules_create::create_firewall_rule;
-use handlers::firewall_rules_delete::delete_firewall_rule;
 use handlers::firewall_rule_delete::delete_firewall_rule as delete_firewall_rule_by_id;
 use handlers::firewall_rules::list_firewall_rules;
 use handlers::firewall_rule_detail::get_firewall_rule_detail;
@@ -181,10 +177,6 @@ use handlers::backups_archive::archive_backup;
 use handlers::backups_execution_history::get_backup_execution_history;
 use handlers::backups_stats::get_backup_stats;
 use handlers::backups::run_backup;
-use handlers::users::{
-    get_users,
-    change_password,
-};
 use handlers::files_ex::{
     create_folder,
     delete_files,
@@ -201,14 +193,6 @@ use handlers::scheduled_tasks::{
     create_scheduled_task,
     update_scheduled_task,
     delete_scheduled_task,
-    toggle_scheduled_task,
-    run_scheduled_task,
-};
-use handlers::disks::{
-    list_disks,
-    get_disk,
-    get_disk_health,
-    get_disk_usage,
 };
 use handlers::power::{
     execute_power_action,
@@ -244,25 +228,19 @@ use handlers::shares_nfs_delete::delete_nfs_share;
 //     delete_share,
 //     toggle_share,
 // };
-use handlers::users_detail::get_user;
 use handlers::users_list::list_users;
 use handlers::users_get_by_id::get_user_by_id;
 use handlers::users_create::create_user;
 use handlers::users_update::update_user;
-use handlers::users_delete::delete_user;
 use handlers::files_list::list_files;
 use handlers::files_detail::get_file_detail;
 use handlers::files_upload::upload_file;
 use handlers::files_download::download_file;
 use handlers::files_delete::delete_file;
-use handlers::files_detail_by_id::get_file_detail as get_file_detail_by_id;
 use handlers::files_update::update_file;
-use handlers::files_download::download_file as download_file_2;
 use handlers::files_rename::{rename_file, move_file};
 use handlers::files_copy::copy_file;
 use handlers::files_browse::browse_files;
-use handlers::files_get::get_file_detail as get_file_detail_4;
-use handlers::files_upload::upload_file as upload_file_3;
 use handlers::network_config_get::get_network_config;
 use handlers::network_config_update::update_network_config;
 use handlers::dns_config_get::get_dns_config;

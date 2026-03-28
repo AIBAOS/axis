@@ -2,7 +2,7 @@
 // GET /api/v1/storage/disks/{id}/smart — 获取磁盘 S.M.A.R.T. 健康信息
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::services::jwt_service::JwtService;
 

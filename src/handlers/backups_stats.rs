@@ -2,7 +2,7 @@
 // GET /api/v1/backups/stats — 获取备份任务和执行历史统计信息
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::sync::Arc;
 
 use crate::services::jwt_service::JwtService;

@@ -2,7 +2,7 @@
 // DELETE /api/v1/storage/volumes/{id} — 删除存储卷
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::database::rbac_store::SqliteRbacRepository;
 use crate::models::rbac::RbacRepository;

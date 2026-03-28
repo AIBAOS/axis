@@ -135,7 +135,7 @@ pub async fn download_file(
     jwt_claims: web::Data<JwtClaims>,
     filename: web::Path<String>,
 ) -> Result<HttpResponse, Error> {
-    let user_id = get_user_id_from_claims(jwt_claims.get_ref());
+    let _user_id = get_user_id_from_claims(jwt_claims.get_ref());
     let original_filename = filename.into_inner();
     
     // 简化实现：返回测试数据
@@ -153,7 +153,7 @@ pub async fn delete_file(
     jwt_claims: web::Data<JwtClaims>,
     filename: web::Path<String>,
 ) -> Result<HttpResponse, Error> {
-    let user_id = get_user_id_from_claims(jwt_claims.get_ref());
+    let _user_id = get_user_id_from_claims(jwt_claims.get_ref());
     let original_filename = filename.into_inner();
     
     Ok(HttpResponse::Ok().json(DeleteResponse {

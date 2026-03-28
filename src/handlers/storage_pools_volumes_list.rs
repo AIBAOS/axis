@@ -68,7 +68,7 @@ pub async fn list_pool_volumes(
     req: HttpRequest,
     path: web::Path<u64>,
     query: web::Query<StorageVolumesQuery>,
-    rbac_repo: web::Data<SqliteRbacRepository>,
+    _rbac_repo: web::Data<SqliteRbacRepository>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
     // 1. JWT 认证 - 提取并验证 token（任意登录用户）

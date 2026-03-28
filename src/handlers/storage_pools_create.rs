@@ -56,7 +56,7 @@ pub struct ErrorResponse {
 pub async fn create_storage_pool(
     req: HttpRequest,
     payload: web::Json<CreateStoragePoolRequest>,
-    rbac_repo: web::Data<SqliteRbacRepository>,
+    _rbac_repo: web::Data<SqliteRbacRepository>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
     // 1. JWT 认证 - 提取并验证 token（任意登录用户）

@@ -2,7 +2,7 @@
 // DELETE /api/v1/network/interfaces/{id} — 删除网络接口
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::services::jwt_service::JwtService;
 

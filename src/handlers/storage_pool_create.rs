@@ -86,7 +86,7 @@ fn get_min_disk_count(pool_type: &str) -> u32 {
 pub async fn create_pool(
     req: HttpRequest,
     payload: web::Json<CreatePoolRequest>,
-    rbac_repo: web::Data<SqliteRbacRepository>,
+    _rbac_repo: web::Data<SqliteRbacRepository>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
     // 1. JWT 认证 - 提取并验证 token（任意登录用户可访问）

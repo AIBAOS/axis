@@ -2,7 +2,7 @@
 // DELETE /api/v1/firewall/rules/{rule_id} — 删除防火墙规则
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::services::jwt_service::JwtService;
 
