@@ -1,45 +1,46 @@
-# 系统通知删除 API 文档
+# 系统通知删除 API
 
-## 概述
+## Phase 208
 
-本文档描述 Axis NAS 系统中删除系统通知 API 的实现细节。
+## 接口说明
 
-## API 端点
+删除指定的系统通知。
 
-- **路径**: `DELETE /api/v1/system/notifications/{id}`
-- **版本**: v1
-- **Phase**: 208
+## 请求
 
-## 认证
+`DELETE /api/v1/system/notifications/{id}`
 
-- **类型**: JWT Bearer Token
-- **权限**: 仅 Admin 用户可访问
+### 路径参数
 
-## 请求参数
+| 字段 | 类型 | 必填 | 说明 |
+| ---- | ---- | ---- | ---- |
+| id | integer | 是 | 通知 ID |
 
-### Path 参数
+### 请求头
 
-| 参数 | 类型 | 必需 | 描述 |
-|------|------|------|------|
-| `id` | number | 是 | 系统通知 ID |
+| 字段 | 类型 | 必填 | 说明 |
+| ---- | ---- | ---- | ---- |
+| Authorization | string | 是 | JWT Token，格式：`Bearer <token>` |
 
-## 响应格式
+### 请求体
 
-### 成功响应 (204 No Content)
+无
 
-```
-HTTP/1.1 204 No Content
-```
+## 响应
+
+### 成功响应（204 No Content）
+
+删除成功，无响应体。
 
 ### 错误响应
 
-#### 404 Not Found - 通知不存在
+#### 401 Unauthorized - 未认证或 Token 无效
 
 ```json
 {
   "success": false,
-  "error": "System notification 999 not found",
-  "code": "NOT_FOUND"
+  "error": "Invalid or expired token",
+  "code": "UNAUTHORIZED"
 }
 ```
 
@@ -53,13 +54,13 @@ HTTP/1.1 204 No Content
 }
 ```
 
-#### 401 Unauthorized - 认证失败
+#### 404 Not Found - 通知不存在或非系统通知
 
 ```json
 {
   "success": false,
-  "error": "Missing or invalid Authorization header",
-  "code": "UNAUTHORIZED"
+  "error": "System notification 999 not found",
+  "code": "NOT_FOUND"
 }
 ```
 
@@ -68,122 +69,79 @@ HTTP/1.1 204 No Content
 ```json
 {
   "success": false,
-  "error": "删除系统通知失败：数据库错误",
+  "error": "删除系统通知失败：database is locked",
   "code": "DATABASE_ERROR"
 }
 ```
 
-## 错误代码
-
-| 代码 | HTTP 状态码 | 描述 |
-|------|-----------|------|
-| `UNAUTHORIZED` | 401 | 未提供或无效的认证令牌 |
-| `FORBIDDEN` | 403 | 非 admin 用户尝试删除 |
-| `NOT_FOUND` | 404 | 通知不存在或非系统通知 |
-| `DATABASE_ERROR` | 500 | 数据库操作失败 |
-
 ## 示例
 
-### 请求
+### 删除系统通知
 
 ```bash
-curl -X DELETE "http://localhost:8080/api/v1/system/notifications/1" \
-  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
+curl -X DELETE "http://localhost:8080/api/v1/system/notifications/15" \
+  -H "Authorization: Bearer <jwt_token>"
 ```
 
-### 成功响应
+响应：`204 No Content`
 
+### 删除不存在的通知
+
+```bash
+curl -X DELETE "http://localhost:8080/api/v1/system/notifications/999" \
+  -H "Authorization: Bearer <jwt_token>"
 ```
-HTTP/1.1 204 No Content
-```
 
-### 错误响应（非系统通知）
-
+响应（404 Not Found）：
 ```json
 {
   "success": false,
-  "error": "System notification 2 not found",
+  "error": "System notification 999 not found",
   "code": "NOT_FOUND"
 }
 ```
 
-## 权限说明
-
-- **Admin 用户**: 可删除任意系统通知（target_user_id IS NULL）
-- **普通用户**: 无权访问（返回 403 Forbidden）
-
-## 删除条件
-
-### 允许删除
-- 通知存在且为系统通知（target_user_id IS NULL）
-- 用户具有 admin 权限
-
-### 禁止删除
-- 通知不存在（404）
-- 通知为个人通知（target_user_id 有值）（404）
-- 用户无 admin 权限（403）
-
-## 实现细节
-
-### 系统通知验证
-
-- 仅允许删除 `target_user_id IS NULL` 的系统通知
-- 个人通知（target_user_id 有值）返回 404 Not Found
-
-### 数据库操作
-
-- **查询**: `get_notification_by_id(id)`
-- **删除**: `delete_notification(id)`
-- **数据库**: SQLite
-- **框架**: Actix-web
-- **仓库**: SqliteNotificationRepository
-
-## 数据库表结构
-
-```sql
-CREATE TABLE IF NOT EXISTS notifications (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    message TEXT NOT NULL,
-    type TEXT NOT NULL DEFAULT 'info',
-    priority TEXT NOT NULL DEFAULT 'normal',
-    source TEXT,
-    target_user_id INTEGER,
-    is_read INTEGER NOT NULL DEFAULT 0,
-    created_at INTEGER NOT NULL,
-    read_at INTEGER,
-    action_url TEXT
-);
-```
-
-## 相关接口
-
-- `GET /api/v1/system/notifications` - 获取系统通知列表
-- `PUT /api/v1/system/notifications/{id}/read` - 标记系统通知为已读
-- `POST /api/v1/system/notifications/{id}/mark-read` - 标记通知为已读
-
-## 测试验证
+### 删除个人通知（非系统通知）
 
 ```bash
-# 编译检查
-cargo check
-
-# 运行测试（如果有）
-cargo test
-
-# 测试删除系统通知
-curl -X DELETE "http://localhost:8080/api/v1/system/notifications/1" \
-  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
-
-# 预期：204 No Content
-
-# 测试删除个人通知（应失败）
-curl -X DELETE "http://localhost:8080/api/v1/system/notifications/2" \
-  -H "Authorization: Bearer ADMIN_JWT_TOKEN"
-
-# 预期：404 Not Found
+curl -X DELETE "http://localhost:8080/api/v1/system/notifications/10" \
+  -H "Authorization: Bearer <jwt_token>"
 ```
+
+响应（404 Not Found）：
+```json
+{
+  "success": false,
+  "error": "System notification 10 not found",
+  "code": "NOT_FOUND"
+}
+```
+
+## 权限要求
+
+- 需要 JWT 认证
+- 仅限 admin 角色访问
+- 仅允许删除系统通知（target_user_id IS NULL）
+
+## 业务逻辑
+
+1. 验证 JWT Token 有效性
+2. 检查用户角色是否为 admin
+3. 查询通知是否存在（404 Not Found）
+4. 验证是系统通知（target_user_id IS NULL）
+5. 执行删除
+6. 返回 204 No Content
+
+## 通知类型
+
+| 类型 | 说明 |
+| ---- | ---- |
+| system | 系统通知 |
+| alert | 告警通知 |
+| info | 信息通知 |
+| warning | 警告通知 |
+| error | 错误通知 |
 
 ## 版本历史
 
-- **Phase 208** (2026-03-28): 初始实现，SQLite 持久化
+- **Phase 208** (2026-03-28): 通知管理模块 - 系统通知删除 API

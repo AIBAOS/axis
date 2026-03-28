@@ -8,13 +8,6 @@ use std::sync::Arc;
 use crate::services::jwt_service::JwtService;
 use crate::database::notification_store::SqliteNotificationRepository;
 
-/// 删除响应
-#[derive(Serialize)]
-pub struct DeleteResponse {
-    pub success: bool,
-    pub message: String,
-}
-
 /// 错误响应
 #[derive(Serialize)]
 pub struct ErrorResponse {
