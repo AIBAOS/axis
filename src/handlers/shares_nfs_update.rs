@@ -1,10 +1,12 @@
-// Phase 158: NFS 共享更新 API
+// Phase 205: NFS 共享更新 API (数据库版本)
 // PUT /api/v1/shares/nfs/{id} — 更新 NFS 共享
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::services::jwt_service::JwtService;
+use crate::database::share_store::SqliteShareRepository;
 
 /// NFS 客户端配置
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -78,8 +80,9 @@ fn validate_access(access: &str) -> bool {
     access == "ro" || access == "rw"
 }
 
-/// 更新 NFS 共享（Phase 158）
+/// 更新 NFS 共享（Phase 205 - 数据库版本）
 /// - JWT 认证，仅 admin 角色可访问
+/// - 使用 SqliteShareRepository 实现真实数据库更新
 /// - 请求体包含：name/path/comment/read_only/no_subtree_check/sync/clients（可选，部分更新）
 /// - 验证共享 ID 存在性（404 Not Found）
 /// - 验证名称格式（400 Bad Request）
@@ -92,6 +95,7 @@ pub async fn update_nfs_share(
     path: web::Path<u64>,
     payload: web::Json<UpdateNfsShareRequest>,
     jwt_service: web::Data<JwtService>,
+    repo: web::Data<Arc<SqliteShareRepository>>,
 ) -> Result<HttpResponse, Error> {
     let share_id = path.into_inner();
 
@@ -167,13 +171,82 @@ pub async fn update_nfs_share(
         }
     }
 
-    // 7. 模拟现有 NFS 共享数据
-    let mut mock_shares = vec![
-        NfsShareInfo {
-            id: 1,
-            name: "Data".to_string(),
-            path: "/srv/nfs/data".to_string(),
-            comment: "Data shared folder".to_string(),
+    // 7. 从数据库查询共享是否存在且为 NFS 协议
+    let existing_share = match repo.get_share_by_id(share_id as i64) {
+        Ok(Some(s)) => {
+            if s.protocol != "nfs" {
+                return Ok(HttpResponse::NotFound().json(ErrorResponse {
+                    success: false,
+                    error: format!("NFS share {} not found", share_id),
+                    code: "NOT_FOUND".to_string(),
+                }));
+            }
+            s
+        }
+        Ok(None) => {
+            return Ok(HttpResponse::NotFound().json(ErrorResponse {
+                success: false,
+                error: format!("NFS share {} not found", share_id),
+                code: "NOT_FOUND".to_string(),
+            }));
+        }
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("查询共享失败：{}", e),
+                code: "DATABASE_ERROR".to_string(),
+            }));
+        }
+    };
+
+    // 8. 验证名称唯一性（排除自身）
+    if let Some(ref new_name) = payload.name {
+        if new_name != &existing_share.name {
+            // 检查是否有其他共享已使用此名称
+            let all_shares = repo.get_shares(1, 1000, None, None).unwrap_or_default();
+            if all_shares.0.iter().any(|s| s.name == *new_name && s.id != share_id as i64) {
+                return Ok(HttpResponse::Conflict().json(ErrorResponse {
+                    success: false,
+                    error: format!("Share name '{}' already exists", new_name),
+                    code: "NAME_CONFLICT".to_string(),
+                }));
+            }
+        }
+    }
+
+    // 9. 使用数据库更新共享
+    match repo.update_share(share_id, payload.name.clone(), payload.path.clone(), None, None) {
+        Ok(share) => {
+            let updated_share = NfsShareInfo {
+                id: share.id,
+                name: share.name,
+                path: share.path,
+                comment: payload.comment.clone().unwrap_or_default(),
+                read_only: payload.read_only.unwrap_or(false),
+                no_subtree_check: payload.no_subtree_check.unwrap_or(true),
+                sync: payload.sync.unwrap_or(true),
+                clients: payload.clients.clone().unwrap_or_default(),
+                enabled: share.status == "active",
+                status: share.status,
+                created_at: share.created_at.to_string(),
+                updated_at: share.updated_at.to_string(),
+            };
+
+            return Ok(HttpResponse::Ok().json(UpdateNfsShareResponse {
+                success: true,
+                message: "NFS share updated successfully".to_string(),
+                data: updated_share,
+            }));
+        }
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("更新共享失败：{}", e),
+                code: "DATABASE_ERROR".to_string(),
+            }));
+        }
+    }
+}
             read_only: false,
             no_subtree_check: true,
             sync: true,
