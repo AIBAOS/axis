@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 08:50 UTC
+> 最后更新：2026-03-28 09:00 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 8cb6c15 |
-| 提交时间 | 2026-03-28 08:50 UTC |
-| 当前阶段 | Phase 230 系统关机 API |
+| 最新 commit | 311751b |
+| 提交时间 | 2026-03-28 09:00 UTC |
+| 当前阶段 | Phase 231 媒体信息 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,15 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 231 待安排
+- [ ] Phase 232 待安排
+
+- [x] Phase 231 媒体信息 API - 2026-03-28 09:00
+  - GET /api/v1/media/info — 获取媒体库统计信息
+  - JWT 认证，任意登录用户可访问
+  - 返回字段：video_count/audio_count/photo_count/total_size_bytes/last_updated
+  - 错误处理：401/500
+  - 单元测试：已编写
+  - Commit: 311751b
 
 - [x] Phase 230 系统关机 API - 2026-03-28 08:50
   - POST /api/v1/system/shutdown — 关闭系统
