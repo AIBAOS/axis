@@ -6,7 +6,7 @@
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | [待提交] |
+| 最新 commit | bafc082 |
 | 提交时间 | 2026-03-28 11:50 UTC |
 | 当前阶段 | Phase 242 容器停止 API |
 | 状态 | ✅ 已完成 |
@@ -78,7 +78,7 @@
   - 错误处理：401/403/404/409/500
   - 单元测试：已编写
   - 文档：docs/containers_stop_api.md
-  - Commit: [待提交]
+  - Commit: bafc082
 
 - [x] Phase 241 容器启动 API - 2026-03-28 11:40
   - POST /api/v1/containers/{id}/start — 启动容器
