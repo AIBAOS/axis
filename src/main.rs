@@ -128,6 +128,7 @@ use handlers::system_restart::restart_system;
 use handlers::system_shutdown::shutdown_system;
 use handlers::media_info::get_media_info;
 use handlers::media_videos::get_videos;
+use handlers::media_audios::get_audios;
 use handlers::storage_volume_snapshot_create::create_volume_snapshot as create_volume_snapshot;
 use handlers::storage_volume_snapshots_list::list_volume_snapshots as list_volume_snapshots;
 use handlers::storage_volume_snapshot_detail::get_volume_snapshot as get_volume_snapshot;
@@ -747,6 +748,8 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/media/info", web::get().to(get_media_info))
             // 媒体视频 API routes (Phase 232)
             .route("/api/v1/media/videos", web::get().to(get_videos))
+            // 媒体音频 API routes (Phase 233)
+            .route("/api/v1/media/audios", web::get().to(get_audios))
             .route("/api/v1/system/logs", web::get().to(get_system_logs))
             .route("/api/v1/system/logs/{id}", web::get().to(get_system_log_detail))
             .route("/api/v1/system/logs/export", web::post().to(export_system_logs))
