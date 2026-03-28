@@ -93,6 +93,16 @@
           </div>
         </a>
         
+        <router-link to="/backups" class="block border border-gray-200 rounded-lg p-4 hover:bg-gray-50 hover:border-primary-300 transition-colors">
+          <div class="flex items-center">
+            <div class="text-2xl mr-3">📦</div>
+            <div>
+              <h4 class="font-medium text-gray-900">备份管理</h4>
+              <p class="text-sm text-gray-500">备份任务配置与管理</p>
+            </div>
+          </div>
+        </router-link>
+        
         <router-link to="/files" class="block border border-gray-200 rounded-lg p-4 hover:bg-gray-50 hover:border-primary-300 transition-colors">
           <div class="flex items-center">
             <div class="text-2xl mr-3">📁</div>
