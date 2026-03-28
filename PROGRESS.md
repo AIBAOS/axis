@@ -69,13 +69,16 @@
 
 - [ ] Phase 243 待安排
 
-- [x] Phase 242 容器停止 API - 2026-03-28 11:50
+- [x] Phase 242 容器停止 API - 2026-03-28 11:50 (增强版)
   - POST /api/v1/containers/{id}/stop — 停止容器
   - JWT 认证，admin 角色可访问
   - 验证容器 ID 存在性（404 Not Found）
   - 验证容器状态：已停止返回 409 Conflict
   - 停止成功返回 200 OK + { success, message, container_id, status: "stopped" }
   - 错误处理：401/403/404/409/500
+  - 单元测试：已编写
+  - 文档：docs/containers_stop_api.md
+  - Commit: [待提交]
 
 - [x] Phase 241 容器启动 API - 2026-03-28 11:40
   - POST /api/v1/containers/{id}/start — 启动容器
