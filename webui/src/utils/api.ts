@@ -96,5 +96,11 @@ export const api = {
     getDisks: (params?: any) => apiClient.get('/api/v1/storage/disks', { params }),
     getDisk: (id: string) => apiClient.get(`/api/v1/storage/disks/${id}`),
     getUsage: () => apiClient.get('/api/v1/storage/usage')
+  },
+
+  // 设置
+  settings: {
+    get: () => apiClient.get('/api/v1/settings'),
+    update: (data: any) => apiClient.put('/api/v1/settings', data)
   }
 }

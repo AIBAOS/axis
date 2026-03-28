@@ -18,6 +18,7 @@
             <router-link to="/storage" class="text-gray-600 hover:text-gray-900">存储</router-link>
             <router-link to="/users" class="text-gray-600 hover:text-gray-900">用户</router-link>
             <router-link to="/backups" class="text-gray-600 hover:text-gray-900">备份</router-link>
+            <router-link to="/settings" class="text-gray-600 hover:text-gray-900">设置</router-link>
             <router-link to="/about" class="text-gray-600 hover:text-gray-900">关于</router-link>
             <span v-if="authStore.isAuthenticated" class="text-gray-600">|</span>
             <button
