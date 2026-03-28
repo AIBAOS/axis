@@ -19,6 +19,12 @@ pub struct Share {
     pub allowed_groups: Option<String>,  // 逗号分隔的组名
     pub guest_ok: bool,                  // 是否允许访客访问
     pub read_only: bool,                 // 是否只读
+    // NFS 专用字段
+    pub comment: Option<String>,
+    pub no_subtree_check: bool,
+    pub sync: bool,
+    pub clients: Option<String>,         // JSON 格式的客户端配置
+    pub enabled: bool,
 }
 
 /// SQLite 网络共享存储实现
@@ -61,18 +67,23 @@ impl SqliteShareRepository {
                 allowed_users TEXT,
                 allowed_groups TEXT,
                 guest_ok INTEGER NOT NULL DEFAULT 0,
-                read_only INTEGER NOT NULL DEFAULT 0
+                read_only INTEGER NOT NULL DEFAULT 0,
+                comment TEXT,
+                no_subtree_check INTEGER NOT NULL DEFAULT 0,
+                sync INTEGER NOT NULL DEFAULT 1,
+                clients TEXT,
+                enabled INTEGER NOT NULL DEFAULT 1
             )
             "#,
         ).map_err(|e| format!("Create table failed: {}", e))?;
         Ok(())
     }
 
-    /// 获取共享详情（包含 SMB 字段）
+    /// 获取共享详情（包含 SMB/NFS 字段）
     pub fn get_share_by_id(&self, id: u64) -> Result<Option<Share>, String> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
-            "SELECT id, name, path, protocol, status, description, created_at, updated_at, allowed_users, allowed_groups, guest_ok, read_only
+            "SELECT id, name, path, protocol, status, description, created_at, updated_at, allowed_users, allowed_groups, guest_ok, read_only, comment, no_subtree_check, sync, clients, enabled
              FROM shares WHERE id = ?1"
         ).map_err(|e| format!("Prepare failed: {}", e))?;
 
@@ -90,6 +101,11 @@ impl SqliteShareRepository {
                 allowed_groups: row.get(9)?,
                 guest_ok: row.get::<_, i32>(10)? != 0,
                 read_only: row.get::<_, i32>(11)? != 0,
+                comment: row.get(12)?,
+                no_subtree_check: row.get::<_, i32>(13)? != 0,
+                sync: row.get::<_, i32>(14)? != 0,
+                clients: row.get(15)?,
+                enabled: row.get::<_, i32>(16)? != 0,
             })
         });
 
@@ -107,7 +123,7 @@ impl SqliteShareRepository {
         let offset = (page - 1) * per_page;
         let mut query = String::from(
             r#"
-            SELECT id, name, path, protocol, status, description, created_at, updated_at
+            SELECT id, name, path, protocol, status, description, created_at, updated_at, allowed_users, allowed_groups, guest_ok, read_only, comment, no_subtree_check, sync, clients, enabled
             FROM shares WHERE 1=1
             "#
         );
@@ -140,6 +156,11 @@ impl SqliteShareRepository {
                     allowed_groups: row.get(9)?,
                     guest_ok: row.get::<_, i32>(10)? != 0,
                     read_only: row.get::<_, i32>(11)? != 0,
+                    comment: row.get(12)?,
+                    no_subtree_check: row.get::<_, i32>(13)? != 0,
+                    sync: row.get::<_, i32>(14)? != 0,
+                    clients: row.get(15)?,
+                    enabled: row.get::<_, i32>(16)? != 0,
                 })
             })
             .map_err(|e| format!("Query failed: {}", e))?
@@ -156,7 +177,7 @@ impl SqliteShareRepository {
         let offset = (page - 1) * per_page;
         let mut query = String::from(
             r#"
-            SELECT id, name, path, protocol, status, description, created_at, updated_at
+            SELECT id, name, path, protocol, status, description, created_at, updated_at, allowed_users, allowed_groups, guest_ok, read_only, comment, no_subtree_check, sync, clients, enabled
             FROM shares WHERE protocol = 'smb'
             "#
         );
@@ -200,6 +221,11 @@ impl SqliteShareRepository {
                     allowed_groups: row.get(9)?,
                     guest_ok: row.get::<_, i32>(10)? != 0,
                     read_only: row.get::<_, i32>(11)? != 0,
+                    comment: row.get(12)?,
+                    no_subtree_check: row.get::<_, i32>(13)? != 0,
+                    sync: row.get::<_, i32>(14)? != 0,
+                    clients: row.get(15)?,
+                    enabled: row.get::<_, i32>(16)? != 0,
                 })
             })
             .map_err(|e| format!("Query failed: {}", e))?
@@ -249,7 +275,7 @@ impl SqliteShareRepository {
         Ok(count as u64)
     }
 
-    /// 创建共享（支持 SMB 字段）
+    /// 创建共享（支持 SMB/NFS 字段）
     pub fn create_share(
         &self,
         name: &str,
@@ -260,6 +286,11 @@ impl SqliteShareRepository {
         allowed_groups: Option<&str>,
         guest_ok: bool,
         read_only: bool,
+        comment: Option<&str>,
+        no_subtree_check: bool,
+        sync: bool,
+        clients: Option<&str>,
+        enabled: bool,
     ) -> Result<Share, String> {
         let conn = self.get_connection()?;
 
@@ -270,8 +301,8 @@ impl SqliteShareRepository {
 
         let mut stmt = conn.prepare(
             r#"
-            INSERT INTO shares (name, path, protocol, status, description, created_at, updated_at, allowed_users, allowed_groups, guest_ok, read_only)
-            VALUES (?1, ?2, ?3, 'active', ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+            INSERT INTO shares (name, path, protocol, status, description, created_at, updated_at, allowed_users, allowed_groups, guest_ok, read_only, comment, no_subtree_check, sync, clients, enabled)
+            VALUES (?1, ?2, ?3, 'active', ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)
             "#
         ).map_err(|e| format!("Prepare failed: {}", e))?;
 
@@ -286,6 +317,11 @@ impl SqliteShareRepository {
             allowed_groups,
             if guest_ok { 1 } else { 0 },
             if read_only { 1 } else { 0 },
+            comment,
+            if no_subtree_check { 1 } else { 0 },
+            if sync { 1 } else { 0 },
+            clients,
+            if enabled { 1 } else { 0 },
         ]).map_err(|e| format!("Insert failed: {}", e))?;
 
         Ok(Share {
@@ -301,6 +337,11 @@ impl SqliteShareRepository {
             allowed_groups: allowed_groups.map(|s| s.to_string()),
             guest_ok,
             read_only,
+            comment: comment.map(|s| s.to_string()),
+            no_subtree_check,
+            sync,
+            clients: clients.map(|s| s.to_string()),
+            enabled,
         })
     }
 
@@ -370,6 +411,11 @@ impl SqliteShareRepository {
             allowed_groups: share.allowed_groups,
             guest_ok: share.guest_ok,
             read_only: share.read_only,
+            comment: share.comment,
+            no_subtree_check: share.no_subtree_check,
+            sync: share.sync,
+            clients: share.clients,
+            enabled: share.enabled,
         })
     }
 
@@ -492,6 +538,11 @@ impl SqliteShareRepository {
             allowed_groups: share.allowed_groups,
             guest_ok: share.guest_ok,
             read_only: share.read_only,
+            comment: share.comment,
+            no_subtree_check: share.no_subtree_check,
+            sync: share.sync,
+            clients: share.clients,
+            enabled: share.enabled,
         })
     }
 }

@@ -148,6 +148,11 @@ pub async fn create_smb_share(
         payload.allowed_groups.as_deref(),
         payload.guest_ok.unwrap_or(false),
         payload.read_only.unwrap_or(false),
+        None,
+        false,
+        false,
+        None,
+        true,
     ) {
         Ok(share) => {
             let new_share = CreatedSmbShare {

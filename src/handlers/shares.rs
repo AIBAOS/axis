@@ -142,7 +142,7 @@ pub async fn create_share(
         log::warn!("Path {} does not exist, creating anyway", path);
     }
 
-    match share_repo.create_share(&create_req.name, &path, &create_req.protocol, create_req.description.as_deref(), None, None, false, false) {
+    match share_repo.create_share(&create_req.name, &path, &create_req.protocol, create_req.description.as_deref(), None, None, false, false, None, false, false, None, false) {
         Ok(share) => {
             let share = crate::models::share::Share {
                 id: share.id,
