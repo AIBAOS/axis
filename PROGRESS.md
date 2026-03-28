@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 17:35 UTC
+> 最后更新：2026-03-28 17:45 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | a368611 |
-| 提交时间 | 2026-03-28 17:35 UTC |
-| 当前阶段 | Phase 301 WebUI 项目基础框架 |
+| 最新 commit | 08b8a6b |
+| 提交时间 | 2026-03-28 17:45 UTC |
+| 当前阶段 | Phase 301 WebUI 基础框架 |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -74,14 +74,26 @@
 
 ## ✅ WebUI 开发
 
-- [x] Phase 301 WebUI 项目基础框架 - 2026-03-28 17:35
+- [x] Phase 301 WebUI 基础框架 - 2026-03-28 17:45
   - Vue 3 + TypeScript + Vite 5
   - TailwindCSS 3 样式
   - Vue Router 4 + Pinia 状态管理
-  - Axios API 客户端（JWT 自动注入）
-  - 首页：显示"Axis NAS 管理面板"标题 + 版本信息
-  - 项目结构：webui/ 目录
-  - Commit: a368611
+  - API 客户端 (src/api/client.ts):
+    - Axios 拦截器（JWT 自动注入）
+    - 备份/文件/用户 API 方法
+    - 错误处理
+  - 视图组件:
+    - Home.vue - 首页（系统状态、功能模块入口）
+    - Backups.vue - 备份管理（列表 + 创建任务模态框）
+    - Files.vue - 文件管理（占位）
+    - Users.vue - 用户管理（占位）
+    - System.vue - 系统设置（占位）
+  - 主布局 (App.vue):
+    - 导航菜单（首页/备份/文件/用户/系统）
+    - 页脚信息
+  - 环境变量：.env.example (VITE_API_BASE_URL)
+  - 构建输出：dist/ 目录
+  - Commit: 08b8a6b
 
 ---
 
