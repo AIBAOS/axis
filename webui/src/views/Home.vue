@@ -113,6 +113,16 @@
           </div>
         </router-link>
         
+        <router-link to="/users" class="block border border-gray-200 rounded-lg p-4 hover:bg-gray-50 hover:border-primary-300 transition-colors">
+          <div class="flex items-center">
+            <div class="text-2xl mr-3">👥</div>
+            <div>
+              <h4 class="font-medium text-gray-900">用户管理</h4>
+              <p class="text-sm text-gray-500">用户与权限管理</p>
+            </div>
+          </div>
+        </router-link>
+        
         <a href="#" class="block border border-gray-200 rounded-lg p-4 hover:bg-gray-50 hover:border-primary-300 transition-colors">
           <div class="flex items-center">
             <div class="text-2xl mr-3">👥</div>
