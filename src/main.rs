@@ -139,6 +139,7 @@ use handlers::system_settings_get::get_system_settings;
 use handlers::system_settings_update::update_system_settings;
 use handlers::system_power::get_power_status;
 use handlers::system_resources::get_system_resources;
+use handlers::system_processes::get_system_processes;
 use handlers::storage_volume_snapshot_create::create_volume_snapshot as create_volume_snapshot;
 use handlers::storage_volume_snapshots_list::list_volume_snapshots as list_volume_snapshots;
 use handlers::storage_volume_snapshot_detail::get_volume_snapshot as get_volume_snapshot;
@@ -780,6 +781,8 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/system/power", web::get().to(get_power_status))
             // 系统资源监控 API routes (Phase 250)
             .route("/api/v1/system/resources", web::get().to(get_system_resources))
+            // 系统进程列表 API routes (Phase 251)
+            .route("/api/v1/system/processes", web::get().to(get_system_processes))
             .route("/api/v1/system/logs", web::get().to(get_system_logs))
             .route("/api/v1/system/logs/{id}", web::get().to(get_system_log_detail))
             .route("/api/v1/system/logs/export", web::post().to(export_system_logs))

@@ -197,3 +197,4 @@ pub mod system_settings_get;
 pub mod system_settings_update;
 pub mod system_power;
 pub mod system_resources;
+pub mod system_processes;

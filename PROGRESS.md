@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 13:50 UTC
+> 最后更新：2026-03-28 14:00 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 5f8ad07 |
-| 提交时间 | 2026-03-28 13:50 UTC |
-| 当前阶段 | Phase 250 系统资源监控 API |
+| 最新 commit | [待提交] |
+| 提交时间 | 2026-03-28 14:00 UTC |
+| 当前阶段 | Phase 251 系统进程列表 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,18 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 251 待安排
+- [ ] Phase 252 待安排
+
+- [x] Phase 251 系统进程列表 API - 2026-03-28 14:00
+  - GET /api/v1/system/processes — 获取系统进程列表
+  - JWT 认证，admin 角色可访问
+  - 查询参数：limit(默认 50, 最大 200)/offset(默认 0)/sort(cpu|memory|pid)/order(asc|desc)
+  - 筛选：user/status(running/sleeping/zombie)
+  - 返回字段：pid/name/user/cpu_percent/memory_percent/status/start_time/command
+  - 错误处理：401/403/400/500
+  - 单元测试：已编写（2 个测试用例）
+  - 文档：docs/system_processes_api.md
+  - Commit: [待提交]
 
 - [x] Phase 250 系统资源监控 API - 2026-03-28 13:50
   - GET /api/v1/system/resources — 获取系统资源使用情况
