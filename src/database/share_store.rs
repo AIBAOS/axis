@@ -11,6 +11,7 @@ pub struct Share {
     pub path: String,
     pub protocol: String, // "smb" or "nfs"
     pub status: String,   // "active" or "inactive"
+    pub description: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -49,6 +50,7 @@ impl SqliteShareRepository {
                 path TEXT NOT NULL,
                 protocol TEXT NOT NULL CHECK(protocol IN ('smb', 'nfs')),
                 status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'inactive')),
+                description TEXT,
                 created_at INTEGER NOT NULL,
                 updated_at INTEGER NOT NULL
             )
@@ -64,7 +66,7 @@ impl SqliteShareRepository {
         let offset = (page - 1) * per_page;
         let mut query = String::from(
             r#"
-            SELECT id, name, path, protocol, status, created_at, updated_at
+            SELECT id, name, path, protocol, status, description, created_at, updated_at
             FROM shares WHERE 1=1
             "#
         );
@@ -77,7 +79,7 @@ impl SqliteShareRepository {
             query.push_str(&format!(" AND status = '{}'", st));
         }
         
-        query.push_str(" ORDER BY id LIMIT ?1 OFFSET ?2");
+        query.push_str(" ORDER BY created_at DESC LIMIT ?1 OFFSET ?2");
         
         let mut stmt = conn.prepare(&query)
             .map_err(|e| format!("Prepare failed: {}", e))?;
@@ -90,8 +92,65 @@ impl SqliteShareRepository {
                     path: row.get(2)?,
                     protocol: row.get(3)?,
                     status: row.get(4)?,
-                    created_at: row.get(5)?,
-                    updated_at: row.get(6)?,
+                    description: row.get(5)?,
+                    created_at: row.get(6)?,
+                    updated_at: row.get(7)?,
+                })
+            })
+            .map_err(|e| format!("Query failed: {}", e))?
+            .filter_map(|r| r.ok())
+            .collect();
+        
+        Ok(shares)
+    }
+
+    /// 获取 SMB 共享列表（分页 + 筛选 + path 模糊搜索）
+    pub fn get_smb_shares(&self, page: u32, per_page: u32, status: Option<String>, path: Option<String>) -> Result<Vec<Share>, String> {
+        let conn = self.get_connection()?;
+        
+        let offset = (page - 1) * per_page;
+        let mut query = String::from(
+            r#"
+            SELECT id, name, path, protocol, status, description, created_at, updated_at
+            FROM shares WHERE protocol = 'smb'
+            "#
+        );
+        
+        let mut param_index = 1;
+        let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+        
+        if let Some(st) = status {
+            query.push_str(&format!(" AND status = ?{}", param_index));
+            param_index += 1;
+            params.push(Box::new(st));
+        }
+        
+        if let Some(p) = path {
+            query.push_str(&format!(" AND path LIKE ?{}", param_index));
+            param_index += 1;
+            params.push(Box::new(format!("%{}%", p)));
+        }
+        
+        query.push_str(" ORDER BY created_at DESC LIMIT ?1 OFFSET ?2");
+        params.push(Box::new(per_page as i64));
+        params.push(Box::new(offset as i64));
+        
+        let params_ref: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+        
+        let mut stmt = conn.prepare(&query)
+            .map_err(|e| format!("Prepare failed: {}", e))?;
+        
+        let shares = stmt
+            .query_map(params_ref.as_slice(), |row| {
+                Ok(Share {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    path: row.get(2)?,
+                    protocol: row.get(3)?,
+                    status: row.get(4)?,
+                    description: row.get(5)?,
+                    created_at: row.get(6)?,
+                    updated_at: row.get(7)?,
                 })
             })
             .map_err(|e| format!("Query failed: {}", e))?
@@ -121,12 +180,32 @@ impl SqliteShareRepository {
         Ok(count as u64)
     }
 
+    /// 统计 SMB 共享数量（带筛选）
+    pub fn count_smb_shares(&self, status: Option<String>, path: Option<String>) -> Result<u64, String> {
+        let conn = self.get_connection()?;
+        
+        let mut query = String::from("SELECT COUNT(*) FROM shares WHERE protocol = 'smb'");
+        
+        if let Some(st) = status {
+            query.push_str(&format!(" AND status = '{}'", st));
+        }
+        
+        if let Some(p) = path {
+            query.push_str(&format!(" AND path LIKE '%{}%'", p));
+        }
+        
+        let count: i64 = conn.query_row(&query, [], |row| row.get(0))
+            .map_err(|e| format!("Count query failed: {}", e))?;
+        
+        Ok(count as u64)
+    }
+
     /// 根据 ID 获取单个共享
     pub fn get_share_by_id(&self, id: u64) -> Result<Option<Share>, String> {
         let conn = self.get_connection()?;
         let mut stmt = conn.prepare(
             r#"
-            SELECT id, name, path, protocol, status, created_at, updated_at
+            SELECT id, name, path, protocol, status, description, created_at, updated_at
             FROM shares WHERE id = ?1
             "#
         ).map_err(|e| format!("Prepare failed: {}", e))?;
@@ -139,8 +218,9 @@ impl SqliteShareRepository {
                     path: row.get(2)?,
                     protocol: row.get(3)?,
                     status: row.get(4)?,
-                    created_at: row.get(5)?,
-                    updated_at: row.get(6)?,
+                    description: row.get(5)?,
+                    created_at: row.get(6)?,
+                    updated_at: row.get(7)?,
                 })
             })
             .optional()
@@ -150,7 +230,7 @@ impl SqliteShareRepository {
     }
 
     /// 创建共享
-    pub fn create_share(&self, name: &str, path: &str, protocol: &str) -> Result<Share, String> {
+    pub fn create_share(&self, name: &str, path: &str, protocol: &str, description: Option<&str>) -> Result<Share, String> {
         let conn = self.get_connection()?;
         
         let now = std::time::SystemTime::now()
@@ -160,12 +240,12 @@ impl SqliteShareRepository {
         
         let mut stmt = conn.prepare(
             r#"
-            INSERT INTO shares (name, path, protocol, status, created_at, updated_at)
-            VALUES (?1, ?2, ?3, 'active', ?4, ?5)
+            INSERT INTO shares (name, path, protocol, status, description, created_at, updated_at)
+            VALUES (?1, ?2, ?3, 'active', ?4, ?5, ?6)
             "#
         ).map_err(|e| format!("Prepare failed: {}", e))?;
         
-        let id = stmt.execute(params![name, path, protocol, now, now])
+        let id = stmt.execute(params![name, path, protocol, description, now, now])
             .map_err(|e| format!("Insert failed: {}", e))?;
         
         Ok(Share {
@@ -174,6 +254,7 @@ impl SqliteShareRepository {
             path: path.to_string(),
             protocol: protocol.to_string(),
             status: "active".to_string(),
+            description: description.map(|s| s.to_string()),
             created_at: now,
             updated_at: now,
         })

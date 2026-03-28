@@ -14,6 +14,7 @@ pub struct SmbSharesQuery {
     pub page: Option<u32>,
     pub per_page: Option<u32>,
     pub status: Option<String>,
+    pub path: Option<String>,
 }
 
 /// SMB 共享信息
@@ -22,10 +23,8 @@ pub struct SmbShareInfo {
     pub id: u64,
     pub name: String,
     pub path: String,
+    pub description: String,
     pub status: String,
-    pub read_only: bool,
-    pub guest_access: bool,
-    pub enabled: bool,
     pub created_at: u64,
     pub updated_at: u64,
 }
@@ -56,10 +55,11 @@ pub struct ErrorResponse {
 }
 
 /// 获取 SMB 共享列表（Phase 198）
-/// - JWT 认证，仅 admin 角色可访问
+/// - JWT 认证，登录用户可访问
 /// - 使用 SqliteShareRepository 实现真实数据库查询
 /// - 支持分页：page(默认 1), per_page(默认 20, 最大 100)
-/// - 支持状态过滤：status(active/inactive)
+/// - 支持筛选：status(active/inactive)/path 模糊搜索
+/// - 排序：created_at DESC
 /// - 返回 SMB 共享列表 + 分页信息
 pub async fn list_smb_shares(
     req: HttpRequest,
@@ -78,42 +78,27 @@ pub async fn list_smb_shares(
         .and_then(|s| s.strip_prefix("Bearer "))
         .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing or invalid Authorization header"))?;
 
-    // 2. 验证 token 有效性
-    let claims = jwt_service
+    // 2. 验证 token 有效性（登录用户即可，无需 admin）
+    let _claims = jwt_service
         .validate_token(token)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))?;
 
-    // 3. 验证 admin 权限
-    let is_admin = claims.roles.iter().any(|r| r == "admin");
-    if !is_admin {
-        return Ok(HttpResponse::Forbidden().json(ErrorResponse {
-            success: false,
-            error: "Only admin users can list SMB shares".to_string(),
-            code: "FORBIDDEN".to_string(),
-        }));
-    }
-
-    // 4. 从数据库获取 SMB 共享列表
-    match repo.get_shares(page, per_page, Some("smb".to_string()), query.status.clone()) {
+    // 3. 从数据库获取 SMB 共享列表
+    match repo.get_smb_shares(page, per_page, query.status.clone(), query.path.clone()) {
         Ok(shares) => {
             // 转换为响应格式
-            let data: Vec<SmbShareInfo> = shares.into_iter().map(|s| {
-                let enabled = s.status == "active";
-                SmbShareInfo {
-                    id: s.id,
-                    name: s.name,
-                    path: s.path,
-                    status: s.status,
-                    read_only: false,
-                    guest_access: false,
-                    enabled,
-                    created_at: s.created_at as u64,
-                    updated_at: s.updated_at as u64,
-                }
+            let data: Vec<SmbShareInfo> = shares.into_iter().map(|s| SmbShareInfo {
+                id: s.id,
+                name: s.name,
+                path: s.path,
+                description: s.description.unwrap_or_default(),
+                status: s.status,
+                created_at: s.created_at as u64,
+                updated_at: s.updated_at as u64,
             }).collect();
 
             // 计算总数和分页
-            let total = repo.count_shares(Some("smb".to_string()), query.status.clone()).unwrap_or(data.len() as u64);
+            let total = repo.count_smb_shares(query.status.clone(), query.path.clone()).unwrap_or(data.len() as u64);
             let total_pages = if total == 0 { 1 } else { (total + per_page as u64 - 1) / per_page as u64 };
 
             Ok(HttpResponse::Ok().json(SmbShareListResponse {
