@@ -93,7 +93,7 @@
           </div>
         </a>
         
-        <a href="#" class="block border border-gray-200 rounded-lg p-4 hover:bg-gray-50 hover:border-primary-300 transition-colors">
+        <router-link to="/files" class="block border border-gray-200 rounded-lg p-4 hover:bg-gray-50 hover:border-primary-300 transition-colors">
           <div class="flex items-center">
             <div class="text-2xl mr-3">📁</div>
             <div>
@@ -101,7 +101,7 @@
               <p class="text-sm text-gray-500">文件浏览与操作</p>
             </div>
           </div>
-        </a>
+        </router-link>
         
         <a href="#" class="block border border-gray-200 rounded-lg p-4 hover:bg-gray-50 hover:border-primary-300 transition-colors">
           <div class="flex items-center">
