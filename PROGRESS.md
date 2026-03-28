@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 00:35 UTC
+> 最后更新：2026-03-28 00:50 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | e70b87b |
-| 提交时间 | 2026-03-28 00:35 UTC |
-| 当前阶段 | Phase 196 备份统计 API |
+| 最新 commit | 44df3a7 |
+| 提交时间 | 2026-03-28 00:50 UTC |
+| 当前阶段 | Phase 197 系统通知列表 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,7 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 197 待安排
+- [ ] Phase 198 待安排
 
 ---
 
@@ -78,6 +78,16 @@
 ---
 
 ## ✅ 已完成事项
+
+- [x] 系统通知列表 API (Phase 197) - 2026-03-28 00:50
+  - GET /api/v1/system/notifications — 获取系统级别的通知列表
+  - JWT 认证，登录用户可访问
+  - 筛选条件：target_user_id IS NULL（全局系统通知）
+  - 支持分页：page(默认 1)/page_size(默认 20)
+  - 支持优先级筛选：priority(low/normal/high/critical)
+  - 返回字段：id/title/message/type/priority/is_read/created_at/action_url
+  - 文档：docs/system_notifications_list_api.md
+  - Commit: 44df3a7
 
 - [x] 备份统计 API (Phase 196) - 2026-03-28 00:35 (修正 00:38)
   - GET /api/v1/backups/stats — 获取备份任务和执行的统计信息
