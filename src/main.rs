@@ -178,7 +178,6 @@ use handlers::backups_delete::delete_backup;
 use handlers::backups_restore::restore_backup;
 use handlers::backups_archive::archive_backup;
 use handlers::backups_execution_history::get_backup_execution_history;
-use handlers::backups_execution_history::get_execution_history;
 use handlers::backups::run_backup;
 use handlers::users::{
     get_users,
@@ -798,9 +797,8 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/backups/{id}", web::delete().to(delete_backup))
             .route("/api/v1/backups/{id}/restore", web::post().to(restore_backup))
             .route("/api/v1/backups/{id}/archive", web::post().to(archive_backup))
-            .route("/api/v1/backups/{id}/execution-history", web::get().to(get_execution_history))
-            .route("/api/v1/backups/{id}/run", web::post().to(run_backup))
             .route("/api/v1/backups/{id}/execution-history", web::get().to(get_backup_execution_history))
+            .route("/api/v1/backups/{id}/run", web::post().to(run_backup))
             // 计划任务管理 API routes
             .route("/api/v1/scheduled-tasks", web::get().to(list_scheduled_tasks))
             .route("/api/v1/scheduled-tasks", web::post().to(create_scheduled_task))
