@@ -67,12 +67,9 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 203 SMB 共享详情 API (P1)
-  - [ ] GET /api/v1/shares/smb/{id} — 获取 SMB 共享详情
-  - [ ] JWT 认证，任意登录用户可访问
-  - [ ] 返回完整共享信息
+- [ ] Phase 204 待安排
 
-- [x] Phase 202 SMB 共享列表 API - 2026-03-28 01:50
+- [x] Phase 203 SMB 共享详情 API - 2026-03-28 02:05
   - [x] GET /api/v1/shares/smb — 获取 SMB 共享列表
   - [x] JWT 认证，任意登录用户可访问
   - [x] 支持分页：page, limit（最大 100）
@@ -89,6 +86,17 @@
 ---
 
 ## ✅ 已完成事项
+
+- [x] SMB 共享详情 API (Phase 203) - 2026-03-28 02:05
+  - GET /api/v1/shares/smb/{id} — 获取 SMB 共享详情
+  - JWT 认证，登录用户可访问
+  - 归属验证：admin 可查看任意，普通用户暂受限
+  - 使用 SqliteShareRepository 实现真实数据库查询
+  - 验证共享 ID 存在性（404 Not Found）
+  - 验证协议类型（非 SMB 返回 404）
+  - 返回字段：id/name/path/description/public/created_at/updated_at
+  - 文档：docs/shares_smb_get_api.md
+  - Commit: db90688
 
 - [x] SMB 共享创建 API (Phase 201) - 2026-03-28 01:40
   - POST /api/v1/shares/smb — 创建 SMB 共享（SQLite 持久化版）
