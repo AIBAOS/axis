@@ -1,15 +1,15 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 09:25 UTC
+> 最后更新：2026-03-28 09:30 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | ecc31c0 |
-| 提交时间 | 2026-03-28 09:25 UTC |
+| 最新 commit | 3fcd549 |
+| 提交时间 | 2026-03-28 09:30 UTC |
 | 当前阶段 | Phase 233 媒体音频列表 API |
-| 状态 | ✅ 已完成 |
+| 状态 | ✅ 已完成 (增强版) |
 | 阻塞项 | 无 |
 
 ---
@@ -69,15 +69,17 @@
 
 - [ ] Phase 234 待安排
 
-- [x] Phase 233 媒体音频列表 API - 2026-03-28 09:25
+- [x] Phase 233 媒体音频列表 API - 2026-03-28 09:30 (增强版)
   - GET /api/v1/media/audios — 获取音频列表
   - JWT 认证，任意登录用户可访问
-  - 支持分页：page(默认 1)/per_page(默认 20)
+  - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - 支持筛选：artist/album（可选）
   - 返回字段：audios/total_count/page/per_page
-  - 音频字段：id/name/path/size_bytes/duration_seconds/artist/album/created_at/thumbnail_path
+  - 音频字段：id/name/path/size_bytes/duration_seconds/artist/album/track_number/created_at/thumbnail_path
   - 错误处理：401/500
   - 单元测试：已编写
-  - Commit: ecc31c0
+  - 文档：docs/media_audios_api.md
+  - Commit: ecc31c0 + 3fcd549 (增强版)
 
 - [x] Phase 232 媒体视频列表 API - 2026-03-28 09:15
   - GET /api/v1/media/videos — 获取视频列表
