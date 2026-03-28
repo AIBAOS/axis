@@ -75,7 +75,7 @@
   - 错误处理：401/403/404/500
   - 单元测试：已编写（3 个测试用例）
   - 文档：docs/system_cron_jobs_delete_api.md
-  - Commit: 2f553ce
+  - Commit: 861b423
 
 - [x] Phase 258 系统定时任务更新 API - 2026-03-28 16:10
   - PUT /api/v1/system/cron-jobs/{id} — 更新系统定时任务
