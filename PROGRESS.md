@@ -6,7 +6,7 @@
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | [待提交] |
+| 最新 commit | fc13105 |
 | 提交时间 | 2026-03-28 12:10 UTC |
 | 当前阶段 | Phase 243 容器重启 API |
 | 状态 | ✅ 已完成 |
@@ -77,7 +77,7 @@
   - 错误处理：401/403/404/500
   - 单元测试：已编写
   - 文档：docs/containers_restart_api.md
-  - Commit: [待提交]
+  - Commit: fc13105
 
 - [x] Phase 242 容器停止 API - 2026-03-28 11:50 (增强版)
   - POST /api/v1/containers/{id}/stop — 停止容器
