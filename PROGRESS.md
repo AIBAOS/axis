@@ -6,7 +6,7 @@
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | [待提交] |
+| 最新 commit | 26e90f2 |
 | 提交时间 | 2026-03-28 11:40 UTC |
 | 当前阶段 | Phase 241 容器启动 API |
 | 状态 | ✅ 已完成 |
@@ -78,7 +78,7 @@
   - 错误处理：401/403/404/409/500
   - 单元测试：已编写
   - 文档：docs/containers_start_api.md
-  - Commit: [待提交]
+  - Commit: 26e90f2
 
 - [x] Phase 240 媒体照片删除 API - 2026-03-28 11:30 (增强版)
   - DELETE /api/v1/media/photos/{id} — 删除照片
