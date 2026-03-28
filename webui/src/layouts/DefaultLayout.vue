@@ -15,6 +15,7 @@
           <nav class="flex items-center space-x-4">
             <router-link to="/" class="text-gray-600 hover:text-gray-900">首页</router-link>
             <router-link to="/files" class="text-gray-600 hover:text-gray-900">文件</router-link>
+            <router-link to="/storage" class="text-gray-600 hover:text-gray-900">存储</router-link>
             <router-link to="/about" class="text-gray-600 hover:text-gray-900">关于</router-link>
             <span v-if="authStore.isAuthenticated" class="text-gray-600">|</span>
             <button

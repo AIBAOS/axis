@@ -15,6 +15,7 @@
           <nav class="flex space-x-4">
             <router-link to="/" class="text-primary-600 hover:text-primary-700 font-medium">首页</router-link>
             <router-link to="/files" class="text-gray-600 hover:text-gray-900 font-medium">文件</router-link>
+            <router-link to="/storage" class="text-gray-600 hover:text-gray-900 font-medium">存储</router-link>
             <router-link to="/about" class="text-gray-600 hover:text-gray-900 font-medium">关于</router-link>
           </nav>
         </div>
@@ -48,17 +49,17 @@
             </div>
           </router-link>
 
-          <div class="card hover:shadow-lg transition-shadow cursor-pointer">
+          <router-link to="/storage" class="card hover:shadow-lg transition-shadow cursor-pointer block">
             <div class="text-center">
               <div class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                 </svg>
               </div>
-              <h3 class="text-lg font-semibold text-gray-900 mb-2">系统监控</h3>
-              <p class="text-gray-600 text-sm">查看系统状态和资源</p>
+              <h3 class="text-lg font-semibold text-gray-900 mb-2">存储管理</h3>
+              <p class="text-gray-600 text-sm">管理存储卷、池和磁盘</p>
             </div>
-          </div>
+          </router-link>
 
           <div class="card hover:shadow-lg transition-shadow cursor-pointer">
             <div class="text-center">
