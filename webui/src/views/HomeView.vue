@@ -17,6 +17,7 @@
             <router-link to="/files" class="text-gray-600 hover:text-gray-900 font-medium">文件</router-link>
             <router-link to="/storage" class="text-gray-600 hover:text-gray-900 font-medium">存储</router-link>
             <router-link to="/users" class="text-gray-600 hover:text-gray-900 font-medium">用户</router-link>
+            <router-link to="/backups" class="text-gray-600 hover:text-gray-900 font-medium">备份</router-link>
             <router-link to="/about" class="text-gray-600 hover:text-gray-900 font-medium">关于</router-link>
           </nav>
         </div>
