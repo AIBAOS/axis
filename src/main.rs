@@ -232,6 +232,7 @@ use handlers::shares_webdav_create::create_webdav_share;
 use handlers::shares_webdav_update::update_webdav_share;
 use handlers::shares_webdav_delete::delete_webdav_share;
 use handlers::shares_ftp_list::list_ftp_shares;
+use handlers::shares_ftp_get::get_ftp_share;
 //     create_share,
 //     get_share,
 //     update_share,
@@ -607,6 +608,8 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/shares/webdav/{id}", web::delete().to(delete_webdav_share))
             // FTP 共享列表 API routes (Phase 220)
             .route("/api/v1/shares/ftp", web::get().to(list_ftp_shares))
+            // FTP 共享详情 API routes (Phase 221)
+            .route("/api/v1/shares/ftp/{id}", web::get().to(get_ftp_share))
             // 文件列表 API routes (Phase 38)
             .route("/api/v1/files", web::get().to(list_files))
             // 文件详情 API routes (Phase 39)
