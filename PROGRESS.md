@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 07:35 UTC
+> 最后更新：2026-03-28 07:45 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 6f0b958 |
-| 提交时间 | 2026-03-28 07:35 UTC |
-| 当前阶段 | Phase 224 FTP 共享删除 API |
+| 最新 commit | 4e2e3fc |
+| 提交时间 | 2026-03-28 07:45 UTC |
+| 当前阶段 | Phase 225 用户列表 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,16 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 225 待安排
+- [ ] Phase 226 待安排
+
+- [x] Phase 225 用户列表 API - 2026-03-28 07:45
+  - [x] GET /api/v1/users — 获取用户列表
+  - [x] JWT 认证，admin 角色可访问
+  - [x] 使用 SqliteUserRepository 实现真实数据库查询
+  - [x] 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - [x] 支持筛选：role
+  - [x] 返回字段：id/username/email/roles/is_active/created_at/updated_at/last_login
+  - Commit: 4e2e3fc
 
 - [x] Phase 224 FTP 共享删除 API - 2026-03-28 07:35
   - [x] DELETE /api/v1/shares/ftp/{id} — 删除 FTP 共享
