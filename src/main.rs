@@ -178,6 +178,7 @@ use handlers::backups_delete::delete_backup;
 use handlers::backups_restore::restore_backup;
 use handlers::backups_archive::archive_backup;
 use handlers::backups_execution_history::get_backup_execution_history;
+use handlers::backups_stats::get_backup_stats;
 use handlers::backups::run_backup;
 use handlers::users::{
     get_users,
@@ -790,6 +791,7 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/containers/{id}/stats", web::get().to(get_container_stats))
             // 备份任务管理 API routes
             .route("/api/v1/backups", web::get().to(list_backup_tasks))
+            .route("/api/v1/backups/stats", web::get().to(get_backup_stats))
             .route("/api/v1/backups", web::post().to(create_backup))
             .route("/api/v1/backups/{id}", web::get().to(get_backup_task_detail))
             .route("/api/v1/backups/{id}/execute", web::post().to(execute_backup_task))

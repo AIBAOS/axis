@@ -419,4 +419,75 @@ impl SqliteBackupRepository {
         ).map_err(|e| format!("Update execution failed: {}", e))?;
         Ok(affected > 0)
     }
+
+    /// 获取备份统计信息
+    pub fn get_backup_stats(&self) -> Result<BackupStats, String> {
+        let conn = self.get_connection()?;
+
+        // 查询备份任务统计
+        let total_backups: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM backups",
+            [],
+            |row| row.get(0),
+        ).map_err(|e| format!("Count backups failed: {}", e))?;
+
+        let active_backups: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM backups WHERE status IN ('active', 'running', 'idle', 'completed')",
+            [],
+            |row| row.get(0),
+        ).map_err(|e| format!("Count active backups failed: {}", e))?;
+
+        let archived_backups: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM backups WHERE status = 'archived'",
+            [],
+            |row| row.get(0),
+        ).map_err(|e| format!("Count archived backups failed: {}", e))?;
+
+        // 查询执行历史统计
+        let total_executions: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM backup_executions",
+            [],
+            |row| row.get(0),
+        ).map_err(|e| format!("Count executions failed: {}", e))?;
+
+        let successful_executions: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM backup_executions WHERE status = 'completed'",
+            [],
+            |row| row.get(0),
+        ).map_err(|e| format!("Count successful executions failed: {}", e))?;
+
+        let failed_executions: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM backup_executions WHERE status = 'failed'",
+            [],
+            |row| row.get(0),
+        ).map_err(|e| format!("Count failed executions failed: {}", e))?;
+
+        let running_executions: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM backup_executions WHERE status = 'running'",
+            [],
+            |row| row.get(0),
+        ).map_err(|e| format!("Count running executions failed: {}", e))?;
+
+        Ok(BackupStats {
+            total_backups: total_backups as u32,
+            active_backups: active_backups as u32,
+            archived_backups: archived_backups as u32,
+            total_executions: total_executions as u32,
+            successful_executions: successful_executions as u32,
+            failed_executions: failed_executions as u32,
+            running_executions: running_executions as u32,
+        })
+    }
+}
+
+/// 备份统计信息
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct BackupStats {
+    pub total_backups: u32,
+    pub active_backups: u32,
+    pub archived_backups: u32,
+    pub total_executions: u32,
+    pub successful_executions: u32,
+    pub failed_executions: u32,
+    pub running_executions: u32,
 }
