@@ -192,3 +192,4 @@ pub mod media_video_detail;
 pub mod media_audio_detail;
 pub mod media_photo_detail;
 pub mod media_photo_upload;
+pub mod media_photo_delete;
