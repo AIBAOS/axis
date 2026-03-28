@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 01:25 UTC
+> 最后更新：2026-03-28 01:40 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | e6ee338 |
-| 提交时间 | 2026-03-28 01:25 UTC |
-| 当前阶段 | Phase 200 系统通知标记已读 API (POST) |
+| 最新 commit | 6832574 |
+| 提交时间 | 2026-03-28 01:40 UTC |
+| 当前阶段 | Phase 201 SMB 共享创建 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,7 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 201 待安排
+- [ ] Phase 202 待安排
 
 ---
 
@@ -78,6 +78,18 @@
 ---
 
 ## ✅ 已完成事项
+
+- [x] SMB 共享创建 API (Phase 201) - 2026-03-28 01:40
+  - POST /api/v1/shares/smb — 创建 SMB 共享（SQLite 持久化版）
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteShareRepository 实现真实数据库创建
+  - 验证名称格式（400 Bad Request）
+  - 验证路径格式（400 Bad Request）
+  - 验证名称唯一性（409 Conflict）
+  - 返回字段：id/name/path/comment/read_only/guest_access/browseable/valid_users/invalid_users/status/created_at/updated_at
+  - 创建成功返回 201 Created
+  - 文档：docs/shares_smb_create_api.md
+  - Commit: 6832574
 
 - [x] 系统通知标记已读 API (POST) (Phase 200) - 2026-03-28 01:25
   - POST /api/v1/system/notifications/{id}/mark-read — 标记通知为已读（POST 版本）
