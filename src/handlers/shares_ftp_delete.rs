@@ -89,7 +89,7 @@ pub async fn delete_ftp_share(
     };
 
     // 5. 使用数据库删除共享
-    match repo.delete_share(share_id as i64) {
+    match repo.delete_share(share_id) {
         Ok(true) => {
             // 6. 返回删除成功（204 No Content）
             Ok(HttpResponse::NoContent().finish())
