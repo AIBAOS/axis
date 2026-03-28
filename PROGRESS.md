@@ -1,15 +1,15 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 09:30 UTC
+> 最后更新：2026-03-28 09:40 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 3fcd549 |
-| 提交时间 | 2026-03-28 09:30 UTC |
-| 当前阶段 | Phase 233 媒体音频列表 API |
-| 状态 | ✅ 已完成 (增强版) |
+| 最新 commit | d282417 |
+| 提交时间 | 2026-03-28 09:40 UTC |
+| 当前阶段 | Phase 234 媒体照片列表 API |
+| 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
 ---
@@ -67,7 +67,18 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 234 待安排
+- [ ] Phase 235 待安排
+
+- [x] Phase 234 媒体照片列表 API - 2026-03-28 09:40
+  - GET /api/v1/media/photos — 获取照片列表
+  - JWT 认证，任意登录用户可访问
+  - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - 支持筛选：album（可选）
+  - 返回字段：photos/total_count/page/per_page
+  - 照片字段：id/name/path/size_bytes/width/height/taken_at/created_at/thumbnail_path/album
+  - 错误处理：401/500
+  - 单元测试：已编写
+  - Commit: d282417
 
 - [x] Phase 233 媒体音频列表 API - 2026-03-28 09:30 (增强版)
   - GET /api/v1/media/audios — 获取音频列表
