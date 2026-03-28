@@ -103,6 +103,16 @@
           </div>
         </router-link>
         
+        <router-link to="/storage" class="block border border-gray-200 rounded-lg p-4 hover:bg-gray-50 hover:border-primary-300 transition-colors">
+          <div class="flex items-center">
+            <div class="text-2xl mr-3">💾</div>
+            <div>
+              <h4 class="font-medium text-gray-900">存储管理</h4>
+              <p class="text-sm text-gray-500">磁盘/存储池/存储卷管理</p>
+            </div>
+          </div>
+        </router-link>
+        
         <a href="#" class="block border border-gray-200 rounded-lg p-4 hover:bg-gray-50 hover:border-primary-300 transition-colors">
           <div class="flex items-center">
             <div class="text-2xl mr-3">👥</div>

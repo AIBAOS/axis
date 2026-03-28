@@ -26,18 +26,25 @@
               🏠 首页
             </router-link>
             <router-link
-              to="/backups"
-              class="px-3 py-2 rounded-md text-sm font-medium hover:bg-primary-600"
-              active-class="bg-primary-600"
-            >
-              📦 备份管理
-            </router-link>
-            <router-link
               to="/files"
               class="px-3 py-2 rounded-md text-sm font-medium hover:bg-primary-600"
               active-class="bg-primary-600"
             >
               📁 文件管理
+            </router-link>
+            <router-link
+              to="/storage"
+              class="px-3 py-2 rounded-md text-sm font-medium hover:bg-primary-600"
+              active-class="bg-primary-600"
+            >
+              💾 存储管理
+            </router-link>
+            <router-link
+              to="/backups"
+              class="px-3 py-2 rounded-md text-sm font-medium hover:bg-primary-600"
+              active-class="bg-primary-600"
+            >
+              📦 备份管理
             </router-link>
             <router-link
               to="/users"
