@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 05:45 UTC
+> 最后更新：2026-03-28 06:00 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | d069b85 |
-| 提交时间 | 2026-03-28 05:45 UTC |
-| 当前阶段 | Phase 218 WebDAV 共享更新 API |
+| 最新 commit | 469c4f4 |
+| 提交时间 | 2026-03-28 06:00 UTC |
+| 当前阶段 | Phase 219 WebDAV 共享删除 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,16 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 219 待安排
+- [ ] Phase 220 待安排
+
+- [x] Phase 219 WebDAV 共享删除 API - 2026-03-28 06:00
+  - [x] DELETE /api/v1/shares/webdav/{id} — 删除 WebDAV 共享
+  - [x] JWT 认证，admin 角色可访问
+  - [x] 使用 SqliteShareRepository 实现真实数据库删除
+  - [x] 验证共享 ID 存在性（404 Not Found）
+  - [x] 验证协议类型（仅 WebDAV）
+  - [x] 删除成功返回 204 No Content
+  - Commit: 469c4f4
 
 - [x] Phase 218 WebDAV 共享更新 API - 2026-03-28 05:45
   - [x] PUT /api/v1/shares/webdav/{id} — 更新 WebDAV 共享
