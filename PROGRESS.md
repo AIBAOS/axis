@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 12:10 UTC
+> 最后更新：2026-03-28 12:15 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | fc13105 |
-| 提交时间 | 2026-03-28 12:10 UTC |
-| 当前阶段 | Phase 243 容器重启 API |
+| 最新 commit | [待提交] |
+| 提交时间 | 2026-03-28 12:15 UTC |
+| 当前阶段 | Phase 244 容器日志 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,17 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 244 待安排
+- [ ] Phase 245 待安排
+
+- [x] Phase 244 容器日志 API - 2026-03-28 12:15
+  - GET /api/v1/containers/{id}/logs — 获取容器日志
+  - JWT 认证，admin 角色可访问
+  - 支持查询参数：tail(默认 100, 最大 1000)/since/follow
+  - 返回字段：container_id/logs/lines_count
+  - 错误处理：401/403/404/500
+  - 单元测试：已编写
+  - 文档：docs/containers_logs_api.md
+  - Commit: [待提交]
 
 - [x] Phase 243 容器重启 API - 2026-03-28 12:10
   - POST /api/v1/containers/{id}/restart — 重启容器
