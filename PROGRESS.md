@@ -6,7 +6,7 @@
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | [待提交] |
+| 最新 commit | 0ba518f |
 | 提交时间 | 2026-03-28 12:15 UTC |
 | 当前阶段 | Phase 244 容器日志 API |
 | 状态 | ✅ 已完成 |
@@ -77,7 +77,7 @@
   - 错误处理：401/403/404/500
   - 单元测试：已编写
   - 文档：docs/containers_logs_api.md
-  - Commit: [待提交]
+  - Commit: 0ba518f
 
 - [x] Phase 243 容器重启 API - 2026-03-28 12:10
   - POST /api/v1/containers/{id}/restart — 重启容器
