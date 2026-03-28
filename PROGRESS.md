@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 00:10 UTC
+> 最后更新：2026-03-28 00:25 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | [待提交] |
-| 提交时间 | 2026-03-28 00:08 UTC |
-| 当前阶段 | Phase 194 备份归档 API (已完善) |
+| 最新 commit | 2c2ba00 |
+| 提交时间 | 2026-03-28 00:25 UTC |
+| 当前阶段 | Phase 195 备份执行历史 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -78,6 +78,17 @@
 ---
 
 ## ✅ 已完成事项
+
+- [x] 备份执行历史 API (Phase 195) - 2026-03-28 00:25
+  - GET /api/v1/backups/{id}/execution-history — 获取备份任务执行历史记录
+  - JWT 认证，登录用户可访问
+  - 使用 SqliteBackupRepository 实现真实数据库查询
+  - 返回字段：execution_id/backup_id/status/started_at/completed_at/duration_seconds/error_message
+  - 支持分页：page(默认 1)/per_page(默认 20)
+  - 按 started_at 降序排列（最新的在前）
+  - 错误处理：404 Not Found / 500 Database Error
+  - 文档：docs/backups_execution_history_api.md
+  - Commit: 2c2ba00
 
 - [x] 备份归档 API (Phase 194) - 2026-03-28 00:10
   - POST /api/v1/backups/{id}/archive — 归档活跃的备份任务
