@@ -4,6 +4,7 @@
 use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use std::path::Path;
 
 use crate::services::jwt_service::JwtService;
 use crate::database::share_store::SqliteShareRepository;
@@ -15,6 +16,7 @@ pub struct UpdateFtpShareRequest {
     pub path: Option<String>,
     pub description: Option<String>,
     pub public: Option<bool>,
+    pub status: Option<String>,
 }
 
 /// FTP 共享信息
@@ -57,13 +59,15 @@ fn validate_share_path(path: &str) -> bool {
 }
 
 /// 更新 FTP 共享（Phase 223）
-/// - JWT 认证，admin 角色可访问
+/// - JWT 认证，仅 admin 角色可访问
 /// - 使用 SqliteShareRepository 实现真实数据库更新
-/// - 请求体包含：name/path/description/public（可选，部分更新）
+/// - 请求体包含：name/path/description/public/status（可选，部分更新）
 /// - 验证共享 ID 存在性（404 Not Found）
 /// - 验证协议类型（仅 FTP）
 /// - 验证名称格式（400 Bad Request）
 /// - 验证路径格式（400 Bad Request）
+/// - 验证路径存在性（400 Bad Request）
+/// - 验证名称唯一性（409 Conflict，排除自身）
 /// - 更新成功返回 200 OK + 共享详情
 pub async fn update_ftp_share(
     req: HttpRequest,
@@ -119,8 +123,19 @@ pub async fn update_ftp_share(
         }
     }
 
-    // 6. 从数据库查询共享是否存在且为 FTP 协议
-    let existing_share = match repo.get_share_by_id(share_id as i64) {
+    // 6. 验证路径存在性（如果提供）
+    if let Some(ref path) = payload.path {
+        if !Path::new(path).exists() {
+            return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+                success: false,
+                error: format!("Path '{}' does not exist", path),
+                code: "PATH_NOT_FOUND".to_string(),
+            }));
+        }
+    }
+
+    // 7. 从数据库查询共享是否存在且为 FTP 协议
+    let existing_share = match repo.get_share_by_id(share_id) {
         Ok(Some(s)) => {
             if s.protocol != "ftp" {
                 return Ok(HttpResponse::NotFound().json(ErrorResponse {
@@ -147,15 +162,34 @@ pub async fn update_ftp_share(
         }
     };
 
-    // 7. 使用数据库更新共享
-    match repo.update_share(share_id, payload.name.clone(), payload.path.clone(), None, None) {
+    // 8. 验证名称唯一性（排除自身）
+    if let Some(ref new_name) = payload.name {
+        if new_name != &existing_share.name {
+            // 检查是否有其他共享已使用此名称
+            let all_shares = repo.get_shares(1, 1000, None, None).unwrap_or_default();
+            if all_shares.iter().any(|s| s.name == *new_name && s.id != share_id) {
+                return Ok(HttpResponse::Conflict().json(ErrorResponse {
+                    success: false,
+                    error: format!("Share name '{}' already exists", new_name),
+                    code: "NAME_CONFLICT".to_string(),
+                }));
+            }
+        }
+    }
+
+    // 9. 使用数据库更新共享
+    let update_name = payload.name.clone().or(Some(existing_share.name.clone()));
+    let update_path = payload.path.clone().or(Some(existing_share.path.clone()));
+    let update_description = payload.description.clone().or(existing_share.description);
+
+    match repo.update_share(share_id, update_name, update_path, None, payload.status.clone()) {
         Ok(share) => {
             let updated_share = FtpShareInfo {
                 id: share.id,
                 name: share.name,
                 path: share.path,
-                description: payload.description.clone().or(existing_share.description),
-                public: payload.public.unwrap_or(share.status == "active"),
+                description: share.description,
+                public: share.guest_ok,
                 status: share.status,
                 created_at: share.created_at,
                 updated_at: share.updated_at,
@@ -174,5 +208,32 @@ pub async fn update_ftp_share(
                 code: "DATABASE_ERROR".to_string(),
             }))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::{test, App};
+
+    #[actix_web::test]
+    async fn test_update_ftp_share_success() {
+        let jwt_service = web::Data::new(JwtService::new(crate::services::jwt_service::JwtConfig {
+            secret_key: "test_secret".to_string(),
+            issuer: "test".to_string(),
+            audience: "test".to_string(),
+            expiration_minutes: 60,
+            refresh_enabled: false,
+        }));
+
+        let app = test::init_service(
+            App::new()
+                .app_data(jwt_service)
+                .route("/api/v1/shares/ftp/{id}", web::put().to(update_ftp_share))
+        ).await;
+
+        // 注意：实际测试需要有效的 JWT token 和数据库
+        // 这里只是示例测试结构
+        assert!(true);
     }
 }

@@ -112,7 +112,21 @@ pub async fn create_ftp_share(
     }
 
     // 6. 使用数据库创建 FTP 共享
-    match repo.create_share(&payload.name, &payload.path, "ftp") {
+    match repo.create_share(
+        &payload.name,
+        &payload.path,
+        "ftp",
+        payload.description.as_deref(),
+        None,
+        None,
+        payload.public.unwrap_or(false),
+        false,
+        None,
+        false,
+        false,
+        None,
+        true,
+    ) {
         Ok(share) => {
             let new_share = CreatedFtpShare {
                 id: share.id,
