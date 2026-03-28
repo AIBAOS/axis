@@ -101,6 +101,26 @@ impl SqliteShareRepository {
         Ok(shares)
     }
 
+    /// 统计共享数量（带筛选）
+    pub fn count_shares(&self, protocol: Option<String>, status: Option<String>) -> Result<u64, String> {
+        let conn = self.get_connection()?;
+        
+        let mut query = String::from("SELECT COUNT(*) FROM shares WHERE 1=1");
+        
+        if let Some(proto) = protocol {
+            query.push_str(&format!(" AND protocol = '{}'", proto));
+        }
+        
+        if let Some(st) = status {
+            query.push_str(&format!(" AND status = '{}'", st));
+        }
+        
+        let count: i64 = conn.query_row(&query, [], |row| row.get(0))
+            .map_err(|e| format!("Count query failed: {}", e))?;
+        
+        Ok(count as u64)
+    }
+
     /// 根据 ID 获取单个共享
     pub fn get_share_by_id(&self, id: u64) -> Result<Option<Share>, String> {
         let conn = self.get_connection()?;

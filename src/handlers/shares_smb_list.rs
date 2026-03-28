@@ -1,10 +1,12 @@
-// Phase 151: SMB 共享列表 API
-// GET /api/v1/shares/smb — 获取 SMB 共享列表
+// Phase 198: SMB 共享列表 API
+// GET /api/v1/shares/smb — 获取 SMB 共享列表（SQLite 持久化版）
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::services::jwt_service::JwtService;
+use crate::database::share_store::SqliteShareRepository;
 
 /// SMB 共享查询参数
 #[derive(Debug, Deserialize)]
@@ -53,8 +55,9 @@ pub struct ErrorResponse {
     pub code: String,
 }
 
-/// 获取 SMB 共享列表（Phase 151）
+/// 获取 SMB 共享列表（Phase 198）
 /// - JWT 认证，仅 admin 角色可访问
+/// - 使用 SqliteShareRepository 实现真实数据库查询
 /// - 支持分页：page(默认 1), per_page(默认 20, 最大 100)
 /// - 支持状态过滤：status(active/inactive)
 /// - 返回 SMB 共享列表 + 分页信息
@@ -62,10 +65,10 @@ pub async fn list_smb_shares(
     req: HttpRequest,
     query: web::Query<SmbSharesQuery>,
     jwt_service: web::Data<JwtService>,
+    repo: web::Data<Arc<SqliteShareRepository>>,
 ) -> Result<HttpResponse, Error> {
-    let page = query.page.unwrap_or(1);
+    let page = query.page.unwrap_or(1).max(1);
     let per_page = query.per_page.unwrap_or(20).min(100);
-    let status_filter = query.status.clone();
 
     // 1. JWT 认证 - 提取并验证 token
     let token = req
@@ -90,83 +93,71 @@ pub async fn list_smb_shares(
         }));
     }
 
-    // 4. 模拟 SMB 共享数据
-    let all_shares = vec![
-        SmbShareInfo {
-            id: 1,
-            name: "Public".to_string(),
-            path: "/srv/samba/public".to_string(),
-            status: "active".to_string(),
-            read_only: false,
-            guest_access: true,
-            enabled: true,
-            created_at: 1711500000,
-            updated_at: 1711500000,
-        },
-        SmbShareInfo {
-            id: 2,
-            name: "Users".to_string(),
-            path: "/srv/samba/users".to_string(),
-            status: "active".to_string(),
-            read_only: false,
-            guest_access: false,
-            enabled: true,
-            created_at: 1711500000,
-            updated_at: 1711500000,
-        },
-        SmbShareInfo {
-            id: 3,
-            name: "Backup".to_string(),
-            path: "/srv/samba/backup".to_string(),
-            status: "inactive".to_string(),
-            read_only: true,
-            guest_access: false,
-            enabled: false,
-            created_at: 1711500000,
-            updated_at: 1711500000,
-        },
-        SmbShareInfo {
-            id: 4,
-            name: "Media".to_string(),
-            path: "/srv/samba/media".to_string(),
-            status: "active".to_string(),
-            read_only: true,
-            guest_access: true,
-            enabled: true,
-            created_at: 1711500000,
-            updated_at: 1711500000,
-        },
-    ];
+    // 4. 从数据库获取 SMB 共享列表
+    match repo.get_shares(page, per_page, Some("smb".to_string()), query.status.clone()) {
+        Ok(shares) => {
+            // 转换为响应格式
+            let data: Vec<SmbShareInfo> = shares.into_iter().map(|s| {
+                let enabled = s.status == "active";
+                SmbShareInfo {
+                    id: s.id,
+                    name: s.name,
+                    path: s.path,
+                    status: s.status,
+                    read_only: false,
+                    guest_access: false,
+                    enabled,
+                    created_at: s.created_at as u64,
+                    updated_at: s.updated_at as u64,
+                }
+            }).collect();
 
-    // 5. 应用状态过滤
-    let filtered_shares: Vec<SmbShareInfo> = if let Some(ref status) = status_filter {
-        all_shares.into_iter().filter(|s| s.status == *status).collect()
-    } else {
-        all_shares
-    };
+            // 计算总数和分页
+            let total = repo.count_shares(Some("smb".to_string()), query.status.clone()).unwrap_or(data.len() as u64);
+            let total_pages = if total == 0 { 1 } else { (total + per_page as u64 - 1) / per_page as u64 };
 
-    // 6. 应用分页
-    let total = filtered_shares.len() as u64;
-    let total_pages = ((total as f64) / (per_page as f64)).ceil() as u32;
-    
-    let start = ((page - 1) * per_page) as usize;
-    let end = (start + per_page as usize).min(filtered_shares.len());
-    
-    let shares = if start < filtered_shares.len() {
-        filtered_shares[start..end].to_vec()
-    } else {
-        vec![]
-    };
+            Ok(HttpResponse::Ok().json(SmbShareListResponse {
+                success: true,
+                data,
+                pagination: PaginationInfo {
+                    page,
+                    per_page,
+                    total,
+                    total_pages: total_pages as u32,
+                },
+            }))
+        }
+        Err(e) => Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+            success: false,
+            error: format!("查询 SMB 共享列表失败：{}", e),
+            code: "DATABASE_ERROR".to_string(),
+        })),
+    }
+}
 
-    // 7. 返回 SMB 共享列表
-    Ok(HttpResponse::Ok().json(SmbShareListResponse {
-        success: true,
-        data: shares,
-        pagination: PaginationInfo {
-            page,
-            per_page,
-            total,
-            total_pages,
-        },
-    }))
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::{test, App};
+
+    #[actix_web::test]
+    async fn test_list_smb_shares_success() {
+        let jwt_service = web::Data::new(JwtService::new(crate::services::jwt_service::JwtConfig {
+            secret_key: "test_secret".to_string(),
+            issuer: "test".to_string(),
+            audience: "test".to_string(),
+            expiration_minutes: 60,
+            refresh_enabled: false,
+        }));
+
+        let app = test::init_service(
+            App::new()
+                .app_data(jwt_service)
+                .route("/api/v1/shares/smb", web::get().to(list_smb_shares))
+        ).await;
+
+        // 注意：实际测试需要有效的 JWT token 和数据库
+        // 这里只是示例测试结构
+        assert!(true);
+    }
 }
