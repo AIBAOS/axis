@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 11:50 UTC
+> 最后更新：2026-03-28 12:10 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | bafc082 |
-| 提交时间 | 2026-03-28 11:50 UTC |
-| 当前阶段 | Phase 242 容器停止 API |
+| 最新 commit | [待提交] |
+| 提交时间 | 2026-03-28 12:10 UTC |
+| 当前阶段 | Phase 243 容器重启 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,17 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 243 待安排
+- [ ] Phase 244 待安排
+
+- [x] Phase 243 容器重启 API - 2026-03-28 12:10
+  - POST /api/v1/containers/{id}/restart — 重启容器
+  - JWT 认证，admin 角色可访问
+  - 验证容器 ID 存在性（404 Not Found）
+  - 重启成功返回 200 OK + { success, message, container_id, status, restarted_at }
+  - 错误处理：401/403/404/500
+  - 单元测试：已编写
+  - 文档：docs/containers_restart_api.md
+  - Commit: [待提交]
 
 - [x] Phase 242 容器停止 API - 2026-03-28 11:50 (增强版)
   - POST /api/v1/containers/{id}/stop — 停止容器
