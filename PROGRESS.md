@@ -6,7 +6,7 @@
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | [待提交] |
+| 最新 commit | 3e89c24 |
 | 提交时间 | 2026-03-28 12:55 UTC |
 | 当前阶段 | Phase 246 系统设置获取 API |
 | 状态 | ✅ 已完成 |
@@ -77,7 +77,7 @@
   - 错误处理：401/404/500
   - 单元测试：已编写
   - 文档：docs/system_settings_get_api.md
-  - Commit: [待提交]
+  - Commit: 3e89c24
 
 - [x] Phase 245 系统信息 API - 2026-03-28 12:30
   - GET /api/v1/system/info — 获取系统信息
