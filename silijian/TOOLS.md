@@ -46,6 +46,11 @@ Add whatever helps you do your job. This is your cheat sheet.
 - **权限:** admin
 - **Token:** 已配置 (环境变量 GITHUB_TOKEN)
 
+## Discord
+
+- **Guild ID:** 1480548143908126720
+- **nas-dev 线程 ID:** 1482978077134028830 (tasks 频道下)
+
 ## 朝廷架构 - 三省六部 Discord ID 名册
 
 ### 📌 艾特格式说明
