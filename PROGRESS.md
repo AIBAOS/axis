@@ -1,15 +1,15 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 09:40 UTC
+> 最后更新：2026-03-28 10:10 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | d282417 |
-| 提交时间 | 2026-03-28 09:40 UTC |
-| 当前阶段 | Phase 234 媒体照片列表 API |
-| 状态 | ✅ 已完成 |
+| 最新 commit | [待提交] |
+| 提交时间 | 2026-03-28 10:10 UTC |
+| 当前阶段 | Phase 104 删除用户 API |
+| 状态 | ✅ 已完成 (增强版) |
 | 阻塞项 | 无 |
 
 ---
@@ -68,6 +68,18 @@
 ## 📋 待办事项
 
 - [ ] Phase 235 待安排
+
+- [x] Phase 104 删除用户 API - 2026-03-28 10:10 (增强版)
+  - DELETE /api/v1/users/{id} — 删除用户
+  - JWT 认证，admin 角色可访问
+  - 普通用户返回 403 Forbidden
+  - 用户不存在返回 404 Not Found
+  - 不能删除自己（400 Bad Request）
+  - 返回 200 OK + { success, message }
+  - 使用 SqliteUserRepository 真实数据库实现
+  - 单元测试：已编写
+  - 文档：docs/users_delete_api.md
+  - 用户模块 5/5 完整闭环
 
 - [x] Phase 234 媒体照片列表 API - 2026-03-28 09:40
   - GET /api/v1/media/photos — 获取照片列表

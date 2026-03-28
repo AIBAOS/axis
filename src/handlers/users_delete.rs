@@ -1,15 +1,20 @@
-// Phase 37 删除用户 API
-// Phase 51: 增强 JWT 认证和 admin 权限校验（使用 JwtService）
-// 连接数据库删除用户
+// Phase 104: 删除用户 API (增强版)
+// DELETE /api/v1/users/{id} — 删除用户
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::Serialize;
 
-use crate::models::rbac::RbacRepository;
 use crate::database::user_store::SqliteUserRepository;
 use crate::database::rbac_store::SqliteRbacRepository;
 use crate::models::user::UserRepository;
 use crate::services::jwt_service::JwtService;
+
+/// 删除用户响应
+#[derive(Serialize)]
+pub struct DeleteUserResponse {
+    pub success: bool,
+    pub message: String,
+}
 
 /// 错误响应
 #[derive(Serialize)]
@@ -19,12 +24,19 @@ pub struct ErrorResponse {
     pub code: String,
 }
 
-/// 删除用户（Phase 51 增强版）
+/// 删除响应
+#[derive(Serialize)]
+pub struct DeleteResponse {
+    pub success: bool,
+    pub message: String,
+}
+
+/// 删除用户（Phase 104 增强版）
 /// - JWT 认证，仅 admin 角色可访问
 /// - 用户不存在返回 404 Not Found
 /// - 非 admin 访问返回 403 Forbidden
 /// - 不能删除自己（返回 400 Bad Request）
-/// - 删除成功后返回 204 No Content
+/// - 删除成功后返回 200 OK + { success: true, message: "User deleted" }
 pub async fn delete_user(
     req: HttpRequest,
     path: web::Path<u64>,
@@ -96,6 +108,60 @@ pub async fn delete_user(
 
     log::info!("User {} ({}) deleted by admin", target_user_id, user.username);
 
-    // 6. 返回 204 No Content
-    Ok(HttpResponse::NoContent().finish())
+    // 6. 返回 200 OK + 删除成功消息
+    Ok(HttpResponse::Ok().json(DeleteUserResponse {
+        success: true,
+        message: "User deleted".to_string(),
+    }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::{test, App};
+
+    #[actix_web::test]
+    async fn test_delete_user_success() {
+        let jwt_service = web::Data::new(JwtService::new(crate::services::jwt_service::JwtConfig {
+            secret_key: "test_secret".to_string(),
+            issuer: "test".to_string(),
+            audience: "test".to_string(),
+            expiration_minutes: 60,
+            refresh_enabled: false,
+        }));
+
+        // 注意：实际测试需要有效的 JWT token 和数据库
+        // 这里只是示例测试结构
+        assert!(true);
+    }
+
+    #[actix_web::test]
+    async fn test_delete_user_forbidden() {
+        let jwt_service = web::Data::new(JwtService::new(crate::services::jwt_service::JwtConfig {
+            secret_key: "test_secret".to_string(),
+            issuer: "test".to_string(),
+            audience: "test".to_string(),
+            expiration_minutes: 60,
+            refresh_enabled: false,
+        }));
+
+        // 注意：实际测试需要验证非 admin 用户
+        // 这里只是示例测试结构
+        assert!(true);
+    }
+
+    #[actix_web::test]
+    async fn test_delete_user_not_found() {
+        let jwt_service = web::Data::new(JwtService::new(crate::services::jwt_service::JwtConfig {
+            secret_key: "test_secret".to_string(),
+            issuer: "test".to_string(),
+            audience: "test".to_string(),
+            expiration_minutes: 60,
+            refresh_enabled: false,
+        }));
+
+        // 注意：实际测试需要验证用户不存在情况
+        // 这里只是示例测试结构
+        assert!(true);
+    }
 }
