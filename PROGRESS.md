@@ -1,15 +1,15 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 03:30 UTC
+> 最后更新：2026-03-28 03:35 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 8ea224b |
-| 提交时间 | 2026-03-28 03:25 UTC |
+| 最新 commit | 5ca8a9d |
+| 提交时间 | 2026-03-28 03:35 UTC |
 | 当前阶段 | Phase 209 待安排 |
-| 状态 | ✅ Phase 208 已完成 |
+| 状态 | ✅ Phase 208 已完成 (修正) |
 | 阻塞项 | 无 |
 
 ---
@@ -69,12 +69,11 @@
 
 - [ ] Phase 209 待安排
 
-- [x] Phase 208 通知删除 API - 2026-03-28 03:25
+- [x] Phase 208 通知删除 API - 2026-03-28 03:30
   - [x] DELETE /api/v1/system/notifications/{id} — 删除系统通知
-  - [x] JWT 认证，登录用户可访问
+  - [x] JWT 认证，仅 admin 用户可访问
   - [x] 验证通知 ID 存在性（404 Not Found）
-  - [x] 验证是系统通知（target_user_id IS NULL，否返回 403 Forbidden）
-  - [x] 删除成功返回 200 OK
+  - [x] 删除成功返回 204 No Content
   - [x] 文档：docs/system_notifications_delete_api.md
 
 - [x] Phase 203 SMB 共享详情 API - 2026-03-28 02:05
