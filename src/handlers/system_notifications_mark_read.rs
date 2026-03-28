@@ -175,7 +175,7 @@ pub async fn mark_notification_as_read(
             if !is_admin {
                 // 非 admin 用户只能标记自己的通知或系统通知
                 if let Some(target_id) = notification.target_user_id {
-                    if target_id != user_id {
+                    if target_id != user_id as i64 {
                         return Ok(HttpResponse::Forbidden().json(ErrorResponse {
                             success: false,
                             error: "只能标记自己的通知为已读".to_string(),

@@ -1,198 +1,183 @@
-# 系统通知标记已读 API
+# 系统通知标记已读 API 文档
 
-## Phase 199
+## 概述
 
-## 接口说明
+本文档描述 Axis NAS 系统中系统通知标记已读 API 的实现细节。
 
-将指定的系统通知标记为已读状态。
+## API 端点
 
-## 请求
+### 端点 1: 标记系统通知为已读 (Phase 199)
 
-`PUT /api/v1/system/notifications/{id}/read`
+- **路径**: `PUT /api/v1/system/notifications/{id}/read`
+- **版本**: v1
+- **Phase**: 199
 
-### 路径参数
+### 端点 2: 标记通知为已读 (Phase 200)
 
-| 字段 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| id | integer | 是 | 通知 ID |
+- **路径**: `POST /api/v1/system/notifications/{id}/mark-read`
+- **版本**: v1
+- **Phase**: 200
 
-### 请求头
+## 认证
 
-| 字段 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| Authorization | string | 是 | JWT Token，格式：`Bearer <token>` |
+- **类型**: JWT Bearer Token
+- **权限**: 登录用户可访问
 
-### 请求体
+## 请求参数
 
-无
+### Path 参数
 
-## 响应
+| 参数 | 类型 | 必需 | 描述 |
+|------|------|------|------|
+| `id` | number | 是 | 通知 ID |
 
-### 成功响应（200 OK）
+## 响应格式
+
+### 成功响应
 
 ```json
 {
   "success": true,
-  "message": "通知 '系统维护通知' 已标记为已读",
+  "message": "通知 '系统更新' 已标记为已读",
   "notification": {
-    "id": 15,
-    "title": "系统维护通知",
-    "message": "系统将于今晚 23:00 进行例行维护",
-    "type": "system",
+    "id": 1,
+    "title": "系统更新",
+    "message": "系统已更新到最新版本",
+    "type": "info",
     "is_read": true,
-    "read_at": 1711670400
+    "read_at": 1711600000
   }
 }
 ```
-
-### 返回字段说明
-
-| 字段 | 类型 | 说明 |
-| ---- | ---- | ---- |
-| success | boolean | 操作是否成功 |
-| message | string | 操作结果消息 |
-| notification | object | 通知摘要（可选） |
-| notification.id | integer | 通知 ID |
-| notification.title | string | 通知标题 |
-| notification.message | string | 通知内容 |
-| notification.type | string | 通知类型 |
-| notification.is_read | boolean | 是否已读 |
-| notification.read_at | integer | 已读时间（Unix 时间戳） |
 
 ### 错误响应
 
-#### 401 Unauthorized - 未认证或 Token 无效
-
 ```json
 {
   "success": false,
-  "error": "Invalid or expired token",
-  "code": "UNAUTHORIZED"
+  "error": "错误描述",
+  "code": "ERROR_CODE"
 }
 ```
 
-#### 403 Forbidden - 权限不足
+## 数据模型
 
-```json
-{
-  "success": false,
-  "error": "只能标记系统通知为已读",
-  "code": "FORBIDDEN"
-}
-```
+### MarkAsReadResponse
 
-#### 404 Not Found - 通知不存在
+| 字段 | 类型 | 描述 |
+|------|------|------|
+| `success` | boolean | 操作是否成功 |
+| `message` | string | 响应消息 |
+| `notification` | NotificationSummary? | 通知摘要（可选） |
 
-```json
-{
-  "success": false,
-  "error": "Notification 999 not found",
-  "code": "NOT_FOUND"
-}
-```
+### NotificationSummary
 
-#### 500 Internal Server Error - 数据库错误
+| 字段 | 类型 | 描述 |
+|------|------|------|
+| `id` | number | 通知 ID |
+| `title` | string | 通知标题 |
+| `message` | string | 通知内容 |
+| `type` | string | 通知类型：`info` / `warning` / `error` / `critical` |
+| `is_read` | boolean | 是否已读 |
+| `read_at` | number? | 已读时间（Unix 时间戳） |
 
-```json
-{
-  "success": false,
-  "error": "标记已读失败：database is locked",
-  "code": "DATABASE_ERROR"
-}
-```
+## 错误代码
+
+| 代码 | 描述 |
+|------|------|
+| `UNAUTHORIZED` | 未提供或无效的认证令牌 |
+| `NOT_FOUND` | 通知不存在 |
+| `FORBIDDEN` | 无权标记此通知（仅 Phase 200） |
+| `CONFLICT` | 通知已是已读状态 |
+| `DATABASE_ERROR` | 数据库操作失败 |
+
+## 权限说明
+
+### PUT /api/v1/system/notifications/{id}/read (Phase 199)
+
+- **适用范围**: 仅系统通知（target_user_id IS NULL）
+- **权限**: 登录用户可标记任意系统通知
+
+### POST /api/v1/system/notifications/{id}/mark-read (Phase 200)
+
+- **适用范围**: 所有通知
+- **权限规则**:
+  - 普通用户：只能标记自己的通知（target_user_id = user_id）或系统通知
+  - Admin 用户：可标记任意通知
 
 ## 示例
 
-### 标记系统通知为已读
+### 请求
 
 ```bash
-curl -X PUT "http://localhost:8080/api/v1/system/notifications/15/read" \
-  -H "Authorization: Bearer <jwt_token>"
+# Phase 199 - 标记系统通知
+curl -X PUT "http://localhost:8080/api/v1/system/notifications/1/read" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# Phase 200 - 标记个人通知
+curl -X POST "http://localhost:8080/api/v1/system/notifications/1/mark-read" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
-响应（200 OK）：
+### 响应
+
 ```json
 {
   "success": true,
-  "message": "通知 '系统维护通知' 已标记为已读",
+  "message": "通知 '系统更新' 已标记为已读",
   "notification": {
-    "id": 15,
-    "title": "系统维护通知",
-    "message": "系统将于今晚 23:00 进行例行维护",
-    "type": "system",
+    "id": 1,
+    "title": "系统更新",
+    "message": "系统已更新到最新版本",
+    "type": "info",
     "is_read": true,
-    "read_at": 1711670400
+    "read_at": 1711600000
   }
 }
 ```
 
-#### 409 Conflict - 通知已是已读状态
+## 数据库表结构
 
-```json
-{
-  "success": false,
-  "error": "通知已是已读状态",
-  "code": "CONFLICT"
-}
+```sql
+CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'info',
+    priority TEXT NOT NULL DEFAULT 'normal',
+    source TEXT,
+    target_user_id INTEGER,
+    is_read INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    read_at INTEGER,
+    action_url TEXT
+);
 ```
 
-### 标记不存在的通知
+## 实现细节
+
+- **状态更新**: `is_read = 1`, `read_at = 当前时间戳`
+- **数据库**: SQLite
+- **框架**: Actix-web
+- **仓库**: SqliteNotificationRepository
+
+## 相关接口
+
+- `GET /api/v1/system/notifications` - 获取系统通知列表
+- `GET /api/v1/notifications` - 获取个人通知列表
+- `DELETE /api/v1/notifications/read` - 删除所有已读通知
+
+## 测试验证
 
 ```bash
-curl -X PUT "http://localhost:8080/api/v1/system/notifications/999/read" \
-  -H "Authorization: Bearer <jwt_token>"
+# 编译检查
+cargo check
+
+# 运行测试（如果有）
+cargo test
 ```
-
-响应（404 Not Found）：
-```json
-{
-  "success": false,
-  "error": "Notification 999 not found",
-  "code": "NOT_FOUND"
-}
-```
-
-### 标记个人通知（非系统通知）
-
-```bash
-curl -X PUT "http://localhost:8080/api/v1/system/notifications/10/read" \
-  -H "Authorization: Bearer <jwt_token>"
-```
-
-响应（403 Forbidden）：
-```json
-{
-  "success": false,
-  "error": "只能标记系统通知为已读",
-  "code": "FORBIDDEN"
-}
-```
-
-## 权限要求
-
-- 需要 JWT 认证
-- 任意登录用户可访问
-- 仅允许标记系统通知（target_user_id IS NULL）
-
-## 业务逻辑
-
-1. 验证 JWT Token 有效性
-2. 查询通知是否存在（404 Not Found）
-3. 验证是系统通知（target_user_id IS NULL）
-4. 如果已是已读状态，直接返回
-5. 更新 is_read = 1, read_at = 当前时间戳
-6. 返回更新后的通知摘要
-
-## 通知类型
-
-| 类型 | 说明 |
-| ---- | ---- |
-| system | 系统通知 |
-| alert | 告警通知 |
-| info | 信息通知 |
-| warning | 警告通知 |
-| error | 错误通知 |
 
 ## 版本历史
 
-- **Phase 199** (2026-03-28): 通知管理模块 - 系统通知标记已读 API
+- **Phase 199** (2026-03-28): 初始实现 PUT /api/v1/system/notifications/{id}/read
+- **Phase 200** (2026-03-28): 新增 POST /api/v1/system/notifications/{id}/mark-read，支持个人通知
