@@ -94,6 +94,7 @@ pub mod downloads;
 pub mod system_info;
 pub mod system_health;
 pub mod system_restart;
+pub mod system_shutdown;
 pub mod printers;
 pub mod printers_list;
 pub mod printers_get;
