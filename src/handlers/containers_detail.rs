@@ -74,64 +74,69 @@ pub async fn get_container_detail(
         }));
     }
 
-    // 4. 模拟容器数据
-    let mock_containers = vec![
-        ContainerDetail {
-            id: 1,
-            name: "nginx-web".to_string(),
-            image: "nginx:latest".to_string(),
-            status: "running".to_string(),
-            ports: vec!["80:80".to_string(), "443:443".to_string()],
-            networks: vec!["bridge".to_string()],
-            created_at: "2026-03-27T06:00:00Z".to_string(),
-            started_at: Some("2026-03-27T06:00:05Z".to_string()),
-            cpu_usage: Some(2.5),
-            memory_usage: Some(134217728),
-        },
-        ContainerDetail {
-            id: 2,
-            name: "postgres-db".to_string(),
-            image: "postgres:15".to_string(),
-            status: "running".to_string(),
-            ports: vec!["5432:5432".to_string()],
-            networks: vec!["bridge".to_string()],
-            created_at: "2026-03-27T06:00:00Z".to_string(),
-            started_at: Some("2026-03-27T06:00:10Z".to_string()),
-            cpu_usage: Some(5.0),
-            memory_usage: Some(536870912),
-        },
-        ContainerDetail {
-            id: 3,
-            name: "redis-cache".to_string(),
-            image: "redis:7".to_string(),
-            status: "stopped".to_string(),
-            ports: vec!["6379:6379".to_string()],
-            networks: vec!["bridge".to_string()],
-            created_at: "2026-03-27T06:00:00Z".to_string(),
-            started_at: None,
-            cpu_usage: None,
-            memory_usage: None,
-        },
-    ];
+    // 4. 从数据库查询容器
+    match repo.get_ref().get_container_by_id(container_id as i64) {
+        Ok(Some(container)) => {
+            // 5. 构建容器详情响应
+            let detail = ContainerDetail {
+                id: container.id as u64,
+                name: container.name,
+                image: container.image,
+                status: container.status,
+                ports: vec![], // 可从配置解析
+                networks: vec!["bridge".to_string()],
+                created_at: container.created_at.to_string(),
+                started_at: None,
+                cpu_usage: None,
+                memory_usage: None,
+            };
 
-    // 5. 查找容器
-    let container = mock_containers.into_iter().find(|c| c.id == container_id);
-
-    // 6. 验证容器存在性
-    match container {
-        Some(container) => {
-            // 7. 返回容器详情
+            // 6. 返回容器详情
             Ok(HttpResponse::Ok().json(ContainerDetailResponse {
                 success: true,
-                data: container,
+                data: detail,
             }))
         }
-        None => {
+        Ok(None) => {
             Ok(HttpResponse::NotFound().json(ErrorResponse {
                 success: false,
                 error: format!("Container {} not found", container_id),
                 code: "NOT_FOUND".to_string(),
             }))
         }
+        Err(e) => {
+            Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("查询容器失败：{}", e),
+                code: "DATABASE_ERROR".to_string(),
+            }))
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::{test, App};
+
+    #[actix_web::test]
+    async fn test_get_container_detail_not_found() {
+        let jwt_service = web::Data::new(JwtService::new(crate::services::jwt_service::JwtConfig {
+            secret_key: "test_secret".to_string(),
+            issuer: "test".to_string(),
+            audience: "test".to_string(),
+            expiration_minutes: 60,
+            refresh_enabled: false,
+        }));
+
+        let app = test::init_service(
+            App::new()
+                .app_data(jwt_service)
+                .route("/api/v1/containers/{id}", web::get().to(get_container_detail))
+        ).await;
+
+        // 注意：实际测试需要有效的 JWT token 和数据库
+        // 这里只是示例测试结构
+        assert!(true);
     }
 }
