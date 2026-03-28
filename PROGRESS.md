@@ -1,15 +1,15 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 11:05 UTC
+> 最后更新：2026-03-28 11:15 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 1d44a46 |
-| 提交时间 | 2026-03-28 11:05 UTC |
-| 当前阶段 | Phase 238 媒体照片详情 API |
-| 状态 | ✅ 已完成 (含文档) |
+| 最新 commit | bb63cc4 |
+| 提交时间 | 2026-03-28 11:15 UTC |
+| 当前阶段 | Phase 239 媒体照片上传 API |
+| 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
 ---
@@ -67,7 +67,16 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 239 待安排
+- [ ] Phase 240 待安排
+
+- [x] Phase 239 媒体照片上传 API - 2026-03-28 11:15
+  - POST /api/v1/media/photos — 上传照片
+  - JWT 认证，登录用户可访问
+  - 支持 multipart/form-data 上传
+  - 返回字段：success/message/data(id/name/path/size_bytes/width/height/created_at/thumbnail_path)
+  - 错误处理：401/400/500
+  - 单元测试：已编写
+  - Commit: bb63cc4
 
 - [x] Phase 238 媒体照片详情 API - 2026-03-28 11:00 (增强版)
   - GET /api/v1/media/photos/{id} — 获取照片详情
