@@ -1,10 +1,12 @@
-// Phase 167: 容器详情 API
+// Phase 228: 容器详情 API (数据库增强版)
 // GET /api/v1/containers/{id} — 获取容器详情
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::Serialize;
+use std::sync::Arc;
 
 use crate::services::jwt_service::JwtService;
+use crate::database::container_store::SqliteContainerRepository;
 
 /// 容器详情信息
 #[derive(Serialize, Clone)]
@@ -36,14 +38,16 @@ pub struct ErrorResponse {
     pub code: String,
 }
 
-/// 获取容器详情（Phase 167）
+/// 获取容器详情（Phase 228 - 数据库增强版）
 /// - JWT 认证，admin 角色可访问
+/// - 使用 SqliteContainerRepository 实现真实数据库查询
 /// - 验证容器 ID 存在性（404 Not Found）
-/// - 返回容器详情
+/// - 返回容器详情（含 resource_usage）
 pub async fn get_container_detail(
     req: HttpRequest,
     path: web::Path<u64>,
     jwt_service: web::Data<JwtService>,
+    repo: web::Data<Arc<SqliteContainerRepository>>,
 ) -> Result<HttpResponse, Error> {
     let container_id = path.into_inner();
 
