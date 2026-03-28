@@ -14,6 +14,11 @@ pub struct Share {
     pub description: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
+    // SMB 专用字段
+    pub allowed_users: Option<String>,   // 逗号分隔的用户名
+    pub allowed_groups: Option<String>,  // 逗号分隔的组名
+    pub guest_ok: bool,                  // 是否允许访客访问
+    pub read_only: bool,                 // 是否只读
 }
 
 /// SQLite 网络共享存储实现
@@ -52,11 +57,47 @@ impl SqliteShareRepository {
                 status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'inactive')),
                 description TEXT,
                 created_at INTEGER NOT NULL,
-                updated_at INTEGER NOT NULL
+                updated_at INTEGER NOT NULL,
+                allowed_users TEXT,
+                allowed_groups TEXT,
+                guest_ok INTEGER NOT NULL DEFAULT 0,
+                read_only INTEGER NOT NULL DEFAULT 0
             )
             "#,
         ).map_err(|e| format!("Create table failed: {}", e))?;
         Ok(())
+    }
+
+    /// 获取共享详情（包含 SMB 字段）
+    pub fn get_share_by_id(&self, id: u64) -> Result<Option<Share>, String> {
+        let conn = self.get_connection()?;
+        let mut stmt = conn.prepare(
+            "SELECT id, name, path, protocol, status, description, created_at, updated_at, allowed_users, allowed_groups, guest_ok, read_only
+             FROM shares WHERE id = ?1"
+        ).map_err(|e| format!("Prepare failed: {}", e))?;
+
+        let result = stmt.query_row(params![id], |row| {
+            Ok(Share {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                path: row.get(2)?,
+                protocol: row.get(3)?,
+                status: row.get(4)?,
+                description: row.get(5)?,
+                created_at: row.get(6)?,
+                updated_at: row.get(7)?,
+                allowed_users: row.get(8)?,
+                allowed_groups: row.get(9)?,
+                guest_ok: row.get::<_, i32>(10)? != 0,
+                read_only: row.get::<_, i32>(11)? != 0,
+            })
+        });
+
+        match result {
+            Ok(share) => Ok(Some(share)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(format!("Query failed: {}", e)),
+        }
     }
 
     /// 获取所有共享（分页 + 筛选）
@@ -229,25 +270,45 @@ impl SqliteShareRepository {
         Ok(result)
     }
 
-    /// 创建共享
-    pub fn create_share(&self, name: &str, path: &str, protocol: &str, description: Option<&str>) -> Result<Share, String> {
+    /// 创建共享（支持 SMB 字段）
+    pub fn create_share(
+        &self,
+        name: &str,
+        path: &str,
+        protocol: &str,
+        description: Option<&str>,
+        allowed_users: Option<&str>,
+        allowed_groups: Option<&str>,
+        guest_ok: bool,
+        read_only: bool,
+    ) -> Result<Share, String> {
         let conn = self.get_connection()?;
-        
+
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(|_| "Invalid time")?
             .as_secs() as i64;
-        
+
         let mut stmt = conn.prepare(
             r#"
-            INSERT INTO shares (name, path, protocol, status, description, created_at, updated_at)
-            VALUES (?1, ?2, ?3, 'active', ?4, ?5, ?6)
+            INSERT INTO shares (name, path, protocol, status, description, created_at, updated_at, allowed_users, allowed_groups, guest_ok, read_only)
+            VALUES (?1, ?2, ?3, 'active', ?4, ?5, ?6, ?7, ?8, ?9, ?10)
             "#
         ).map_err(|e| format!("Prepare failed: {}", e))?;
-        
-        let id = stmt.execute(params![name, path, protocol, description, now, now])
-            .map_err(|e| format!("Insert failed: {}", e))?;
-        
+
+        let id = stmt.execute(params![
+            name,
+            path,
+            protocol,
+            description,
+            now,
+            now,
+            allowed_users,
+            allowed_groups,
+            if guest_ok { 1 } else { 0 },
+            if read_only { 1 } else { 0 },
+        ]).map_err(|e| format!("Insert failed: {}", e))?;
+
         Ok(Share {
             id: id as u64,
             name: name.to_string(),
@@ -257,6 +318,10 @@ impl SqliteShareRepository {
             description: description.map(|s| s.to_string()),
             created_at: now,
             updated_at: now,
+            allowed_users: allowed_users.map(|s| s.to_string()),
+            allowed_groups: allowed_groups.map(|s| s.to_string()),
+            guest_ok,
+            read_only,
         })
     }
 

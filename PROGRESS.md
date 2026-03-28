@@ -1,15 +1,15 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 03:45 UTC
+> 最后更新：2026-03-28 03:50 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 21f0e42 |
-| 提交时间 | 2026-03-28 03:33 UTC |
-| 当前阶段 | Phase 210 待安排 |
-| 状态 | ✅ Phase 209 已完成 |
+| 最新 commit | 6e894c2 |
+| 提交时间 | 2026-03-28 03:46 UTC |
+| 当前阶段 | Phase 211 待安排 |
+| 状态 | ✅ Phase 210 已完成 |
 | 阻塞项 | 无 |
 
 ---
@@ -67,9 +67,9 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 210 待安排
+- [ ] Phase 211 待安排
 
-- [x] Phase 209 系统通知详情 API - 2026-03-28 03:45
+- [x] Phase 210 SMB 共享创建 API - 2026-03-28 03:50
   - [x] GET /api/v1/system/notifications/{id} — 获取通知详情
   - [x] JWT 认证，登录用户可访问
   - [x] 验证通知 ID 存在性（404 Not Found）
@@ -101,6 +101,15 @@
 ---
 
 ## ✅ 已完成事项
+
+- [x] SMB 共享创建 API (Phase 210) - 2026-03-28 03:50
+  - POST /api/v1/shares/smb — 创建 SMB 共享配置
+  - JWT 认证，仅 admin 用户可访问
+  - 验证路径存在性、权限检查、名称唯一性
+  - 请求体：name/path/description/allowed_users/allowed_groups/guest_ok/read_only
+  - 创建成功返回 201 Created + 共享详情
+  - 文档：docs/shares_smb_create_api.md
+  - Commit: (待提交)
 
 - [x] 系统通知详情 API (Phase 209) - 2026-03-28 03:45
   - GET /api/v1/system/notifications/{id} — 获取通知详情
@@ -1683,10 +1692,11 @@
 | Phase 207 系统通知列表 API | 100% ✅ |
 | Phase 208 通知删除 API | 100% ✅ |
 | Phase 209 通知详情 API | 100% ✅ |
+| Phase 210 SMB 共享创建 API | 100% ✅ |
 
-**总体进度**：**Phase 209 通知详情 API 已完成**
+**总体进度**：**Phase 210 SMB 共享创建 API 已完成**
 
 ---
 
 **兵部尚书 签发**
-2026-03-28 03:45 UTC
+2026-03-28 03:50 UTC
