@@ -75,7 +75,7 @@
   - 错误处理：401/403/400/500
   - 单元测试：已编写（3 个测试用例）
   - 文档：docs/system_cron_jobs_list_api.md
-  - Commit: [待提交]
+  - Commit: f3ddf4b
 
 - [x] Phase 253 进程信号发送 API - 2026-03-28 14:40
   - POST /api/v1/system/processes/{pid}/signal — 向进程发送信号
