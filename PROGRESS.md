@@ -69,14 +69,18 @@
 
 - [ ] Phase 240 待安排
 
-- [x] Phase 239 媒体照片上传 API - 2026-03-28 11:15
+- [x] Phase 239 媒体照片上传 API - 2026-03-28 11:20 (增强版)
   - POST /api/v1/media/photos — 上传照片
   - JWT 认证，登录用户可访问
   - 支持 multipart/form-data 上传
-  - 返回字段：success/message/data(id/name/path/size_bytes/width/height/created_at/thumbnail_path)
-  - 错误处理：401/400/500
+  - 验证文件类型（jpg/jpeg/png/webp）
+  - 验证文件大小（max 50MB）
+  - 自动生成缩略图
+  - 返回字段：success/message/data(id/name/path/size_bytes/width/height/thumbnail_path/created_at)
+  - 错误处理：401/400(文件无效)/413(超大)/500
   - 单元测试：已编写
-  - Commit: bb63cc4
+  - 文档：docs/media_photo_upload_api.md
+  - Commit: bb63cc4 + 增强版
 
 - [x] Phase 238 媒体照片详情 API - 2026-03-28 11:00 (增强版)
   - GET /api/v1/media/photos/{id} — 获取照片详情

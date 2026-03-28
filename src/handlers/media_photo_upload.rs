@@ -37,11 +37,13 @@ pub struct ErrorResponse {
     pub code: String,
 }
 
-/// 上传照片（Phase 239）
+/// 上传照片（Phase 239 增强版）
 /// - JWT 认证，登录用户可访问
 /// - 支持 multipart/form-data 上传
+/// - 验证文件类型（jpg/jpeg/png/webp）
+/// - 验证文件大小（max 50MB）
 /// - 返回上传后的照片信息
-/// - 错误处理：401/400/500
+/// - 错误处理：401/400/413/500
 pub async fn upload_photo(
     req: HttpRequest,
     mut payload: Multipart,
@@ -82,12 +84,31 @@ pub async fn upload_photo(
                     .unwrap_or("unknown.jpg")
                     .to_string();
                 
+                // 4. 验证文件类型（jpg/jpeg/png/webp）
+                let ext = filename.split('.').last().unwrap_or("").to_lowercase();
+                if !["jpg", "jpeg", "png", "webp"].contains(&ext.as_str()) {
+                    return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+                        success: false,
+                        error: format!("Invalid file type '{}'. Allowed: jpg, jpeg, png, webp", ext),
+                        code: "INVALID_FILE_TYPE".to_string(),
+                    }));
+                }
+                
                 // 读取文件内容
                 let mut data = Vec::new();
                 while let Some(chunk) = field.try_next().await.map_err(|e| {
                     actix_web::error::ErrorInternalServerError(format!("Failed to read file: {}", e))
                 })? {
                     data.extend_from_slice(&chunk);
+                    
+                    // 5. 验证文件大小（max 50MB）
+                    if data.len() > 50 * 1024 * 1024 {
+                        return Ok(HttpResponse::PayloadTooLarge().json(ErrorResponse {
+                            success: false,
+                            error: "File size exceeds 50MB limit".to_string(),
+                            code: "FILE_TOO_LARGE".to_string(),
+                        }));
+                    }
                 }
                 
                 uploaded_file = Some((filename, data));
