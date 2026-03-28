@@ -150,6 +150,51 @@ class ApiClient {
     return `${API_BASE_URL}${API_VERSION}/files/download?path=${encodeURIComponent(path)}`;
   }
 
+  // Storage methods
+  async getStorageDisks() {
+    return this.get('/storage/disks');
+  }
+
+  async getStorageDiskDetail(id: number) {
+    return this.get(`/storage/disks/${id}`);
+  }
+
+  async getStoragePools() {
+    return this.get('/storage/pools');
+  }
+
+  async getStoragePoolDetail(id: number) {
+    return this.get(`/storage/pools/${id}`);
+  }
+
+  async createStoragePool(data: {
+    name: string;
+    raid_type: string;
+    disk_ids: number[];
+  }) {
+    return this.post('/storage/pools', data);
+  }
+
+  async getStorageVolumes() {
+    return this.get('/storage/volumes');
+  }
+
+  async getStorageVolumeDetail(id: number) {
+    return this.get(`/storage/volumes/${id}`);
+  }
+
+  async createStorageVolume(data: {
+    pool_id: number;
+    name: string;
+    size: number;
+  }) {
+    return this.post('/storage/volumes', data);
+  }
+
+  async getStorageUsage() {
+    return this.get('/storage/usage');
+  }
+
   // User methods
   async getUsers() {
     return this.get('/users');
