@@ -1,43 +1,50 @@
-# 系统定时任务删除 API (Phase 259)
+# 系统定时任务删除 API
 
-## 接口信息
+## Phase 259
 
-- **路径**: `DELETE /api/v1/system/cron-jobs/{id}`
-- **认证**: JWT Bearer Token (Required)
-- **权限**: admin 角色
-- **状态**: ✅ 已完成
+## 接口说明
 
-## 请求参数
+删除系统定时任务（cron jobs），用于移除不再需要的定时任务，仅限 admin 角色访问。
 
-### 路径参数
+## 请求
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| id | u32 | 是 | 定时任务 ID |
+`DELETE /api/v1/system/cron-jobs/{id}`
 
 ### 请求头
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| Authorization | string | 是 | Bearer {JWT_TOKEN} |
+| 字段 | 类型 | 必填 | 说明 |
+| ---- | ---- | ---- | ---- |
+| Authorization | string | 是 | JWT Token，格式：`Bearer <token>` |
+
+### 路径参数
+
+| 字段 | 类型 | 必填 | 说明 |
+| ---- | ---- | ---- | ---- |
+| id | integer | 是 | 定时任务 ID |
+
+### 请求体
+
+无
 
 ## 响应
 
-### 204 No Content - 删除成功
+### 成功响应（204 No Content）
 
 删除成功，无响应体。
 
-### 401 Unauthorized - 未认证
+### 错误响应
+
+#### 401 Unauthorized - 未认证或 Token 无效
 
 ```json
 {
   "success": false,
-  "error": "Missing or invalid Authorization header",
+  "error": "Invalid or expired token",
   "code": "UNAUTHORIZED"
 }
 ```
 
-### 403 Forbidden - 权限不足
+#### 403 Forbidden - 权限不足（非 admin）
 
 ```json
 {
@@ -47,42 +54,7 @@
 }
 ```
 
-### 404 Not Found - 任务不存在
-
-```json
-{
-  "success": false,
-  "error": "Cron job {id} not found",
-  "code": "NOT_FOUND"
-}
-```
-
-### 500 Internal Server Error - 服务器错误
-
-```json
-{
-  "success": false,
-  "error": "Internal server error",
-  "code": "INTERNAL_ERROR"
-}
-```
-
-## 请求示例
-
-```bash
-curl -X DELETE "http://localhost:8080/api/v1/system/cron-jobs/1" \
-  -H "Authorization: Bearer {JWT_TOKEN}"
-```
-
-## 响应示例
-
-### 删除成功 (204)
-
-```
-HTTP/1.1 204 No Content
-```
-
-### 任务不存在 (404)
+#### 404 Not Found - 任务不存在
 
 ```json
 {
@@ -92,38 +64,95 @@ HTTP/1.1 204 No Content
 }
 ```
 
-## 错误码
+#### 500 Internal Server Error - 服务器错误
 
-| 错误码 | HTTP 状态码 | 说明 |
-|--------|------------|------|
-| UNAUTHORIZED | 401 | 未提供或无效的 JWT Token |
-| FORBIDDEN | 403 | 非 admin 用户无权删除 |
-| NOT_FOUND | 404 | 指定的定时任务不存在 |
-| INTERNAL_ERROR | 500 | 服务器内部错误 |
+```json
+{
+  "success": false,
+  "error": "Failed to delete cron job: database error",
+  "code": "INTERNAL_ERROR"
+}
+```
 
-## 实现细节
+## 示例
 
-- JWT Token 验证失败返回 401
-- 非 admin 用户返回 403
-- 任务 ID 不存在返回 404
-- 删除成功返回 204 No Content（无响应体）
+### 删除定时任务
 
-## 单元测试
+```bash
+curl -X DELETE "http://localhost:8080/api/v1/system/cron-jobs/1" \
+  -H "Authorization: Bearer <admin_jwt_token>"
+```
 
-测试用例覆盖：
+响应：**204 No Content**
 
-1. ✅ 删除成功（返回 204）
-2. ✅ 任务不存在（返回 404）
-3. ✅ 未认证请求（返回 401）
+### 删除不存在的任务
 
-## 相关文件
+```bash
+curl -X DELETE "http://localhost:8080/api/v1/system/cron-jobs/999" \
+  -H "Authorization: Bearer <admin_jwt_token>"
+```
 
-- 实现：`src/handlers/system_cron_jobs_delete.rs`
-- 路由：`src/main.rs`
-- 模块：`src/handlers/mod.rs`
+响应（404 Not Found）：
+```json
+{
+  "success": false,
+  "error": "Cron job 999 not found",
+  "code": "NOT_FOUND"
+}
+```
 
-## 更新记录
+### 非 admin 用户删除任务
 
-| 日期 | 版本 | 说明 |
-|------|------|------|
-| 2026-03-28 | 1.0 | Phase 259 初始实现 |
+```bash
+curl -X DELETE "http://localhost:8080/api/v1/system/cron-jobs/1" \
+  -H "Authorization: Bearer <user_jwt_token>"
+```
+
+响应（403 Forbidden）：
+```json
+{
+  "success": false,
+  "error": "Only admin users can delete cron jobs",
+  "code": "FORBIDDEN"
+}
+```
+
+### 未认证请求
+
+```bash
+curl -X DELETE "http://localhost:8080/api/v1/system/cron-jobs/1"
+```
+
+响应（401 Unauthorized）：
+```json
+{
+  "success": false,
+  "error": "Missing or invalid Authorization header",
+  "code": "UNAUTHORIZED"
+}
+```
+
+## 权限要求
+
+- 需要 JWT 认证
+- 仅限 admin 角色访问
+
+## 业务逻辑
+
+1. 验证 JWT Token 有效性
+2. 检查用户角色是否为 admin
+3. 解析任务 ID 路径参数
+4. 验证任务是否存在（404 Not Found）
+5. 从数据库删除定时任务
+6. 返回 204 No Content
+
+## 安全说明
+
+- 此接口仅限 admin 用户调用
+- 删除操作不可逆，建议添加二次确认机制
+- 建议添加操作审计日志
+- 删除前应检查任务是否正在运行
+
+## 版本历史
+
+- **Phase 259** (2026-03-28): 系统模块 - 系统定时任务删除 API
