@@ -9,7 +9,7 @@
 | 最新 commit | 5ca8a9d |
 | 提交时间 | 2026-03-28 03:35 UTC |
 | 当前阶段 | Phase 209 待安排 |
-| 状态 | ✅ Phase 208 已完成 (修正) |
+| 状态 | ✅ Phase 208 已完成 |
 | 阻塞项 | 无 |
 
 ---
@@ -94,14 +94,13 @@
 
 ## ✅ 已完成事项
 
-- [x] 系统通知删除 API (Phase 208) - 2026-03-28 03:25
+- [x] 系统通知删除 API (Phase 208) - 2026-03-28 03:30
   - DELETE /api/v1/system/notifications/{id} — 删除系统通知
-  - JWT 认证，admin 角色可访问
+  - JWT 认证，仅 admin 用户可访问
   - 验证通知 ID 存在性（404 Not Found）
-  - 验证是系统通知（target_user_id IS NULL）
-  - 删除成功返回 200 OK
+  - 删除成功返回 204 No Content
   - 文档：docs/system_notifications_delete_api.md
-  - Commit: 8ea224b
+  - Commit: (待提交)
 
 - [x] 系统通知列表 API (Phase 207) - 2026-03-28 03:10
   - GET /api/v1/system/notifications — 获取系统通知列表
@@ -1672,4 +1671,4 @@
 ---
 
 **兵部尚书 签发**
-2026-03-28 03:25 UTC
+2026-03-28 03:35 UTC
