@@ -77,7 +77,7 @@ use handlers::notifications::{
     delete_notification,
     delete_read_notifications,
 };
-use handlers::system_notifications_list::get_system_notifications;
+use handlers::system_notifications_list::list_notifications;
 
 use handlers::system_update::{
     check_update,
@@ -773,7 +773,7 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/notifications/{id}/read", web::put().to(mark_as_read))
             .route("/api/v1/notifications/{id}", web::delete().to(delete_notification))
             .route("/api/v1/notifications/read", web::delete().to(delete_read_notifications))
-            .route("/api/v1/system/notifications", web::get().to(get_system_notifications))
+            .route("/api/v1/system/notifications", web::get().to(list_notifications))
             // 应用/插件管理 API routes
             .route("/api/v1/apps", web::get().to(get_apps))
             .route("/api/v1/apps", web::post().to(install_app))

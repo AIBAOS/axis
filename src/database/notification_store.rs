@@ -183,6 +183,7 @@ impl SqliteNotificationRepository {
         message: &str,
         notification_type: &str,
         priority: &str,
+        source: Option<&str>,
         target_user_id: Option<i64>,
         action_url: Option<&str>,
     ) -> Result<NotificationRow, String> {
@@ -193,9 +194,9 @@ impl SqliteNotificationRepository {
             .as_secs() as i64;
 
         conn.execute(
-            "INSERT INTO notifications (title, message, type, priority, target_user_id, is_read, created_at, action_url) \
-             VALUES (?1, ?2, ?3, ?4, ?5, 0, ?6, ?7)",
-            params![title, message, notification_type, priority, target_user_id, now, action_url],
+            "INSERT INTO notifications (title, message, type, priority, source, target_user_id, is_read, created_at, action_url) \
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7, ?8)",
+            params![title, message, notification_type, priority, source, target_user_id, now, action_url],
         ).map_err(|e| format!("Insert failed: {}", e))?;
 
         let id = conn.last_insert_rowid();
@@ -205,6 +206,7 @@ impl SqliteNotificationRepository {
             message: message.to_string(),
             notification_type: notification_type.to_string(),
             priority: priority.to_string(),
+            source: source.map(|s| s.to_string()),
             target_user_id,
             is_read: false,
             created_at: now,
@@ -279,7 +281,7 @@ impl SqliteNotificationRepository {
 
         // 查询分页数据
         let data_sql = format!(
-            "SELECT id, title, message, type, priority, target_user_id, is_read, created_at, read_at, action_url \
+            "SELECT id, title, message, type, priority, source, target_user_id, is_read, created_at, read_at, action_url \
              FROM notifications {} ORDER BY created_at DESC LIMIT ?{} OFFSET ?{}",
             where_clause,
             param_values.len() + 1,
@@ -297,11 +299,12 @@ impl SqliteNotificationRepository {
                 message: row.get(2)?,
                 notification_type: row.get(3)?,
                 priority: row.get(4)?,
-                target_user_id: row.get(5)?,
-                is_read: row.get(6)?,
-                created_at: row.get(7)?,
-                read_at: row.get(8)?,
-                action_url: row.get(9)?,
+                source: row.get(5)?,
+                target_user_id: row.get(6)?,
+                is_read: row.get::<_, i32>(7)? != 0,
+                created_at: row.get(8)?,
+                read_at: row.get(9)?,
+                action_url: row.get(10)?,
             })
         }).map_err(|e| format!("Query failed: {}", e))?;
 

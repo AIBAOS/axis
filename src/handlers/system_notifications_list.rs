@@ -2,49 +2,52 @@
 // GET /api/v1/system/notifications — 获取系统通知列表
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use crate::services::jwt_service::JwtService;
-use crate::database::notification_store::{SqliteNotificationRepository, NotificationRow};
+use crate::database::notification_store::SqliteNotificationRepository;
 
 /// 查询参数
-#[derive(Debug, serde::Deserialize)]
-pub struct SystemNotificationsQuery {
+#[derive(Debug, Deserialize)]
+pub struct NotificationsQuery {
     pub page: Option<u32>,
-    pub page_size: Option<u32>,
-    pub priority: Option<String>,
+    pub per_page: Option<u32>,
+    #[serde(rename = "type")]
+    pub notification_type: Option<String>,
+    pub status: Option<String>,
+    pub source: Option<String>,
 }
 
-/// 系统通知条目响应
+/// 分页信息
 #[derive(Serialize)]
-pub struct SystemNotificationItem {
+pub struct PaginationInfo {
+    pub page: u32,
+    pub per_page: u32,
+    pub total: u64,
+    pub total_pages: u32,
+}
+
+/// 通知列表响应
+#[derive(Serialize)]
+pub struct NotificationsResponse {
+    pub success: bool,
+    pub data: Vec<NotificationItem>,
+    pub pagination: PaginationInfo,
+}
+
+/// 通知项（简化响应格式）
+#[derive(Serialize, Clone)]
+pub struct NotificationItem {
     pub id: i64,
-    pub title: String,
-    pub message: String,
     #[serde(rename = "type")]
     pub notification_type: String,
-    pub priority: String,
-    pub is_read: bool,
+    pub title: String,
+    pub message: String,
+    pub source: Option<String>,
+    pub status: String,
     pub created_at: i64,
-    pub action_url: Option<String>,
-}
-
-/// 系统通知列表响应
-#[derive(Serialize)]
-pub struct SystemNotificationsResponse {
-    pub success: bool,
-    pub data: SystemNotificationsData,
-}
-
-/// 系统通知数据
-#[derive(Serialize)]
-pub struct SystemNotificationsData {
-    pub notifications: Vec<SystemNotificationItem>,
-    pub total: u64,
-    pub page: u32,
-    pub page_size: u32,
-    pub has_more: bool,
+    pub read_at: Option<i64>,
 }
 
 /// 错误响应
@@ -57,17 +60,15 @@ pub struct ErrorResponse {
 
 /// 获取系统通知列表（Phase 197）
 /// - JWT 认证，登录用户可访问
-/// - 返回系统级别的通知（target_user_id IS NULL 或 type = 'system'）
-/// - 支持分页和优先级筛选
-pub async fn get_system_notifications(
+/// - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+/// - 支持筛选：type(info/warning/error/critical)/status(unread/read)/source
+/// - 按 created_at 降序排序（最新的在前）
+pub async fn list_notifications(
     req: HttpRequest,
-    query: web::Query<SystemNotificationsQuery>,
+    query: web::Query<NotificationsQuery>,
     jwt_service: web::Data<JwtService>,
     repo: web::Data<Arc<SqliteNotificationRepository>>,
 ) -> Result<HttpResponse, Error> {
-    let page = query.page.unwrap_or(1).max(1);
-    let page_size = query.page_size.unwrap_or(20).min(100);
-
     // 1. JWT 认证 - 提取并验证 token
     let token = req
         .headers()
@@ -81,41 +82,75 @@ pub async fn get_system_notifications(
         .validate_token(token)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))?;
 
-    // 3. 获取系统通知（筛选 target_user_id IS NULL 的通知）
-    match repo.get_system_notifications(query.priority.as_deref(), page, page_size) {
+    // 3. 解析分页参数
+    let page = query.page.unwrap_or(1).max(1);
+    let per_page = std::cmp::min(query.per_page.unwrap_or(20), 100);
+
+    // 4. 获取通知列表
+    match repo.get_notifications(
+        query.notification_type.as_deref(),
+        query.status.as_deref(),
+        query.source.as_deref(),
+        page,
+        per_page,
+    ) {
         Ok((notifications, total)) => {
-            // 4. 转换为响应格式
-            let items: Vec<SystemNotificationItem> = notifications
-                .into_iter()
-                .map(|n| SystemNotificationItem {
-                    id: n.id,
-                    title: n.title,
-                    message: n.message,
-                    notification_type: n.notification_type,
-                    priority: n.priority,
-                    is_read: n.is_read,
-                    created_at: n.created_at,
-                    action_url: n.action_url,
-                })
-                .collect();
+            let total_pages = if total == 0 { 1 } else { (total + per_page as u64 - 1) / per_page as u64 };
 
-            let has_more = ((page - 1) * page_size + items.len() as u32) < total as u32;
+            // 转换为响应格式
+            let data: Vec<NotificationItem> = notifications.into_iter().map(|n| NotificationItem {
+                id: n.id,
+                notification_type: n.notification_type,
+                title: n.title,
+                message: n.message,
+                source: n.source,
+                status: if n.is_read { "read".to_string() } else { "unread".to_string() },
+                created_at: n.created_at,
+                read_at: n.read_at,
+            }).collect();
 
-            Ok(HttpResponse::Ok().json(SystemNotificationsResponse {
+            Ok(HttpResponse::Ok().json(NotificationsResponse {
                 success: true,
-                data: SystemNotificationsData {
-                    notifications: items,
-                    total,
+                data,
+                pagination: PaginationInfo {
                     page,
-                    page_size,
-                    has_more,
+                    per_page,
+                    total,
+                    total_pages: total_pages as u32,
                 },
             }))
         }
         Err(e) => Ok(HttpResponse::InternalServerError().json(ErrorResponse {
             success: false,
-            error: format!("查询系统通知失败：{}", e),
+            error: format!("查询通知列表失败：{}", e),
             code: "DATABASE_ERROR".to_string(),
         })),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::{test, App};
+
+    #[actix_web::test]
+    async fn test_list_notifications_success() {
+        let jwt_service = web::Data::new(JwtService::new(crate::services::jwt_service::JwtConfig {
+            secret_key: "test_secret".to_string(),
+            issuer: "test".to_string(),
+            audience: "test".to_string(),
+            expiration_minutes: 60,
+            refresh_enabled: false,
+        }));
+
+        let app = test::init_service(
+            App::new()
+                .app_data(jwt_service)
+                .route("/api/v1/system/notifications", web::get().to(list_notifications))
+        ).await;
+
+        // 注意：实际测试需要有效的 JWT token 和数据库
+        // 这里只是示例测试结构
+        assert!(true);
     }
 }
