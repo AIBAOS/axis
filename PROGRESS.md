@@ -1,15 +1,15 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 10:20 UTC
+> 最后更新：2026-03-28 10:35 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 15d64eb |
-| 提交时间 | 2026-03-28 10:20 UTC |
-| 当前阶段 | Phase 235 媒体视频列表 API |
-| 状态 | ✅ 已完成 (增强版) |
+| 最新 commit | a9345a2 |
+| 提交时间 | 2026-03-28 10:35 UTC |
+| 当前阶段 | Phase 236 媒体视频详情 API |
+| 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
 ---
@@ -67,7 +67,16 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 236 待安排
+- [ ] Phase 237 待安排
+
+- [x] Phase 236 媒体视频详情 API - 2026-03-28 10:35
+  - GET /api/v1/media/videos/{id} — 获取视频详情
+  - JWT 认证，任意登录用户可访问
+  - 验证视频 ID 存在性（404 Not Found）
+  - 返回字段：id/name/path/size_bytes/duration_seconds/resolution/codec/bitrate/framerate/created_at/updated_at/thumbnail_path/folder
+  - 错误处理：401/404/500
+  - 单元测试：已编写
+  - Commit: a9345a2
 
 - [x] Phase 235 媒体视频列表 API - 2026-03-28 10:20 (增强版)
   - GET /api/v1/media/videos — 获取视频列表
