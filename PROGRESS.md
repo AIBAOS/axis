@@ -69,15 +69,13 @@
 
 - [ ] Phase 209 待安排
 
-- [x] Phase 208 系统通知删除 API - 2026-03-28 03:25
-  - [x] GET /api/v1/system/notifications — 获取系统通知列表
+- [x] Phase 208 通知删除 API - 2026-03-28 03:25
+  - [x] DELETE /api/v1/system/notifications/{id} — 删除系统通知
   - [x] JWT 认证，登录用户可访问
-  - [x] 支持分页：page(默认 1), per_page(默认 20, 最大 100)
-  - [x] 支持筛选：type(info/warning/error/critical), status(unread/read), source
-  - [x] 按 created_at 降序排序（最新的在前）
-  - [x] 返回字段：id/type/title/message/source/status/created_at/read_at
-  - [x] 响应格式：`{ data: [...], pagination: { page, per_page, total, total_pages } }`
-  - [x] 文档：docs/system_notifications_list_api.md
+  - [x] 验证通知 ID 存在性（404 Not Found）
+  - [x] 验证是系统通知（target_user_id IS NULL，否返回 403 Forbidden）
+  - [x] 删除成功返回 200 OK
+  - [x] 文档：docs/system_notifications_delete_api.md
 
 - [x] Phase 203 SMB 共享详情 API - 2026-03-28 02:05
   - [x] GET /api/v1/shares/smb — 获取 SMB 共享列表

@@ -27,7 +27,7 @@ pub struct ErrorResponse {
 /// - JWT 认证，admin 角色可访问
 /// - 验证通知 ID 存在性（404 Not Found）
 /// - 验证是系统通知（target_user_id IS NULL）
-/// - 删除成功返回 200 OK
+/// - 删除成功返回 204 No Content
 pub async fn delete_system_notification(
     req: HttpRequest,
     path: web::Path<i64>,
@@ -73,10 +73,7 @@ pub async fn delete_system_notification(
 
             // 6. 执行删除
             match repo.delete_notification(notification_id) {
-                Ok(true) => Ok(HttpResponse::Ok().json(DeleteResponse {
-                    success: true,
-                    message: format!("System notification {} deleted", notification_id),
-                })),
+                Ok(true) => Ok(HttpResponse::NoContent().finish()),
                 Ok(false) => Ok(HttpResponse::NotFound().json(ErrorResponse {
                     success: false,
                     error: format!("System notification {} not found", notification_id),
