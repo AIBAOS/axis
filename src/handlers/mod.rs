@@ -87,6 +87,7 @@ pub mod storage_volume_snapshot_clone;
 pub mod users;
 pub mod users_list;
 pub mod users_get_by_id;
+pub mod users_get_by_id_v2;
 pub mod users_create;
 pub mod users_update;
 pub mod users_detail;
