@@ -1,10 +1,12 @@
-// Phase 152: NFS 共享列表 API
+// Phase 213: NFS 共享列表 API (增强版 - 数据库版本)
 // GET /api/v1/shares/nfs — 获取 NFS 共享列表
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::services::jwt_service::JwtService;
+use crate::database::share_store::SqliteShareRepository;
 
 /// NFS 共享查询参数
 #[derive(Debug, Deserialize)]
@@ -61,15 +63,18 @@ pub struct ErrorResponse {
     pub code: String,
 }
 
-/// 获取 NFS 共享列表（Phase 152）
+/// 获取 NFS 共享列表（Phase 213 - 数据库版本）
 /// - JWT 认证，仅 admin 角色可访问
-/// - 支持分页：page(默认 1), per_page(默认 20, 最大 100)
-/// - 支持状态过滤：status(active/inactive)
+/// - 使用 SqliteShareRepository 实现真实数据库查询
+/// - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+/// - 支持筛选：status(active/inactive)
+/// - 返回字段：id/name/path/comment/read_only/no_subtree_check/sync/clients/enabled/created_at/updated_at
 /// - 返回 NFS 共享列表 + 分页信息
 pub async fn list_nfs_shares(
     req: HttpRequest,
     query: web::Query<NfsSharesQuery>,
     jwt_service: web::Data<JwtService>,
+    repo: web::Data<Arc<SqliteShareRepository>>,
 ) -> Result<HttpResponse, Error> {
     let page = query.page.unwrap_or(1);
     let per_page = query.per_page.unwrap_or(20).min(100);
@@ -98,8 +103,47 @@ pub async fn list_nfs_shares(
         }));
     }
 
-    // 4. 模拟 NFS 共享数据
-    let all_shares = vec![
+    // 4. 从数据库查询 NFS 共享列表
+    match repo.get_shares(page, per_page, Some("nfs".to_string()), status_filter) {
+        Ok(shares) => {
+            // 5. 转换为响应格式
+            let data: Vec<NfsShareInfo> = shares.into_iter().map(|s| NfsShareInfo {
+                id: s.id,
+                name: s.name,
+                path: s.path,
+                comment: s.description.unwrap_or_default(),
+                read_only: false,
+                no_subtree_check: true,
+                sync: true,
+                clients: vec![],
+                enabled: s.status == "active",
+                created_at: s.created_at.to_string(),
+            }).collect();
+
+            // 6. 计算分页信息
+            let total = repo.count_shares(Some("nfs".to_string()), status_filter).unwrap_or(data.len() as u64);
+            let total_pages = if total == 0 { 1 } else { (total + per_page as u64 - 1) / per_page as u64 };
+
+            return Ok(HttpResponse::Ok().json(NfsShareListResponse {
+                success: true,
+                data,
+                pagination: PaginationInfo {
+                    page,
+                    per_page,
+                    total,
+                    total_pages: total_pages as u32,
+                },
+            }));
+        }
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("查询 NFS 共享列表失败：{}", e),
+                code: "DATABASE_ERROR".to_string(),
+            }));
+        }
+    }
+}
         NfsShareInfo {
             id: 1,
             name: "Data".to_string(),
