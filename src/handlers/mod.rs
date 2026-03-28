@@ -93,6 +93,7 @@ pub mod users_delete;
 pub mod downloads;
 pub mod system_info;
 pub mod system_health;
+pub mod system_restart;
 pub mod printers;
 pub mod printers_list;
 pub mod printers_get;

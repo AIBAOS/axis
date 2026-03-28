@@ -124,6 +124,7 @@ use handlers::printers_update::update_printer;
 use handlers::printers_get::get_printer_detail as get_printer_2;
 use handlers::printers_delete::delete_printer;
 use handlers::system_health::get_system_health;
+use handlers::system_restart::restart_system;
 use handlers::storage_volume_snapshot_create::create_volume_snapshot as create_volume_snapshot;
 use handlers::storage_volume_snapshots_list::list_volume_snapshots as list_volume_snapshots;
 use handlers::storage_volume_snapshot_detail::get_volume_snapshot as get_volume_snapshot;
@@ -737,6 +738,7 @@ async fn main() -> std::io::Result<()> {
             // 系统信息 API routes
             .route("/api/v1/system/info", web::get().to(handlers::system_info::get_system_info))
             .route("/api/v1/system/health", web::get().to(get_system_health))
+            .route("/api/v1/system/restart", web::post().to(restart_system))
             .route("/api/v1/system/logs", web::get().to(get_system_logs))
             .route("/api/v1/system/logs/{id}", web::get().to(get_system_log_detail))
             .route("/api/v1/system/logs/export", web::post().to(export_system_logs))
