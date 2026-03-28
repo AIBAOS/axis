@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 13:20 UTC
+> 最后更新：2026-03-28 13:35 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 6ebd282 |
-| 提交时间 | 2026-03-28 13:20 UTC |
-| 当前阶段 | Phase 248 系统电源管理 API |
+| 最新 commit | [待提交] |
+| 提交时间 | 2026-03-28 13:35 UTC |
+| 当前阶段 | Phase 249 系统日志查询 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,18 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 249 待安排
+- [ ] Phase 250 待安排
+
+- [x] Phase 249 系统日志查询 API - 2026-03-28 13:35
+  - GET /api/v1/system/logs — 获取系统日志列表
+  - JWT 认证，admin 角色可访问
+  - 查询参数：level(info/warn/error)/limit(默认 50)/offset(默认 0)
+  - 返回字段：timestamp/level/module/message/context
+  - 支持分页
+  - 错误处理：401/403/400/500
+  - 单元测试：已编写
+  - 文档：docs/system_logs_api.md
+  - Commit: [待提交]
 
 - [x] Phase 248 系统电源管理 API - 2026-03-28 13:20
   - GET /api/v1/system/power — 获取电源状态信息
