@@ -67,7 +67,15 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 252 待安排
+- [x] Phase 252 终止进程 API - 2026-03-28 14:15
+  - POST /api/v1/system/processes/{pid}/terminate — 终止指定进程
+  - JWT 认证，admin 角色可访问
+  - 验证进程 PID 存在性（404 Not Found）
+  - 系统关键进程不可终止（403 Forbidden）
+  - 返回 200 OK + { success, message, pid, terminated_at }
+  - 错误处理：401/403/404/500
+
+- [ ] Phase 253 待安排
 
 - [x] Phase 251 系统进程列表 API - 2026-03-28 14:00
   - GET /api/v1/system/processes — 获取系统进程列表

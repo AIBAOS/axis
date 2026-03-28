@@ -198,3 +198,4 @@ pub mod system_settings_update;
 pub mod system_power;
 pub mod system_resources;
 pub mod system_processes;
+pub mod system_process_terminate;
