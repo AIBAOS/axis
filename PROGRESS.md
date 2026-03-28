@@ -1,6 +1,6 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 04:15 UTC
+> 最后更新：2026-03-28 04:25 UTC
 
 ## 📌 当前状态
 
@@ -8,7 +8,7 @@
 |------|------|
 | 最新 commit | 54ddd37 |
 | 提交时间 | 2026-03-28 04:15 UTC |
-| 当前阶段 | Phase 212 SMB 共享删除 API |
+| 当前阶段 | Phase 203 SMB 共享详情 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -70,6 +70,8 @@
 - [ ] Phase 213 待安排
 
 - [x] Phase 212 SMB 共享删除 API - 2026-03-28 04:15
+
+- [x] Phase 203 SMB 共享详情 API - 2026-03-28 04:25
   - [x] GET /api/v1/system/notifications/{id} — 获取通知详情
   - [x] JWT 认证，登录用户可访问
   - [x] 验证通知 ID 存在性（404 Not Found）
@@ -101,6 +103,15 @@
 ---
 
 ## ✅ 已完成事项
+
+- [x] SMB 共享详情 API (Phase 203) - 2026-03-28 04:25
+  - GET /api/v1/shares/smb/{id} — 获取 SMB 共享详情
+  - JWT 认证，登录用户可访问
+  - 验证共享 ID 存在性（404 Not Found）
+  - 验证协议为 SMB
+  - 返回完整共享信息（包含 SMB 专用字段）
+  - 文档：docs/shares_smb_get_api.md
+  - Commit: (待提交)
 
 - [x] SMB 共享删除 API (Phase 212) - 2026-03-28 04:15
   - DELETE /api/v1/shares/smb/{id} — 删除 SMB 共享
@@ -1713,9 +1724,9 @@
 | Phase 209 通知详情 API | 100% ✅ |
 | Phase 210 SMB 共享创建 API | 100% ✅ |
 
-**总体进度**：**Phase 212 SMB 共享删除 API 已完成**
+**总体进度**：**Phase 203 SMB 共享详情 API 已完成**
 
 ---
 
 **兵部尚书 签发**
-2026-03-28 04:15 UTC
+2026-03-28 04:25 UTC

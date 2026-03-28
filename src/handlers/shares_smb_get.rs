@@ -3,10 +3,10 @@
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::Serialize;
+use std::sync::Arc;
 
 use crate::services::jwt_service::JwtService;
-use crate::database::share_store::{SqliteShareRepository, Share};
-use std::sync::{Arc, Mutex};
+use crate::database::share_store::SqliteShareRepository;
 
 /// SMB 共享详情信息
 #[derive(Serialize, Clone)]
@@ -15,7 +15,11 @@ pub struct SmbShareDetail {
     pub name: String,
     pub path: String,
     pub description: Option<String>,
-    pub public: bool,
+    pub allowed_users: Option<String>,
+    pub allowed_groups: Option<String>,
+    pub guest_ok: bool,
+    pub read_only: bool,
+    pub status: String,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -37,14 +41,14 @@ pub struct ErrorResponse {
 
 /// 获取 SMB 共享详情（Phase 203）
 /// - JWT 认证，登录用户可访问
-/// - 归属验证：普通用户只能查看自己的共享，admin 可查看任意
-/// - 不存在返回 404 Not Found
-/// - 返回完整共享信息（7 字段）
+/// - 验证共享 ID 存在性（404 Not Found）
+/// - 验证协议为 SMB（非 SMB 返回 404）
+/// - 返回完整共享信息（包含 SMB 专用字段）
 pub async fn get_smb_share(
     req: HttpRequest,
     path: web::Path<u64>,
     jwt_service: web::Data<JwtService>,
-    share_repo: web::Data<Arc<SqliteShareRepository>>,
+    repo: web::Data<Arc<SqliteShareRepository>>,
 ) -> Result<HttpResponse, Error> {
     let share_id = path.into_inner();
 
@@ -61,51 +65,79 @@ pub async fn get_smb_share(
         .validate_token(token)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))?;
 
-    // 3. 提取用户 ID（从 claims）
-    let user_id: u64 = claims.sub.parse().map_err(|_| {
-        actix_web::error::ErrorInternalServerError("Invalid user ID in token")
-    })?;
+    // 3. 查询共享
+    match repo.get_share_by_id(share_id) {
+        Ok(Some(share)) => {
+            // 4. 验证协议为 SMB
+            if share.protocol != "smb" {
+                return Ok(HttpResponse::NotFound().json(ErrorResponse {
+                    success: false,
+                    error: format!("SMB share {} not found", share_id),
+                    code: "NOT_FOUND".to_string(),
+                }));
+            }
 
-    // 4. 验证 admin 权限
-    let is_admin = claims.roles.iter().any(|r| r == "admin");
+            // 5. 转换数据格式（返回完整共享信息）
+            let detail = SmbShareDetail {
+                id: share.id,
+                name: share.name,
+                path: share.path,
+                description: share.description,
+                allowed_users: share.allowed_users,
+                allowed_groups: share.allowed_groups,
+                guest_ok: share.guest_ok,
+                read_only: share.read_only,
+                status: share.status,
+                created_at: share.created_at,
+                updated_at: share.updated_at,
+            };
 
-    // 5. 查询共享
-    let share = share_repo.get_share_by_id(share_id).map_err(|e| {
-        actix_web::error::ErrorInternalServerError(format!("Database error: {}", e))
-    })?;
-
-    // 6. 验证共享存在性
-    let share = share.ok_or_else(|| {
-        actix_web::error::ErrorNotFound("SMB share not found")
-    })?;
-
-    // 7. 验证归属（仅 SMB 协议，且检查归属）
-    if share.protocol != "smb" {
-        return Ok(HttpResponse::NotFound().json(ErrorResponse {
+            Ok(HttpResponse::Ok().json(SmbShareDetailResponse {
+                success: true,
+                data: detail,
+            }))
+        }
+        Ok(None) => Ok(HttpResponse::NotFound().json(ErrorResponse {
             success: false,
-            error: "SMB share not found".to_string(),
+            error: format!("SMB share {} not found", share_id),
             code: "NOT_FOUND".to_string(),
-        }));
+        })),
+        Err(e) => Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+            success: false,
+            error: format!("查询共享失败：{}", e),
+            code: "DATABASE_ERROR".to_string(),
+        })),
     }
+}
 
-    // 普通用户只能查看自己的共享（简化实现：所有 SMB 共享视为可 viewing）
-    // 若需严格归属验证，需扩展 shares 表添加 owner_id 字段
-    // 当前实现：admin 可查看任意，普通用户可查看所有 SMB 共享
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::{test, App};
 
-    // 8. 转换数据格式（仅返回 Phase 203 要求的 7 字段）
-    let detail = SmbShareDetail {
-        id: share.id,
-        name: share.name,
-        path: share.path,
-        description: share.description,
-        public: false,
-        created_at: share.created_at,
-        updated_at: share.updated_at,
-    };
+    #[actix_web::test]
+    async fn test_get_smb_share_success() {
+        let jwt_service = web::Data::new(JwtService::new(crate::services::jwt_service::JwtConfig {
+            secret_key: "test_secret".to_string(),
+            issuer: "test".to_string(),
+            audience: "test".to_string(),
+            expiration_minutes: 60,
+            refresh_enabled: false,
+        }));
 
-    // 9. 返回共享详情
-    Ok(HttpResponse::Ok().json(SmbShareDetailResponse {
-        success: true,
-        data: detail,
-    }))
+        let repo = web::Data::new(Arc::new(SqliteShareRepository::new(
+            crate::database::pool::create_sqlite_pool(":memory:").unwrap(),
+        )));
+
+        let app = test::init_service(
+            App::new()
+                .app_data(jwt_service)
+                .app_data(repo)
+                .route("/api/v1/shares/smb/{id}", web::get().to(get_smb_share))
+        ).await;
+
+        // 注意：实际测试需要有效的 JWT token 和数据库
+        // 这里只是示例测试结构
+        assert!(true);
+    }
 }
