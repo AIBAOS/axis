@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 16:50 UTC
+> 最后更新：2026-03-28 17:30 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 3b91f6e |
-| 提交时间 | 2026-03-28 16:50 UTC |
-| 当前阶段 | Phase 260 备份任务列表 API |
+| 最新 commit | af4ad6a |
+| 提交时间 | 2026-03-28 17:30 UTC |
+| 当前阶段 | Phase 261 备份任务创建 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -66,6 +66,20 @@
 ---
 
 ## 📋 待办事项
+
+- [x] Phase 261 备份任务创建 API - 2026-03-28 17:30
+  - POST /api/v1/backups — 创建备份任务
+  - JWT 认证，仅 admin 可创建
+  - 请求体：name/description/source_path/destination/backup_type/schedule
+  - backup_type 支持：full（全量）/incremental（增量）
+  - 验证名称格式（1-128 字符，允许字母数字 -_ ）
+  - 验证路径格式（必须以/开头，≤512 字符）
+  - 使用 SqliteBackupRepository 持久化
+  - 创建成功返回 201 Created + 备份任务详情
+  - 错误处理：400/401/403/500
+  - 单元测试：已编写（3 个测试用例）
+  - 文档：docs/backups_create_api.md (已更新)
+  - Commit: af4ad6a
 
 - [x] Phase 260 备份任务列表 API - 2026-03-28 16:50
   - GET /api/v1/backups — 获取备份任务列表
