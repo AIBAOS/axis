@@ -102,7 +102,7 @@ pub async fn start_container(
             // 8. 模拟启动容器
             // 实际实现中，这里会调用 Docker/LXC API 启动容器
             let container_status = ContainerStatus {
-                id: *container_id,
+                id: container_id,
                 name: name.to_string(),
                 status: "running".to_string(),
                 started_at: now,

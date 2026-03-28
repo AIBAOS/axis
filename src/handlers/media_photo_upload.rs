@@ -73,16 +73,24 @@ pub async fn upload_photo(
     // 4. 处理 multipart 表单数据
     let mut uploaded_file: Option<(String, Vec<u8>)> = None;
 
-    while let Ok(Some(mut field)) = payload.try_next().await {
+    use actix_web::web::Payload;
+    use futures_util::StreamExt;
+    
+    let mut payload = payload;
+    while let Some(field_result) = payload.next().await {
+        let mut field = field_result.map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Failed to read multipart: {}", e))
+        })?;
         let content_disposition = field.content_disposition();
         
-        if let Some(name) = content_disposition.get_name() {
-            if name == "file" || name == "photo" {
-                // 获取文件名
-                let filename = content_disposition
-                    .get_filename()
-                    .unwrap_or("unknown.jpg")
-                    .to_string();
+        if let Some(cd) = content_disposition {
+            if let Some(name) = cd.get_name() {
+                if name == "file" || name == "photo" {
+                    // 获取文件名
+                    let filename = cd
+                        .get_filename()
+                        .unwrap_or("unknown.jpg")
+                        .to_string();
                 
                 // 4. 验证文件类型（jpg/jpeg/png/webp）
                 let ext = filename.split('.').last().unwrap_or("").to_lowercase();
@@ -96,9 +104,10 @@ pub async fn upload_photo(
                 
                 // 读取文件内容
                 let mut data = Vec::new();
-                while let Some(chunk) = field.try_next().await.map_err(|e| {
-                    actix_web::error::ErrorInternalServerError(format!("Failed to read file: {}", e))
-                })? {
+                while let Some(chunk) = field.next().await {
+                    let chunk = chunk.map_err(|e| {
+                        actix_web::error::ErrorInternalServerError(format!("Failed to read file: {}", e))
+                    })?;
                     data.extend_from_slice(&chunk);
                     
                     // 5. 验证文件大小（max 50MB）
@@ -113,6 +122,7 @@ pub async fn upload_photo(
                 
                 uploaded_file = Some((filename, data));
                 break;
+                }
             }
         }
     }
@@ -133,7 +143,7 @@ pub async fn upload_photo(
     // 实际实现中，这里会将文件保存到磁盘并更新数据库
     let photo_info = PhotoInfo {
         id: now as u64 % 1000000, // 模拟 ID
-        name: filename,
+        name: filename.clone(),
         path: format!("/media/photos/{}", filename),
         size_bytes: file_data.len() as u64,
         width: 4000, // 模拟值
