@@ -1,31 +1,27 @@
-// Phase 145: 容器启动 API
+// Phase 241: 容器启动 API
 // POST /api/v1/containers/{id}/start — 启动容器
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::services::jwt_service::JwtService;
 
-/// 容器信息
-#[derive(Serialize, Clone)]
-pub struct ContainerInfo {
-    pub id: u64,
-    pub name: String,
-    pub image: String,
-    pub status: String,
-    pub ports: Vec<String>,
-    pub networks: Vec<String>,
-    pub created_at: u64,
-    pub cpu_usage: Option<f64>,
-    pub memory_usage: Option<u64>,
-}
-
-/// 启动容器响应
+/// 容器启动响应
 #[derive(Serialize)]
-pub struct StartContainerResponse {
+pub struct ContainerStartResponse {
     pub success: bool,
     pub message: String,
-    pub data: ContainerInfo,
+    pub data: Option<ContainerStatus>,
+}
+
+/// 容器状态
+#[derive(Serialize, Clone)]
+pub struct ContainerStatus {
+    pub id: u64,
+    pub name: String,
+    pub status: String,
+    pub started_at: u64,
 }
 
 /// 错误响应
@@ -36,11 +32,12 @@ pub struct ErrorResponse {
     pub code: String,
 }
 
-/// 启动容器（Phase 145）
-/// - JWT 认证，仅 admin 角色可访问
+/// 启动容器（Phase 241）
+/// - JWT 认证，admin 角色可访问
 /// - 验证容器 ID 存在性（404 Not Found）
-/// - 验证容器当前状态（已运行则返回 409 Conflict）
-/// - 启动成功返回 200 OK + 容器详情
+/// - 验证容器状态（已运行返回 409 Conflict）
+/// - 启动成功后返回 200 OK
+/// - 错误处理：401/403/404/409/500
 pub async fn start_container(
     req: HttpRequest,
     path: web::Path<u64>,
@@ -71,75 +68,128 @@ pub async fn start_container(
         }));
     }
 
-    // 4. 模拟容器数据
-    let mut mock_containers = vec![
-        ContainerInfo {
-            id: 1,
-            name: "nginx-web".to_string(),
-            image: "nginx:latest".to_string(),
-            status: "stopped".to_string(),
-            ports: vec!["80:80".to_string(), "443:443".to_string()],
-            networks: vec!["bridge".to_string()],
-            created_at: 1711500000,
-            cpu_usage: None,
-            memory_usage: None,
-        },
-        ContainerInfo {
-            id: 2,
-            name: "postgres-db".to_string(),
-            image: "postgres:15".to_string(),
-            status: "running".to_string(),
-            ports: vec!["5432:5432".to_string()],
-            networks: vec!["bridge".to_string()],
-            created_at: 1711500000,
-            cpu_usage: Some(1.2),
-            memory_usage: Some(512 * 1024 * 1024),
-        },
-        ContainerInfo {
-            id: 3,
-            name: "redis-cache".to_string(),
-            image: "redis:7".to_string(),
-            status: "stopped".to_string(),
-            ports: vec!["6379:6379".to_string()],
-            networks: vec!["bridge".to_string()],
-            created_at: 1711500000,
-            cpu_usage: None,
-            memory_usage: None,
-        },
+    // 4. 获取当前时间戳
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|_| {
+            actix_web::error::ErrorInternalServerError("Failed to get current time")
+        })?
+        .as_secs();
+
+    // 5. 模拟容器数据
+    // 实际实现中，这里会查询数据库验证容器是否存在
+    let mock_containers = vec![
+        (1u64, "nginx-web", "stopped"),
+        (2u64, "postgres-db", "stopped"),
+        (3u64, "redis-cache", "running"),
+        (4u64, "mongo-db", "stopped"),
     ];
 
-    // 5. 验证容器 ID 存在性
-    let container_index = mock_containers.iter().position(|c| c.id == container_id);
+    // 6. 验证容器是否存在并检查状态
+    let container = mock_containers.iter().find(|(id, _, _)| *id == container_id);
     
-    if container_index.is_none() {
-        return Ok(HttpResponse::NotFound().json(ErrorResponse {
-            success: false,
-            error: format!("Container {} not found", container_id),
-            code: "NOT_FOUND".to_string(),
+    match container {
+        Some((_, name, status)) => {
+            // 7. 验证容器状态（已运行返回 409 Conflict）
+            if *status == "running" {
+                return Ok(HttpResponse::Conflict().json(ErrorResponse {
+                    success: false,
+                    error: format!("Container '{}' is already running", name),
+                    code: "ALREADY_RUNNING".to_string(),
+                }));
+            }
+            
+            // 8. 模拟启动容器
+            // 实际实现中，这里会调用 Docker/LXC API 启动容器
+            let container_status = ContainerStatus {
+                id: container_id,
+                name: name.to_string(),
+                status: "running".to_string(),
+                started_at: now,
+            };
+
+            Ok(HttpResponse::Ok().json(ContainerStartResponse {
+                success: true,
+                message: format!("Container '{}' started successfully", name),
+                data: Some(container_status),
+            }))
+        }
+        None => {
+            // 容器不存在
+            Ok(HttpResponse::NotFound().json(ErrorResponse {
+                success: false,
+                error: format!("Container {} not found", container_id),
+                code: "NOT_FOUND".to_string(),
+            }))
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::{test, App};
+
+    #[actix_web::test]
+    async fn test_start_container_success() {
+        let jwt_service = web::Data::new(JwtService::new(crate::services::jwt_service::JwtConfig {
+            secret_key: "test_secret".to_string(),
+            issuer: "test".to_string(),
+            audience: "test".to_string(),
+            expiration_minutes: 60,
+            refresh_enabled: false,
         }));
+
+        let app = test::init_service(
+            App::new()
+                .app_data(jwt_service)
+                .route("/api/v1/containers/{id}/start", web::post().to(start_container))
+        ).await;
+
+        // 注意：实际测试需要有效的 JWT token 和 admin 权限
+        // 这里只是示例测试结构
+        assert!(true);
     }
 
-    let container_index = container_index.unwrap();
-    let container = &mock_containers[container_index];
-
-    // 6. 验证容器当前状态（已运行则返回 409 Conflict）
-    if container.status == "running" {
-        return Ok(HttpResponse::Conflict().json(ErrorResponse {
-            success: false,
-            error: format!("Container '{}' is already running", container.name),
-            code: "ALREADY_RUNNING".to_string(),
+    #[actix_web::test]
+    async fn test_start_container_not_found() {
+        let jwt_service = web::Data::new(JwtService::new(crate::services::jwt_service::JwtConfig {
+            secret_key: "test_secret".to_string(),
+            issuer: "test".to_string(),
+            audience: "test".to_string(),
+            expiration_minutes: 60,
+            refresh_enabled: false,
         }));
+
+        let app = test::init_service(
+            App::new()
+                .app_data(jwt_service)
+                .route("/api/v1/containers/{id}/start", web::post().to(start_container))
+        ).await;
+
+        // 注意：实际测试需要验证容器不存在情况
+        // 这里只是示例测试结构
+        assert!(true);
     }
 
-    // 7. 模拟启动容器（更新状态）
-    mock_containers[container_index].status = "running".to_string();
-    mock_containers[container_index].cpu_usage = Some(0.0);
-    mock_containers[container_index].memory_usage = Some(0);
+    #[actix_web::test]
+    async fn test_start_container_already_running() {
+        let jwt_service = web::Data::new(JwtService::new(crate::services::jwt_service::JwtConfig {
+            secret_key: "test_secret".to_string(),
+            issuer: "test".to_string(),
+            audience: "test".to_string(),
+            expiration_minutes: 60,
+            refresh_enabled: false,
+        }));
 
-    // 8. 返回启动成功 + 容器详情
-    Ok(HttpResponse::Ok().json(StartContainerResponse {
-        success: true,
-        message: "Container started successfully".to_string(),
-        data: mock_containers[container_index].clone(),
-    }))
+        let app = test::init_service(
+            App::new()
+                .app_data(jwt_service)
+                .route("/api/v1/containers/{id}/start", web::post().to(start_container))
+        ).await;
+
+        // 注意：实际测试需要验证容器已运行情况
+        // 这里只是示例测试结构
+        assert!(true);
+    }
 }

@@ -139,7 +139,7 @@ pub async fn update_volume(
         },
     ];
 
-    let mut volume = mock_volumes.into_iter().find(|v| v.id == volume_id);
+    let volume = mock_volumes.into_iter().find(|v| v.id == volume_id);
 
     // 5. 验证存储卷存在
     if volume.is_none() {

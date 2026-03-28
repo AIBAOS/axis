@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 17:30 UTC
+> 最后更新：2026-03-28 17:35 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | Phase 301 WebUI 基础框架 |
-| 提交时间 | 2026-03-28 17:30 UTC |
-| 当前阶段 | Phase 301 WebUI 基础框架 |
+| 最新 commit | a368611 |
+| 提交时间 | 2026-03-28 17:35 UTC |
+| 当前阶段 | Phase 301 WebUI 项目基础框架 |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -68,18 +68,830 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 181 待安排
+- [ ] Phase 262 待安排
+
+---
+
+## ✅ WebUI 开发
+
+- [x] Phase 301 WebUI 项目基础框架 - 2026-03-28 17:35
+  - Vue 3 + TypeScript + Vite 5
+  - TailwindCSS 3 样式
+  - Vue Router 4 + Pinia 状态管理
+  - Axios API 客户端（JWT 自动注入）
+  - 首页：显示"Axis NAS 管理面板"标题 + 版本信息
+  - 项目结构：webui/ 目录
+  - Commit: a368611
+
+---
+
+## ✅ API 开发
+
+- [x] Phase 261 备份任务创建 API - 2026-03-28 17:30
+  - POST /api/v1/backups — 创建备份任务
+  - JWT 认证，仅 admin 可创建
+  - 请求体：name/description/source_path/destination/backup_type/schedule
+  - backup_type 支持：full（全量）/incremental（增量）
+  - 验证名称格式（1-128 字符，允许字母数字 -_ ）
+  - 验证路径格式（必须以/开头，≤512 字符）
+  - 使用 SqliteBackupRepository 持久化
+  - 创建成功返回 201 Created + 备份任务详情
+  - 错误处理：400/401/403/500
+  - 单元测试：已编写（3 个测试用例）
+  - 文档：docs/backups_create_api.md (已更新)
+  - Commit: af4ad6a
+
+- [x] Phase 260 备份任务列表 API - 2026-03-28 16:50
+  - GET /api/v1/backups — 获取备份任务列表
+  - JWT 认证，admin 角色可访问
+  - 支持分页：page(默认 1)/page_size(默认 20, 最大 100)
+  - 支持状态过滤：status(active/inactive/all)
+  - 返回字段：id/name/description/source_path/destination_path/schedule/status/last_run/next_run/created_at/updated_at
+  - 错误处理：401/403/500
+  - 单元测试：已编写（3 个测试用例）
+  - 文档：docs/backups_list_api.md (已更新)
+  - Commit: 3b91f6e
+
+- [x] Phase 259 系统定时任务删除 API - 2026-03-28 16:30
+  - DELETE /api/v1/system/cron-jobs/{id} — 删除系统定时任务
+  - JWT 认证，admin 角色可访问
+  - 验证任务 ID 存在性（404 Not Found）
+  - 删除成功返回 204 No Content
+  - 错误处理：401/403/404/500
+  - 单元测试：已编写（3 个测试用例）
+  - 文档：docs/system_cron_jobs_delete_api.md
+  - Commit: 861b423
+
+- [x] Phase 258 系统定时任务更新 API - 2026-03-28 16:10
+  - PUT /api/v1/system/cron-jobs/{id} — 更新系统定时任务
+  - JWT 认证，admin 角色可访问
+  - 支持部分更新：name/schedule/command/description/enabled
+  - 验证 name 唯一性（409 Conflict）
+  - 验证 schedule 格式（cron 表达式或预定义）
+  - 返回 200 OK + 任务详情
+  - 错误处理：401/403/400/404/409/500
+  - 单元测试：已编写（3 个测试用例）
+  - 文档：docs/system_cron_jobs_update_api.md
+  - Commit: 9119678
+
+- [x] Phase 257 系统日志列表 API - 2026-03-28 16:00
+  - GET /api/v1/system/logs — 获取系统日志列表
+  - JWT 认证，admin 角色可访问
+  - 支持分页：page(默认 1)/page_size(默认 20, 最大 100)
+  - 支持级别过滤：level(debug/info/warn/error)
+  - 返回字段：id/level/message/source/created_at
+  - 错误处理：401/403/400/500
+  - 单元测试：已编写（3 个测试用例）
+  - 文档：docs/system_logs_list_api.md
+  - Commit: 25a6293
+
+- [x] Phase 256 系统定时任务详情 API - 2026-03-28 15:45
+  - GET /api/v1/system/cron-jobs/{id} — 获取单个定时任务详情
+  - JWT 认证，admin 角色可访问
+  - 验证任务 ID 存在性（404 Not Found）
+  - 返回字段：id/name/schedule/command/status/last_run/next_run/enabled/description/created_at/updated_at
+  - 错误处理：401/403/404/500
+  - 单元测试：已编写（3 个测试用例）
+  - 文档：docs/system_cron_job_detail_api.md
+  - Commit: 2516c98
+
+- [x] Phase 255 系统定时任务创建 API - 2026-03-28 15:30
+  - POST /api/v1/system/cron-jobs — 创建系统定时任务
+  - JWT 认证，admin 角色可访问
+  - 请求体：name/schedule/command/description/enabled
+  - 验证 name 唯一性（409 Conflict）
+  - 验证 schedule 格式（cron 表达式或预定义）
+  - 返回 201 Created + 任务详情
+  - 错误处理：401/403/400/409/500
+  - 单元测试：已编写（3 个测试用例）
+  - 文档：docs/system_cron_jobs_create_api.md
+  - Commit: 394dbdb
+
+- [x] Phase 254 系统定时任务列表 API - 2026-03-28 15:05
+  - GET /api/v1/system/cron-jobs — 获取系统定时任务列表
+  - JWT 认证，admin 角色可访问
+  - 筛选：status(active/inactive/running)/enabled(true/false)
+  - 返回字段：id/name/schedule/command/status/last_run/next_run/enabled/description
+  - 错误处理：401/403/400/500
+  - 单元测试：已编写（3 个测试用例）
+  - 文档：docs/system_cron_jobs_list_api.md
+  - Commit: f3ddf4b
+
+- [x] Phase 253 进程信号发送 API - 2026-03-28 14:40
+  - POST /api/v1/system/processes/{pid}/signal — 向进程发送信号
+  - JWT 认证，admin 角色可访问
+  - 支持信号：SIGTERM/SIGHUP/SIGINT/SIGKILL/SIGUSR1/SIGUSR2
+  - 验证进程 PID 存在性（404 Not Found）
+  - 保护系统关键进程（403 Forbidden）
+  - 返回字段：success/message/pid/signal/sent_at
+  - 错误处理：401/403/400/404/500
+  - 单元测试：已编写（2 个测试用例）
+  - 文档：docs/system_process_signal_api.md
+  - Commit: b2fa376
+
+- [x] Phase 252 终止进程 API - 2026-03-28 14:15
+  - POST /api/v1/system/processes/{pid}/terminate — 终止指定进程
+  - JWT 认证，admin 角色可访问
+  - 验证进程 PID 存在性（404 Not Found）
+  - 系统关键进程不可终止（403 Forbidden）
+  - 返回 200 OK + { success, message, pid, terminated_at }
+  - 错误处理：401/403/404/500
+
+- [x] Phase 251 系统进程列表 API - 2026-03-28 14:00
+  - GET /api/v1/system/processes — 获取系统进程列表
+  - JWT 认证，admin 角色可访问
+  - 查询参数：limit(默认 50, 最大 200)/offset(默认 0)/sort(cpu|memory|pid)/order(asc|desc)
+  - 筛选：user/status(running/sleeping/zombie)
+  - 返回字段：pid/name/user/cpu_percent/memory_percent/status/start_time/command
+  - 错误处理：401/403/400/500
+  - 单元测试：已编写（2 个测试用例）
+  - 文档：docs/system_processes_api.md
+  - Commit: c440219
+
+- [x] Phase 250 系统资源监控 API - 2026-03-28 13:50
+  - GET /api/v1/system/resources — 获取系统资源使用情况
+  - JWT 认证，admin 角色可访问
+  - 返回字段：cpu/memory/disk_io/network_io/timestamp
+  - CPU 信息：usage_percent/load_1m/load_5m/load_15m/core_count
+  - 内存信息：total_bytes/used_bytes/available_bytes/usage_percent
+  - 磁盘 IO：read_bytes_sec/write_bytes_sec/read_ops_sec/write_ops_sec
+  - 网络 IO：rx_bytes_sec/tx_bytes_sec/rx_packets_sec/tx_packets_sec
+  - 错误处理：401/403/500
+  - 单元测试：已编写（2 个测试用例）
+  - 文档：docs/system_resources_api.md
+  - Commit: 5f8ad07
+
+- [x] Phase 249 系统日志查询 API - 2026-03-28 13:35
+  - GET /api/v1/system/logs — 获取系统日志列表
+  - JWT 认证，admin 角色可访问
+  - 查询参数：level(info/warn/error)/limit(默认 50)/offset(默认 0)
+  - 返回字段：timestamp/level/module/message/context
+  - 支持分页
+  - 错误处理：401/403/400/500
+  - 单元测试：已编写
+  - 文档：docs/system_logs_api.md
+  - Commit: 115c15e
+
+- [x] Phase 248 系统电源管理 API - 2026-03-28 13:20
+  - GET /api/v1/system/power — 获取电源状态信息
+  - JWT 认证，admin 角色可访问
+  - 返回字段：ac_power_connected/power_consumption_watts/ups/wake_on_lan_enabled/auto_power_on
+  - UPS 信息：present/model/battery_level/runtime_remaining/status
+  - 错误处理：401/403/500
+  - 单元测试：已编写
+  - 文档：docs/system_power_api.md
+  - Commit: 6ebd282
+
+- [x] Phase 247 系统设置更新 API - 2026-03-28 13:10
+  - PUT /api/v1/system/settings — 更新系统设置
+  - JWT 认证，admin 角色可访问
+  - 支持部分更新：timezone/language/update_channel/auto_update_enabled/notification_enabled/power_schedule
+  - 验证设置项合法性（400 Bad Request）
+  - 返回更新后的设置
+  - 错误处理：401/403/400/500
+  - 单元测试：已编写
+  - 文档：docs/system_settings_update_api.md
+  - Commit: 20cf60d
+
+- [x] Phase 246 系统设置获取 API - 2026-03-28 13:00
+  - GET /api/v1/system/settings — 获取系统设置
+  - JWT 认证，admin 角色可访问
+  - 返回字段：hostname/timezone/language/update_channel/auto_update_enabled/notification_enabled/power_schedule
+  - 错误处理：401/403/500
+  - 单元测试：已编写
+  - 文档：docs/system_settings_api.md
+  - Commit: 2537065
+
+- [x] Phase 245 系统信息 API - 2026-03-28 12:30
+  - GET /api/v1/system/info — 获取系统信息
+  - JWT 认证，admin 角色可访问
+  - 返回字段：hostname/os_version/kernel_version/cpu_model/cpu_cores/total_memory_gb/uptime_seconds/boot_time
+  - 错误处理：401/403/500
+  - 单元测试：已编写
+  - 文档：docs/system_info_api.md
+  - Commit: a5db0d7
+
+- [x] Phase 244 容器日志 API - 2026-03-28 12:15
+  - GET /api/v1/containers/{id}/logs — 获取容器日志
+  - JWT 认证，admin 角色可访问
+  - 支持查询参数：tail(默认 100, 最大 1000)/since/follow
+  - 返回字段：container_id/logs/lines_count
+  - 错误处理：401/403/404/500
+  - 单元测试：已编写
+  - 文档：docs/containers_logs_api.md
+  - Commit: 0ba518f
+
+- [x] Phase 243 容器重启 API - 2026-03-28 12:10
+  - POST /api/v1/containers/{id}/restart — 重启容器
+  - JWT 认证，admin 角色可访问
+  - 验证容器 ID 存在性（404 Not Found）
+  - 重启成功返回 200 OK + { success, message, container_id, status, restarted_at }
+  - 错误处理：401/403/404/500
+  - 单元测试：已编写
+  - 文档：docs/containers_restart_api.md
+  - Commit: fc13105
+
+- [x] Phase 242 容器停止 API - 2026-03-28 11:50 (增强版)
+  - POST /api/v1/containers/{id}/stop — 停止容器
+  - JWT 认证，admin 角色可访问
+  - 验证容器 ID 存在性（404 Not Found）
+  - 验证容器状态：已停止返回 409 Conflict
+  - 停止成功返回 200 OK + { success, message, container_id, status: "stopped" }
+  - 错误处理：401/403/404/409/500
+  - 单元测试：已编写
+  - 文档：docs/containers_stop_api.md
+  - Commit: bafc082
+
+- [x] Phase 241 容器启动 API - 2026-03-28 11:40
+  - POST /api/v1/containers/{id}/start — 启动容器
+  - JWT 认证，admin 角色可访问
+  - 验证容器 ID 存在性（404 Not Found）
+  - 验证容器状态（已运行返回 409 Conflict）
+  - 启动成功返回 200 OK + 容器状态
+  - 错误处理：401/403/404/409/500
+  - 单元测试：已编写
+  - 文档：docs/containers_start_api.md
+  - Commit: 26e90f2
+
+- [x] Phase 240 媒体照片删除 API - 2026-03-28 11:30 (增强版)
+  - DELETE /api/v1/media/photos/{id} — 删除照片
+  - JWT 认证，登录用户可访问
+  - 权限验证：仅照片所有者可删除（403 Forbidden）
+  - 验证照片 ID 存在性（404 Not Found）
+  - 删除成功返回 204 No Content
+  - 错误处理：401/403/404/500
+  - 单元测试：已编写
+  - 文档：docs/media_photo_delete_api.md
+  - Commit: 86f268a + 增强版
+
+- [x] Phase 239 媒体照片上传 API - 2026-03-28 11:20 (增强版)
+  - POST /api/v1/media/photos — 上传照片
+  - JWT 认证，登录用户可访问
+  - 支持 multipart/form-data 上传
+  - 验证文件类型（jpg/jpeg/png/webp）
+  - 验证文件大小（max 50MB）
+  - 自动生成缩略图
+  - 返回字段：success/message/data(id/name/path/size_bytes/width/height/thumbnail_path/created_at)
+  - 错误处理：401/400(文件无效)/413(超大)/500
+  - 单元测试：已编写
+  - 文档：docs/media_photo_upload_api.md
+  - Commit: bb63cc4 + 增强版
+
+- [x] Phase 238 媒体照片详情 API - 2026-03-28 11:00 (增强版)
+  - GET /api/v1/media/photos/{id} — 获取照片详情
+  - JWT 认证，任意登录用户可访问
+  - 验证照片 ID 存在性（404 Not Found）
+  - 返回字段：id/name/path/size_bytes/width/height/taken_at/created_at/updated_at/thumbnail_path/album/exif
+  - 错误处理：401/404/500
+  - 单元测试：已编写
+  - 文档：docs/media_photos_detail_api.md
+  - Commit: cc49aeb + 文档补充
+
+- [x] Phase 237 媒体音频详情 API - 2026-03-28 10:50
+  - GET /api/v1/media/audios/{id} — 获取音频详情
+  - JWT 认证，任意登录用户可访问
+  - 验证音频 ID 存在性（404 Not Found）
+  - 返回字段：id/name/path/size_bytes/duration_seconds/artist/album/track_number/genre/bitrate/sample_rate/created_at/updated_at/thumbnail_path
+  - 错误处理：401/404/500
+  - 单元测试：已编写
+  - 文档：docs/media_audio_detail_api.md
+  - Commit: fb9a246
+
+- [x] Phase 236 媒体视频详情 API - 2026-03-28 10:35 (增强版)
+  - GET /api/v1/media/videos/{id} — 获取视频详情
+  - JWT 认证，任意登录用户可访问
+  - 验证视频 ID 存在性（404 Not Found）
+  - 返回字段：id/name/path/size_bytes/duration_seconds/resolution/codec/bitrate/framerate/created_at/modified_at/thumbnail_path/metadata
+  - 错误处理：401/404/500
+  - 单元测试：已编写
+  - 文档：docs/media_videos_detail_api.md
+  - Commit: a9345a2 + 文档补充
+
+- [x] Phase 235 媒体视频列表 API - 2026-03-28 10:20 (增强版)
+  - GET /api/v1/media/videos — 获取视频列表
+  - JWT 认证，任意登录用户可访问
+  - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - 支持筛选：folder（可选，按目录过滤）
+  - 返回字段：videos/total_count/page/per_page
+  - 视频字段：id/name/path/size_bytes/duration_seconds/resolution/created_at/thumbnail_path
+  - 错误处理：401/500
+  - 单元测试：已编写
+  - 文档：docs/media_videos_list_api.md
+  - Commit: 15d64eb
+
+- [x] Phase 104 删除用户 API - 2026-03-28 10:10 (增强版)
+  - DELETE /api/v1/users/{id} — 删除用户
+  - JWT 认证，admin 角色可访问
+  - 普通用户返回 403 Forbidden
+  - 用户不存在返回 404 Not Found
+  - 不能删除自己（400 Bad Request）
+  - 返回 200 OK + { success, message }
+  - 使用 SqliteUserRepository 真实数据库实现
+  - 单元测试：已编写
+  - 文档：docs/users_delete_api.md
+  - 用户模块 5/5 完整闭环
+
+- [x] Phase 234 媒体照片列表 API - 2026-03-28 09:40
+  - GET /api/v1/media/photos — 获取照片列表
+  - JWT 认证，任意登录用户可访问
+  - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - 支持筛选：album（可选）
+  - 返回字段：photos/total_count/page/per_page
+  - 照片字段：id/name/path/size_bytes/width/height/taken_at/created_at/thumbnail_path/album
+  - 错误处理：401/500
+  - 单元测试：已编写
+  - Commit: d282417
+
+- [x] Phase 233 媒体音频列表 API - 2026-03-28 09:30 (增强版)
+  - GET /api/v1/media/audios — 获取音频列表
+  - JWT 认证，任意登录用户可访问
+  - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - 支持筛选：artist/album（可选）
+  - 返回字段：audios/total_count/page/per_page
+  - 音频字段：id/name/path/size_bytes/duration_seconds/artist/album/track_number/created_at/thumbnail_path
+  - 错误处理：401/500
+  - 单元测试：已编写
+  - 文档：docs/media_audios_api.md
+  - Commit: ecc31c0 + 3fcd549 (增强版)
+
+- [x] Phase 232 媒体视频列表 API - 2026-03-28 09:15
+  - GET /api/v1/media/videos — 获取视频列表
+  - JWT 认证，任意登录用户可访问
+  - 支持分页：page(默认 1)/per_page(默认 20)
+  - 返回字段：videos/total_count/page/per_page
+  - 视频字段：id/name/path/size_bytes/duration_seconds/resolution/created_at/thumbnail_path
+  - 错误处理：401/500
+  - 单元测试：已编写
+  - Commit: 4cc43c9
+
+- [x] Phase 231 媒体信息 API - 2026-03-28 09:00
+  - GET /api/v1/media/info — 获取媒体库统计信息
+  - JWT 认证，任意登录用户可访问
+  - 返回字段：video_count/audio_count/photo_count/total_size_bytes/last_updated
+  - 错误处理：401/500
+  - 单元测试：已编写
+  - Commit: 311751b
+
+- [x] Phase 230 系统关机 API - 2026-03-28 08:50
+  - POST /api/v1/system/shutdown — 关闭系统
+  - JWT 认证，admin 角色可访问
+  - 支持 delay_seconds 参数（0-300 秒）
+  - 验证延迟参数合法性（400 Bad Request）
+  - 返回字段：status/message/shutdown_at
+  - 错误处理：401/403/400/500
+  - Commit: 8cb6c15
+
+- [x] Phase 229 系统重启 API - 2026-03-28 08:40 (增强版)
+  - POST /api/v1/system/restart — 重启系统
+  - JWT 认证，admin 角色可访问
+  - 支持 delay_seconds 参数（0-300 秒）
+  - 验证延迟参数合法性（400 Bad Request）
+  - 返回字段：status/message/restart_at
+  - 错误处理：401/403/400/500
+  - 文档：docs/system_restart_api.md
+  - Commit: 87a67ca + 增强版
+
+- [x] Phase 228 容器详情 API - 2026-03-28 08:25
+  - GET /api/v1/containers/{id} — 获取容器详情（数据库增强版）
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteContainerRepository 实现真实数据库查询
+  - 验证容器 ID 存在性（404 Not Found）
+  - 返回字段：id/name/image/status/ports/networks/created_at/started_at/cpu_usage/memory_usage
+  - Commit: 5d8c8c3
+
+- [x] Phase 227 容器列表 API - 2026-03-28 08:15
+  - GET /api/v1/containers — 获取容器列表（数据库增强版）
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteContainerRepository 实现真实数据库查询
+  - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - 支持筛选：status(running/stopped/paused)
+  - 返回字段：id/name/image/status/created_at
+  - Commit: 56e1730
+
+- [x] Phase 225 用户列表 API - 2026-03-28 07:45
+  - GET /api/v1/users — 获取用户列表
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteUserRepository 真实数据库查询
+  - 支持分页：page/per_page（默认 20，最大 100）
+  - 支持筛选：role
+  - 返回字段：id/username/email/roles/is_active/created_at/updated_at/last_login
+  - 文档：docs/users_list_api.md
+
+- [x] 用户详情 API (Phase 226) - 2026-03-28 08:00
+  - GET /api/v1/users/{id} — 获取用户详情
+  - JWT 认证，登录用户可访问
+  - 使用 SqliteUserRepository 真实数据库查询
+  - 权限控制：admin 可查看任意用户，普通用户只能查看自己
+  - 验证用户 ID 存在性（404 Not Found）
+  - 返回字段：id/username/email/roles/is_active/created_at/updated_at/last_login（不含密码）
+  - 单元测试：2 个测试用例
+  - 文档：docs/users_detail_api.md
+  - [x] GET /api/v1/users — 获取用户列表
+  - [x] JWT 认证，admin 角色可访问
+  - [x] 使用 SqliteUserRepository 实现真实数据库查询
+  - [x] 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - [x] 支持筛选：role
+  - [x] 返回字段：id/username/email/roles/is_active/created_at/updated_at/last_login
+  - Commit: 4e2e3fc
+
+- [x] Phase 224 FTP 共享删除 API - 2026-03-28 07:35
+  - [x] DELETE /api/v1/shares/ftp/{id} — 删除 FTP 共享
+  - [x] JWT 认证，admin 角色可访问
+  - [x] 使用 SqliteShareRepository 实现真实数据库删除
+  - [x] 验证共享 ID 存在性（404 Not Found）
+  - [x] 验证协议类型（仅 FTP）
+  - [x] 删除成功返回 204 No Content
+  - Commit: 6f0b958
+
+- [x] Phase 223 FTP 共享更新 API - 2026-03-28 07:20
+  - [x] PUT /api/v1/shares/ftp/{id} — 更新 FTP 共享
+  - [x] JWT 认证，admin 角色可访问
+  - [x] 使用 SqliteShareRepository 实现真实数据库更新
+  - [x] 支持部分更新：name/path/description/public
+  - [x] 验证共享 ID 存在性（404 Not Found）
+  - [x] 验证协议类型（仅 FTP）
+  - [x] 验证名称格式（400 Bad Request）
+  - [x] 验证路径格式（400 Bad Request）
+  - Commit: 0219349
+
+- [x] Phase 222 FTP 共享创建 API - 2026-03-28 07:10
+  - [x] POST /api/v1/shares/ftp — 创建 FTP 共享
+  - [x] JWT 认证，admin 角色可访问
+  - [x] 使用 SqliteShareRepository 实现真实数据库创建
+  - [x] 验证名称格式（400 Bad Request）
+  - [x] 验证路径格式（400 Bad Request）
+  - [x] 验证名称唯一性（409 Conflict）
+  - [x] 返回字段：id/name/path/description/public/status/created_at/updated_at
+  - Commit: 89a12e8
+
+- [x] Phase 221 FTP 共享详情 API - 2026-03-28 06:55
+  - [x] GET /api/v1/shares/ftp/{id} — 获取 FTP 共享详情
+  - [x] JWT 认证，admin 角色可访问
+  - [x] 使用 SqliteShareRepository 实现真实数据库查询
+  - [x] 验证共享 ID 存在性（404 Not Found）
+  - [x] 验证协议类型（仅 FTP）
+  - [x] 返回字段：id/name/path/description/public/status/created_at/updated_at
+  - Commit: 0b107cb
+
+- [x] Phase 220 FTP 共享列表 API - 2026-03-28 06:40
+  - [x] GET /api/v1/shares/ftp — 获取 FTP 共享列表
+  - [x] JWT 认证，admin 角色可访问
+  - [x] 使用 SqliteShareRepository 实现真实数据库查询
+  - [x] 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - [x] 支持筛选：status(active/inactive)
+  - [x] 返回字段：id/name/path/description/public/status/created_at/updated_at
+  - Commit: b281fb8
+
+- [x] Phase 219 WebDAV 共享删除 API - 2026-03-28 06:00
+  - [x] DELETE /api/v1/shares/webdav/{id} — 删除 WebDAV 共享
+  - [x] JWT 认证，admin 角色可访问
+  - [x] 使用 SqliteShareRepository 实现真实数据库删除
+  - [x] 验证共享 ID 存在性（404 Not Found）
+  - [x] 验证协议类型（仅 WebDAV）
+  - [x] 删除成功返回 204 No Content
+  - Commit: 469c4f4
+
+- [x] Phase 218 WebDAV 共享更新 API - 2026-03-28 05:45
+  - [x] PUT /api/v1/shares/webdav/{id} — 更新 WebDAV 共享
+  - [x] JWT 认证，admin 角色可访问
+  - [x] 使用 SqliteShareRepository 实现真实数据库更新
+  - [x] 支持部分更新：name/path/description/public
+  - [x] 验证共享 ID 存在性（404 Not Found）
+  - [x] 验证协议类型（仅 WebDAV）
+  - [x] 验证名称格式（400 Bad Request）
+  - [x] 验证路径格式（400 Bad Request）
+  - Commit: d069b85
+
+- [x] Phase 217 WebDAV 共享创建 API - 2026-03-28 05:35
+  - [x] POST /api/v1/shares/webdav — 创建 WebDAV 共享
+  - [x] JWT 认证，admin 角色可访问
+  - [x] 使用 SqliteShareRepository 实现真实数据库创建
+  - [x] 验证名称格式（400 Bad Request）
+  - [x] 验证路径格式（400 Bad Request）
+  - [x] 验证名称唯一性（409 Conflict）
+  - [x] 返回字段：id/name/path/description/public/status/created_at/updated_at
+  - Commit: 7c3f48f
+
+- [x] Phase 216 WebDAV 共享详情 API - 2026-03-28 05:25
+  - [x] GET /api/v1/shares/webdav/{id} — 获取 WebDAV 共享详情
+  - [x] JWT 认证，admin 角色可访问
+  - [x] 使用 SqliteShareRepository 实现真实数据库查询
+  - [x] 验证共享 ID 存在性（404 Not Found）
+  - [x] 验证协议类型（仅 WebDAV）
+  - [x] 返回字段：id/name/path/description/public/status/created_at/updated_at
+  - Commit: 5d09684
+
+- [x] Phase 215 WebDAV 共享列表 API - 2026-03-28 05:10
+  - [x] GET /api/v1/shares/webdav — 获取 WebDAV 共享列表
+  - [x] JWT 认证，admin 角色可访问
+  - [x] 使用 SqliteShareRepository 实现真实数据库查询
+  - [x] 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - [x] 支持筛选：status(active/inactive)
+  - [x] 返回字段：id/name/path/description/public/status/created_at/updated_at
+  - Commit: a6033d6
+
+- [x] Phase 213 NFS 共享列表 API 增强版 - 2026-03-28 04:45
+  - [x] GET /api/v1/shares/nfs — 获取 NFS 共享列表（数据库版本）
+  - [x] JWT 认证，admin 角色可访问
+  - [x] 使用 SqliteShareRepository 实现真实数据库查询
+  - [x] 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - [x] 支持筛选：status(active/inactive)
+  - [x] 返回字段：id/name/path/comment/read_only/no_subtree_check/sync/clients/enabled/created_at/updated_at
+  - [x] 文档：docs/shares_nfs_list_api.md
+  - Commit: c540cc0
+
+- [x] Phase 212 SMB 共享删除 API - 2026-03-28 04:15
+
+- [x] Phase 215 WebDAV 共享列表 API - 2026-03-28 05:05
+
+- [x] Phase 214 NFS 共享详情 API - 2026-03-28 04:52
+
+- [x] Phase 213 NFS 共享列表 API (增强版) - 2026-03-28 04:40
+
+- [x] Phase 203 SMB 共享详情 API - 2026-03-28 04:25
+  - [x] GET /api/v1/system/notifications/{id} — 获取通知详情
+  - [x] JWT 认证，登录用户可访问
+  - [x] 验证通知 ID 存在性（404 Not Found）
+  - [x] 验证通知归属（admin 可查看任意，普通用户只能查看自己的）
+  - [x] 返回字段：id/type/title/message/source/status/created_at/read_at/metadata
+  - [x] 文档：docs/system_notifications_detail_api.md
+
+- [x] Phase 208 通知删除 API - 2026-03-28 03:30
+  - [x] DELETE /api/v1/system/notifications/{id} — 删除系统通知
+  - [x] JWT 认证，仅 admin 用户可访问
+  - [x] 验证通知 ID 存在性（404 Not Found）
+  - [x] 删除成功返回 204 No Content
+  - [x] 文档：docs/system_notifications_delete_api.md
+
+- [x] Phase 203 SMB 共享详情 API - 2026-03-28 02:05
+  - [x] GET /api/v1/shares/smb — 获取 SMB 共享列表
+  - [x] JWT 认证，任意登录用户可访问
+  - [x] 支持分页：page, limit（最大 100）
+  - [x] 支持筛选：public 字段
+  - [x] 返回 7 个字段：id/name/path/description/public/created_at/updated_at
+  - [x] 文档：docs/shares_smb_list_api.md
+
+---
+
+## 🔄 进行中
+
+无
 
 ---
 
 ## ✅ 已完成事项
 
+<<<<<<< HEAD
 - [x] **Phase 301 WebUI 基础框架** - 2026-03-28 17:30
   - 技术栈：Vue 3 + TypeScript + Vite + TailwindCSS + Pinia
   - 目录：`axis/webui/`
   - 功能：项目脚手架、路由配置、API 客户端、认证 store、首页、关于页、登录页
   - 构建：`npm run dev` (开发) / `npm run build` (生产)
   - 文档：webui/README.md
+=======
+- [x] WebDAV 共享列表 API (Phase 215) - 2026-03-28 05:05
+  - GET /api/v1/shares/webdav — 获取 WebDAV 共享列表
+  - JWT 认证，仅 admin 用户可访问
+  - 使用 SqliteShareRepository 真实数据库查询
+  - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - 支持状态筛选：status(active/inactive)
+  - 文档：docs/shares_webdav_list_api.md
+  - Commit: (待提交)
+
+- [x] NFS 共享详情 API (Phase 214) - 2026-03-28 04:52
+  - GET /api/v1/shares/nfs/{id} — 获取 NFS 共享详情
+  - JWT 认证，仅 admin 用户可访问
+  - 使用 SqliteShareRepository 真实数据库查询
+  - 验证共享 ID 存在性（404 Not Found）
+  - 验证协议类型（仅 NFS）
+  - 返回 NFS 共享完整详情
+  - 文档：docs/shares_nfs_get_api.md
+  - Commit: (待提交)
+
+- [x] NFS 共享列表 API (Phase 213) - 2026-03-28 04:40
+  - GET /api/v1/shares/nfs — 获取 NFS 共享列表（增强版）
+  - JWT 认证，仅 admin 用户可访问
+  - 使用 SqliteShareRepository 真实数据库查询
+  - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - 支持状态筛选：status(active/inactive)
+  - 返回字段：id/name/path/comment/read_only/no_subtree_check/sync/clients/enabled/created_at/updated_at
+  - 文档：docs/shares_nfs_list_api.md
+  - Commit: (待提交)
+
+- [x] SMB 共享详情 API (Phase 203) - 2026-03-28 04:25
+  - GET /api/v1/shares/smb/{id} — 获取 SMB 共享详情
+  - JWT 认证，登录用户可访问
+  - 验证共享 ID 存在性（404 Not Found）
+  - 验证协议为 SMB
+  - 返回完整共享信息（包含 SMB 专用字段）
+  - 文档：docs/shares_smb_get_api.md
+  - Commit: (待提交)
+
+- [x] SMB 共享删除 API (Phase 212) - 2026-03-28 04:15
+  - DELETE /api/v1/shares/smb/{id} — 删除 SMB 共享
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteShareRepository 实现真实数据库删除
+  - 验证共享 ID 存在性（404 Not Found）
+  - 验证协议类型（非 SMB 返回 404）
+  - 删除成功返回 204 No Content
+  - 文档：docs/shares_smb_delete_api.md
+  - Commit: 54ddd37
+
+- [x] SMB 共享更新 API (Phase 211) - 2026-03-28 04:00
+  - PUT /api/v1/shares/smb/{id} — 更新 SMB 共享配置
+  - JWT 认证，仅 admin 用户可访问
+  - 支持部分更新：name/path/description/allowed_users/allowed_groups/guest_ok/read_only
+  - 验证路径存在性、权限检查、名称唯一性（排除自身）
+  - 更新成功返回 200 OK + 共享详情
+  - 文档：docs/shares_smb_update_api.md
+  - Commit: (待提交)
+
+- [x] SMB 共享创建 API (Phase 210) - 2026-03-28 03:50
+  - POST /api/v1/shares/smb — 创建 SMB 共享配置
+  - JWT 认证，仅 admin 用户可访问
+  - 验证路径存在性、权限检查、名称唯一性
+  - 请求体：name/path/description/allowed_users/allowed_groups/guest_ok/read_only
+  - 创建成功返回 201 Created + 共享详情
+  - 文档：docs/shares_smb_create_api.md
+  - Commit: (待提交)
+
+- [x] 系统通知详情 API (Phase 209) - 2026-03-28 03:45
+  - GET /api/v1/system/notifications/{id} — 获取通知详情
+  - JWT 认证，登录用户可访问
+  - 验证通知 ID 存在性（404 Not Found）
+  - 验证通知归属（admin 可查看任意，普通用户只能查看自己的）
+  - 返回字段：id/type/title/message/source/status/created_at/read_at/metadata
+  - 文档：docs/system_notifications_detail_api.md
+  - Commit: (待提交)
+
+- [x] 系统通知删除 API (Phase 208) - 2026-03-28 03:30
+  - DELETE /api/v1/system/notifications/{id} — 删除系统通知
+  - JWT 认证，仅 admin 用户可访问
+  - 验证通知 ID 存在性（404 Not Found）
+  - 删除成功返回 204 No Content
+  - 文档：docs/system_notifications_delete_api.md
+  - Commit: (待提交)
+
+- [x] 系统通知列表 API (Phase 207) - 2026-03-28 03:10
+  - GET /api/v1/system/notifications — 获取系统通知列表
+  - JWT 认证，登录用户可访问
+  - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - 支持筛选：type(info/warning/error/critical)/status(unread/read)/source
+  - 按 created_at 降序排序（最新的在前）
+  - 返回字段：id/type/title/message/source/status/created_at/read_at
+  - 响应格式：{ data: [...], pagination: { page, per_page, total, total_pages } }
+  - 文档：docs/system_notifications_list_api.md
+  - Commit: (待提交)
+
+- [x] NFS 共享删除 API (Phase 206) - 2026-03-28 02:45
+  - DELETE /api/v1/shares/nfs/{id} — 删除 NFS 共享（SQLite 持久化版）
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteShareRepository 实现真实数据库删除
+  - 验证共享 ID 存在性（404 Not Found）
+  - 验证协议类型（非 NFS 返回 404）
+  - 删除成功返回 204 No Content
+  - 文档：docs/shares_nfs_delete_api.md
+  - Commit: 161f742
+
+- [x] NFS 共享更新 API (Phase 205) - 2026-03-28 02:35
+  - PUT /api/v1/shares/nfs/{id} — 更新 NFS 共享（SQLite 持久化版）
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteShareRepository 实现真实数据库更新
+  - 支持部分更新：name/path/comment/read_only/no_subtree_check/sync/clients
+  - 验证共享 ID 存在性（404 Not Found）
+  - 验证名称格式（400 Bad Request）
+  - 验证路径格式（400 Bad Request）
+  - 验证名称唯一性（409 Conflict）
+  - 更新成功返回 200 OK + 共享详情
+  - 文档：docs/shares_nfs_update_api.md
+  - Commit: 6746351
+
+- [x] NFS 共享详情 API (Phase 204) - 2026-03-28 02:20
+  - GET /api/v1/shares/nfs/{id} — 获取 NFS 共享详情
+  - JWT 认证，登录用户可访问
+  - 归属验证：admin 可查看任意，普通用户暂受限
+  - 使用 SqliteShareRepository 实现真实数据库查询
+  - 验证共享 ID 存在性（404 Not Found）
+  - 验证协议类型（非 NFS 返回 404）
+  - 返回字段：id/name/path/description/public/created_at/updated_at
+  - 文档：docs/shares_nfs_get_api.md
+  - Commit: d33010b
+
+- [x] SMB 共享详情 API (Phase 203) - 2026-03-28 02:05
+  - GET /api/v1/shares/smb/{id} — 获取 SMB 共享详情
+  - JWT 认证，登录用户可访问
+  - 归属验证：admin 可查看任意，普通用户暂受限
+  - 使用 SqliteShareRepository 实现真实数据库查询
+  - 验证共享 ID 存在性（404 Not Found）
+  - 验证协议类型（非 SMB 返回 404）
+  - 返回字段：id/name/path/description/public/created_at/updated_at
+  - 文档：docs/shares_smb_get_api.md
+  - Commit: db90688
+
+- [x] SMB 共享创建 API (Phase 201) - 2026-03-28 01:40
+  - POST /api/v1/shares/smb — 创建 SMB 共享（SQLite 持久化版）
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteShareRepository 实现真实数据库创建
+  - 验证名称格式（400 Bad Request）
+  - 验证路径格式（400 Bad Request）
+  - 验证名称唯一性（409 Conflict）
+  - 返回字段：id/name/path/comment/read_only/guest_access/browseable/valid_users/invalid_users/status/created_at/updated_at
+  - 创建成功返回 201 Created
+  - 文档：docs/shares_smb_create_api.md
+  - Commit: 6832574
+
+- [x] 系统通知标记已读 API (POST) (Phase 200) - 2026-03-28 01:25
+  - POST /api/v1/system/notifications/{id}/mark-read — 标记通知为已读（POST 版本）
+  - JWT 认证，登录用户可访问
+  - 支持标记系统通知和个人通知
+  - 验证通知归属（403 Forbidden）
+  - 已读通知返回 409 Conflict
+  - 返回更新后的通知摘要
+  - 文档：docs/system_notifications_mark_read_post_api.md
+  - Commit: e6ee338
+
+- [x] 系统通知标记已读 API (PUT) (Phase 199) - 2026-03-28 01:15
+  - PUT /api/v1/system/notifications/{id}/read — 标记系统通知为已读
+  - JWT 认证，登录用户可访问
+  - 验证通知存在性（404 Not Found）
+  - 仅允许标记系统通知（target_user_id IS NULL）
+  - 更新 is_read = 1, read_at = 当前时间戳
+  - 返回更新后的通知摘要
+  - 文档：docs/system_notifications_mark_read_api.md
+  - Commit: c6c9b36
+
+- [x] SMB 共享列表 API (Phase 198) - 2026-03-28 00:55
+  - GET /api/v1/shares/smb — 获取 SMB 共享列表（SQLite 持久化版）
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteShareRepository 实现真实数据库查询
+  - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - 支持状态筛选：status(active/inactive)
+  - 返回字段：id/name/path/status/read_only/guest_access/enabled/created_at/updated_at
+  - 响应格式：success + data + pagination(page/per_page/total/total_pages)
+  - 文档：docs/shares_smb_list_api.md
+  - Commit: d5c82f6
+
+- [x] 系统通知列表 API (Phase 197) - 2026-03-28 00:50
+  - GET /api/v1/system/notifications — 获取系统级别的通知列表
+  - JWT 认证，登录用户可访问
+  - 筛选条件：target_user_id IS NULL（全局系统通知）
+  - 支持分页：page(默认 1)/page_size(默认 20)
+  - 支持优先级筛选：priority(low/normal/high/critical)
+  - 返回字段：id/title/message/type/priority/is_read/created_at/action_url
+  - 文档：docs/system_notifications_list_api.md
+  - Commit: 44df3a7
+
+- [x] 备份统计 API (Phase 196) - 2026-03-28 00:35 (修正 00:38)
+  - GET /api/v1/backups/stats — 获取备份任务和执行的统计信息
+  - JWT 认证，admin 角色可访问
+  - 返回字段：total_backups/active_backups/archived_backups/total_executions/successful_executions/failed_executions/running_executions/last_execution_at/next_scheduled_execution/storage_used_bytes
+  - 使用 SqliteBackupRepository 实现真实数据库聚合查询
+  - 用于仪表板展示备份模块整体状态
+  - 文档：docs/backups_stats_api.md
+  - Commit: e70b87b + 3183a29 (修正)
+
+- [x] 备份执行历史 API (Phase 195) - 2026-03-28 00:25
+  - GET /api/v1/backups/{id}/execution-history — 获取备份任务执行历史记录
+  - JWT 认证，登录用户可访问
+  - 使用 SqliteBackupRepository 实现真实数据库查询
+  - 返回字段：execution_id/backup_id/status/started_at/completed_at/duration_seconds/error_message
+  - 支持分页：page(默认 1)/per_page(默认 20)
+  - 按 started_at 降序排列（最新的在前）
+  - 错误处理：404 Not Found / 500 Database Error
+  - 文档：docs/backups_execution_history_api.md
+  - Commit: 2c2ba00
+
+- [x] 备份归档 API (Phase 194) - 2026-03-28 00:10
+  - POST /api/v1/backups/{id}/archive — 归档活跃的备份任务
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteBackupRepository 实现真实数据库操作
+  - 状态流转：active/completed → archived
+  - 状态校验：仅 active/completed 可归档（running 返回 400，archived 返回 409）
+  - 完善错误处理（404 Not Found / 400 Bad Request / 409 Conflict / 500 Database Error）
+  - 归档成功返回 200 OK + 备份完整信息
+  - 文档：docs/backups_archive_api.md
+  - Commit: f26b07e
+
+- [x] 备份恢复 API (Phase 193) - 2026-03-28 00:05
+  - POST /api/v1/backups/{id}/restore — 恢复已归档的备份任务
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteBackupRepository 实现真实数据库操作
+  - 状态流转：archived → active
+  - 冲突检测：非 archived 状态返回 409 / 已有活跃备份返回 409
+  - 完善错误处理（404 Not Found / 409 Conflict / 500 Database Error）
+  - 恢复成功返回 200 OK + 备份完整信息
+  - 文档：docs/backups_restore_api.md
+  - Commit: 20c388f
+
+- [x] 备份任务删除 API (Phase 192) - 2026-03-27 23:45
+  - DELETE /api/v1/backups/{id} — 删除备份任务
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteBackupRepository 实现真实数据库删除
+  - 添加运行中任务保护（409 Conflict）
+  - 完善错误处理（404 Not Found / 409 Conflict / 500 Database Error）
+  - 删除成功返回 200 OK + 确认消息
+  - Commit: eeefbe3
+>>>>>>> 4c9cf127741819c070e89e08e5e2fe8e2ae36269
 
 - [x] 备份任务更新 API (Phase 191) - 2026-03-27 19:58
   - PUT /api/v1/backups/{id} — 更新备份任务配置
@@ -1473,10 +2285,23 @@
 | Phase 136 防火墙规则详情 API | 100% ✅ |
 | Phase 137 防火墙规则更新 API | 100% ✅ |
 | Phase 138 防火墙规则删除 API | 100% ✅ |
+| Phase 197 系统通知列表 API | 100% ✅ |
+| Phase 198 SMB 共享列表 API | 100% ✅ |
+| Phase 199 系统通知标记已读 API | 100% ✅ |
+| Phase 200 系统通知标记已读 API (POST) | 100% ✅ |
+| Phase 201 SMB 共享创建 API | 100% ✅ |
+| Phase 203 SMB 共享详情 API | 100% ✅ |
+| Phase 204 NFS 共享详情 API | 100% ✅ |
+| Phase 205 NFS 共享更新 API | 100% ✅ |
+| Phase 206 NFS 共享删除 API | 100% ✅ |
+| Phase 207 系统通知列表 API | 100% ✅ |
+| Phase 208 通知删除 API | 100% ✅ |
+| Phase 209 通知详情 API | 100% ✅ |
+| Phase 210 SMB 共享创建 API | 100% ✅ |
 
-**总体进度**：**Phase 138 防火墙规则删除 API 已完成**
+**总体进度**：**Phase 203 SMB 共享详情 API 已完成**
 
 ---
 
 **兵部尚书 签发**
-2026-03-27 02:35 UTC
+2026-03-28 04:25 UTC

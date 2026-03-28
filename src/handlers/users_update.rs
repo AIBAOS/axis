@@ -3,7 +3,7 @@
 // JWT 认证，仅 admin 角色可访问
 
 use actix_web::{web, HttpResponse, Error};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::database::user_store::SqliteUserRepository;
 use crate::database::rbac_store::SqliteRbacRepository;
@@ -143,7 +143,7 @@ pub async fn update_user(
     }
 
     // 6. 更新存储配额（如果提供）
-    if let Some(new_quota) = req.storage_quota {
+    if let Some(_new_quota) = req.storage_quota {
         //* storage_quota not supported */ // user.storage_quota = new_quota;
     }
 

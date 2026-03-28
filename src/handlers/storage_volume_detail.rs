@@ -2,7 +2,7 @@
 // GET /api/v1/storage/volumes/{id} — 获取存储卷详情
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::services::jwt_service::JwtService;
 

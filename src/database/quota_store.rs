@@ -1,6 +1,6 @@
 // 配额存储实现（基于 SQLite）
 use crate::models::quota::UserQuota;
-use crate::database::pool::{DbConnectionType, init_rbac_tables};
+use crate::database::pool::DbConnectionType;
 use rusqlite::{params, Connection};
 use std::sync::{Arc, Mutex};
 

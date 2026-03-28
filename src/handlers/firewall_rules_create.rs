@@ -2,7 +2,6 @@
 // POST /api/v1/firewall/rules — 创建防火墙规则
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use crate::services::jwt_service::JwtService;

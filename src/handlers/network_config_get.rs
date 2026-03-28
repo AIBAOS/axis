@@ -2,7 +2,7 @@
 // GET /api/v1/network/config — 获取网络配置
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::database::rbac_store::SqliteRbacRepository;
 use crate::models::rbac::RbacRepository;

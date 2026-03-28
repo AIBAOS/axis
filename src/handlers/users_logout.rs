@@ -1,10 +1,9 @@
 // Phase 100 - 用户登出 API
 // POST /api/v1/auth/logout — 用户登出
 
-use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use actix_web::{HttpResponse, Error, HttpRequest};
+use serde::Serialize;
 
-use crate::models::jwt::JwtClaims;
 
 /// 登出响应
 #[derive(Serialize)]

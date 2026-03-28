@@ -1,3 +1,7 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+
 use actix_web::{web, App, HttpResponse, HttpServer, Result};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -53,6 +57,7 @@ mod database {
     pub mod update_store;
     pub mod usb_device_store;
     pub mod share_store;
+    pub mod cron_job_store;
 }
 mod config;
 
@@ -66,7 +71,6 @@ use handlers::tasks::{
     get_task,
     update_task,
     delete_task,
-    cancel_task,
 };
 use handlers::settings::{get_all_settings, get_setting, update_setting};
 use handlers::notifications::{
@@ -77,6 +81,11 @@ use handlers::notifications::{
     delete_notification,
     delete_read_notifications,
 };
+use handlers::system_notifications_list::list_notifications;
+use handlers::system_notifications_mark_read::mark_system_notification_as_read;
+use handlers::system_notifications_mark_read::mark_notification_as_read;
+use handlers::system_notifications_delete::delete_notification as delete_system_notification;
+use handlers::system_notifications_detail::get_system_notification_detail;
 
 use handlers::system_update::{
     check_update,
@@ -98,7 +107,6 @@ use handlers::network_config_list::list_network_config;
 use handlers::storage_disks_list::list_storage_disks;
 use handlers::storage_disk_detail::get_storage_disk_detail;
 use handlers::network_interfaces_list::list_network_interfaces;
-use handlers::network_interface_detail::get_network_interface_detail;
 use handlers::network_interfaces_create::create_network_interface;
 use handlers::network_interface_update::update_network_interface;
 use handlers::network_interface_delete::delete_network_interface;
@@ -117,11 +125,29 @@ use handlers::printers_update::update_printer;
 use handlers::printers_get::get_printer_detail as get_printer_2;
 use handlers::printers_delete::delete_printer;
 use handlers::system_health::get_system_health;
-use handlers::storage_volumes::list_volumes;
-use handlers::storage_volumes_create::create_volume as create_storage_volume;
-use handlers::storage_volumes_update::update_storage_volume;
-use handlers::storage_volumes_delete::delete_storage_volume;
-use handlers::storage_volume_snapshots::list_snapshots as list_volume_snapshots_old;
+use handlers::system_restart::restart_system;
+use handlers::system_shutdown::shutdown_system;
+use handlers::media_info::get_media_info;
+use handlers::media_videos::get_videos;
+use handlers::media_audios::get_audios;
+use handlers::media_photos::get_photos;
+use handlers::media_video_detail::get_video_detail;
+use handlers::media_audio_detail::get_audio_detail;
+use handlers::media_photo_detail::get_photo_detail;
+use handlers::media_photo_upload::upload_photo;
+use handlers::media_photo_delete::delete_photo;
+use handlers::system_settings_get::get_system_settings;
+use handlers::system_settings_update::update_system_settings;
+use handlers::system_power::get_power_status;
+use handlers::system_resources::get_system_resources;
+use handlers::system_processes::get_system_processes;
+use handlers::system_process_signal::send_signal_to_process;
+use handlers::system_cron_jobs_list::get_system_cron_jobs;
+use handlers::system_cron_jobs_create::create_cron_job;
+use handlers::system_cron_jobs_detail::get_system_cron_job_detail;
+use handlers::system_cron_jobs_update::update_system_cron_job;
+use handlers::system_cron_jobs_delete::delete_system_cron_job;
+use handlers::system_process_terminate::terminate_process;
 use handlers::storage_volume_snapshot_create::create_volume_snapshot as create_volume_snapshot;
 use handlers::storage_volume_snapshots_list::list_volume_snapshots as list_volume_snapshots;
 use handlers::storage_volume_snapshot_detail::get_volume_snapshot as get_volume_snapshot;
@@ -139,7 +165,6 @@ use handlers::shared_folder_permissions_add::add_shared_folder_permission as add
 use handlers::shared_folder_permissions_update::update_shared_folder_permission as update_shared_folder_permission;
 use handlers::shared_folder_permissions_delete::delete_shared_folder_permission as delete_shared_folder_permission;
 use handlers::firewall_rules_create::create_firewall_rule;
-use handlers::firewall_rules_delete::delete_firewall_rule;
 use handlers::firewall_rule_delete::delete_firewall_rule as delete_firewall_rule_by_id;
 use handlers::firewall_rules::list_firewall_rules;
 use handlers::firewall_rule_detail::get_firewall_rule_detail;
@@ -175,11 +200,11 @@ use handlers::backups_detail::get_backup_task_detail;
 use handlers::backups_execute::execute_backup_task;
 use handlers::backups_update::update_backup;
 use handlers::backups_delete::delete_backup;
+use handlers::backups_restore::restore_backup;
+use handlers::backups_archive::archive_backup;
+use handlers::backups_execution_history::get_backup_execution_history;
+use handlers::backups_stats::get_backup_stats;
 use handlers::backups::run_backup;
-use handlers::users::{
-    get_users,
-    change_password,
-};
 use handlers::files_ex::{
     create_folder,
     delete_files,
@@ -196,14 +221,6 @@ use handlers::scheduled_tasks::{
     create_scheduled_task,
     update_scheduled_task,
     delete_scheduled_task,
-    toggle_scheduled_task,
-    run_scheduled_task,
-};
-use handlers::disks::{
-    list_disks,
-    get_disk,
-    get_disk_health,
-    get_disk_usage,
 };
 use handlers::power::{
     execute_power_action,
@@ -223,7 +240,7 @@ use handlers::shares_list::list_shares;
 use handlers::shares_detail::get_share;
 use handlers::shares_update::update_share;
 use handlers::shares_delete::delete_share;
-use handlers::shares_smb_list::list_smb_shares;
+use handlers::shares_smb_list_v2::list_smb_shares_v2 as list_smb_shares;
 use handlers::shares_smb_create::create_smb_share;
 use handlers::shares_smb_get::get_smb_share;
 use handlers::shares_smb_update::update_smb_share;
@@ -233,31 +250,35 @@ use handlers::shares_nfs_create::create_nfs_share;
 use handlers::shares_nfs_get::get_nfs_share;
 use handlers::shares_nfs_update::update_nfs_share;
 use handlers::shares_nfs_delete::delete_nfs_share;
+use handlers::shares_webdav_list::list_webdav_shares;
+use handlers::shares_webdav_get::get_webdav_share;
+use handlers::shares_webdav_create::create_webdav_share;
+use handlers::shares_webdav_update::update_webdav_share;
+use handlers::shares_webdav_delete::delete_webdav_share;
+use handlers::shares_ftp_list::list_ftp_shares;
+use handlers::shares_ftp_get::get_ftp_share;
+use handlers::shares_ftp_create::create_ftp_share;
+use handlers::shares_ftp_update::update_ftp_share;
+use handlers::shares_ftp_delete::delete_ftp_share;
+use handlers::users_list::list_users;
 //     create_share,
 //     get_share,
 //     update_share,
 //     delete_share,
 //     toggle_share,
 // };
-use handlers::users_detail::get_user;
-use handlers::users_list::list_users;
 use handlers::users_get_by_id::get_user_by_id;
 use handlers::users_create::create_user;
 use handlers::users_update::update_user;
-use handlers::users_delete::delete_user;
 use handlers::files_list::list_files;
 use handlers::files_detail::get_file_detail;
 use handlers::files_upload::upload_file;
 use handlers::files_download::download_file;
 use handlers::files_delete::delete_file;
-use handlers::files_detail_by_id::get_file_detail as get_file_detail_by_id;
 use handlers::files_update::update_file;
-use handlers::files_download::download_file as download_file_2;
 use handlers::files_rename::{rename_file, move_file};
 use handlers::files_copy::copy_file;
 use handlers::files_browse::browse_files;
-use handlers::files_get::get_file_detail as get_file_detail_4;
-use handlers::files_upload::upload_file as upload_file_3;
 use handlers::network_config_get::get_network_config;
 use handlers::network_config_update::update_network_config;
 use handlers::dns_config_get::get_dns_config;
@@ -586,8 +607,8 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/shares/{id}", web::put().to(update_share))
             .route("/api/v1/shares/{id}", web::delete().to(delete_share))
             // .route("/api/v1/shares/{id}/toggle", web::post().to(handlers::shares::toggle_share))
-            // SMB 共享列表 API routes (Phase 151)
-            .route("/api/v1/shares/smb", web::get().to(list_smb_shares))
+            // SMB 共享列表 API routes (Phase 202 - 增强版)
+            .route("/api/v1/shares/smb", web::get().to(handlers::shares_smb_list_v2::list_smb_shares_v2))
             // SMB 共享创建 API routes (Phase 153)
             .route("/api/v1/shares/smb", web::post().to(create_smb_share))
             // SMB 共享详情 API routes (Phase 155)
@@ -606,6 +627,24 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/shares/nfs/{id}", web::put().to(update_nfs_share))
             // NFS 共享删除 API routes (Phase 160)
             .route("/api/v1/shares/nfs/{id}", web::delete().to(delete_nfs_share))
+            // WebDAV 共享列表 API routes (Phase 215)
+            .route("/api/v1/shares/webdav", web::get().to(list_webdav_shares))
+            .route("/api/v1/shares/webdav/{id}", web::get().to(get_webdav_share))
+            .route("/api/v1/shares/webdav", web::post().to(create_webdav_share))
+            .route("/api/v1/shares/webdav/{id}", web::put().to(update_webdav_share))
+            .route("/api/v1/shares/webdav/{id}", web::delete().to(delete_webdav_share))
+            // FTP 共享列表 API routes (Phase 220)
+            .route("/api/v1/shares/ftp", web::get().to(list_ftp_shares))
+            // FTP 共享详情 API routes (Phase 221)
+            .route("/api/v1/shares/ftp/{id}", web::get().to(get_ftp_share))
+            // FTP 共享创建 API routes (Phase 222)
+            .route("/api/v1/shares/ftp", web::post().to(create_ftp_share))
+            // FTP 共享更新 API routes (Phase 223)
+            .route("/api/v1/shares/ftp/{id}", web::put().to(update_ftp_share))
+            // FTP 共享删除 API routes (Phase 224)
+            .route("/api/v1/shares/ftp/{id}", web::delete().to(delete_ftp_share))
+            // 用户列表 API routes (Phase 225)
+            .route("/api/v1/users", web::get().to(list_users))
             // 文件列表 API routes (Phase 38)
             .route("/api/v1/files", web::get().to(list_files))
             // 文件详情 API routes (Phase 39)
@@ -624,7 +663,7 @@ async fn main() -> std::io::Result<()> {
             // 用户列表 API (Phase 34)
             .route("/api/v1/users", web::get().to(list_users))
             .route("/api/v1/users", web::post().to(create_user))
-            .route("/api/v1/users/{id}", web::get().to(get_user_by_id))
+            // 用户详情 API (Phase 226 - 增强版)
             .route("/api/v1/storage/volumes/{id}/snapshots", web::get().to(list_volume_snapshots))
             .route("/api/v1/storage/volumes/{id}/snapshots", web::post().to(create_volume_snapshot))
             .route("/api/v1/storage/volumes/{volume_id}/snapshots/{snapshot_id}", web::get().to(get_volume_snapshot))
@@ -722,6 +761,48 @@ async fn main() -> std::io::Result<()> {
             // 系统信息 API routes
             .route("/api/v1/system/info", web::get().to(handlers::system_info::get_system_info))
             .route("/api/v1/system/health", web::get().to(get_system_health))
+            .route("/api/v1/system/restart", web::post().to(restart_system))
+            .route("/api/v1/system/shutdown", web::post().to(shutdown_system))
+            // 媒体信息 API routes (Phase 231)
+            .route("/api/v1/media/info", web::get().to(get_media_info))
+            // 媒体视频 API routes (Phase 232)
+            .route("/api/v1/media/videos", web::get().to(get_videos))
+            // 媒体音频 API routes (Phase 233)
+            .route("/api/v1/media/audios", web::get().to(get_audios))
+            // 媒体照片 API routes (Phase 234)
+            .route("/api/v1/media/photos", web::get().to(get_photos))
+            // 媒体视频详情 API routes (Phase 236)
+            .route("/api/v1/media/videos/{id}", web::get().to(get_video_detail))
+            // 媒体音频详情 API routes (Phase 237)
+            .route("/api/v1/media/audios/{id}", web::get().to(get_audio_detail))
+            // 媒体照片详情 API routes (Phase 238)
+            .route("/api/v1/media/photos/{id}", web::get().to(get_photo_detail))
+            // 媒体照片上传 API routes (Phase 239)
+            .route("/api/v1/media/photos", web::post().to(upload_photo))
+            // 媒体照片删除 API routes (Phase 240)
+            .route("/api/v1/media/photos/{id}", web::delete().to(delete_photo))
+            // 系统设置获取 API routes (Phase 246)
+            .route("/api/v1/system/settings", web::get().to(get_system_settings))
+            // 系统设置更新 API routes (Phase 247)
+            .route("/api/v1/system/settings", web::put().to(update_system_settings))
+            // 系统电源管理 API routes (Phase 248)
+            .route("/api/v1/system/power", web::get().to(get_power_status))
+            // 系统资源监控 API routes (Phase 250)
+            .route("/api/v1/system/resources", web::get().to(get_system_resources))
+            // 系统进程列表 API routes (Phase 251)
+            .route("/api/v1/system/processes", web::get().to(get_system_processes))
+            .route("/api/v1/system/processes/{pid}/terminate", web::post().to(terminate_process))
+            // 进程信号发送 API routes (Phase 253)
+            .route("/api/v1/system/processes/{pid}/signal", web::post().to(send_signal_to_process))
+            // 系统定时任务列表 API routes (Phase 254)
+            .route("/api/v1/system/cron-jobs", web::get().to(get_system_cron_jobs))
+            // 系统定时任务创建 API routes (Phase 255)
+            .route("/api/v1/system/cron-jobs", web::post().to(create_cron_job))
+            // 系统定时任务详情 API routes (Phase 256)
+            .route("/api/v1/system/cron-jobs/{id}", web::get().to(get_system_cron_job_detail))
+            .route("/api/v1/system/cron-jobs/{id}", web::put().to(update_system_cron_job))
+            // 系统定时任务删除 API routes (Phase 259)
+            .route("/api/v1/system/cron-jobs/{id}", web::delete().to(delete_system_cron_job))
             .route("/api/v1/system/logs", web::get().to(get_system_logs))
             .route("/api/v1/system/logs/{id}", web::get().to(get_system_log_detail))
             .route("/api/v1/system/logs/export", web::post().to(export_system_logs))
@@ -768,6 +849,11 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/notifications/{id}/read", web::put().to(mark_as_read))
             .route("/api/v1/notifications/{id}", web::delete().to(delete_notification))
             .route("/api/v1/notifications/read", web::delete().to(delete_read_notifications))
+            .route("/api/v1/system/notifications", web::get().to(list_notifications))
+            .route("/api/v1/system/notifications/{id}/read", web::put().to(mark_system_notification_as_read))
+            .route("/api/v1/system/notifications/{id}/mark-read", web::post().to(mark_notification_as_read))
+            .route("/api/v1/system/notifications/{id}", web::delete().to(delete_system_notification))
+            .route("/api/v1/system/notifications/{id}", web::get().to(get_system_notification_detail))
             // 应用/插件管理 API routes
             .route("/api/v1/apps", web::get().to(get_apps))
             .route("/api/v1/apps", web::post().to(install_app))
@@ -787,11 +873,15 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/containers/{id}/stats", web::get().to(get_container_stats))
             // 备份任务管理 API routes
             .route("/api/v1/backups", web::get().to(list_backup_tasks))
+            .route("/api/v1/backups/stats", web::get().to(get_backup_stats))
             .route("/api/v1/backups", web::post().to(create_backup))
             .route("/api/v1/backups/{id}", web::get().to(get_backup_task_detail))
             .route("/api/v1/backups/{id}/execute", web::post().to(execute_backup_task))
             .route("/api/v1/backups/{id}", web::put().to(update_backup))
             .route("/api/v1/backups/{id}", web::delete().to(delete_backup))
+            .route("/api/v1/backups/{id}/restore", web::post().to(restore_backup))
+            .route("/api/v1/backups/{id}/archive", web::post().to(archive_backup))
+            .route("/api/v1/backups/{id}/execution-history", web::get().to(get_backup_execution_history))
             .route("/api/v1/backups/{id}/run", web::post().to(run_backup))
             // 计划任务管理 API routes
             .route("/api/v1/scheduled-tasks", web::get().to(list_scheduled_tasks))
@@ -806,7 +896,7 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/system/update/install", web::post().to(install_update))
             .route("/api/v1/system/update/status", web::get().to(get_update_status))
             .route("/api/v1/system/update/cancel", web::post().to(cancel_update))
-            // 用户管理 API routes (Phase 34 & 55 & 101 & 102 & 103)
+            // 用户管理 API routes (Phase 34 & 55 & 226 & 102 & 103)
             .route("/api/v1/users", web::get().to(handlers::users_list::list_users))
             .route("/api/v1/users", web::post().to(create_user))
             .route("/api/v1/users/{id}", web::get().to(get_user_by_id))

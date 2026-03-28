@@ -2,7 +2,7 @@
 // POST /api/v1/storage/volumes/{volume_id}/snapshots/{snapshot_id}/restore — 恢复存储卷快照
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::database::rbac_store::SqliteRbacRepository;
 use crate::models::rbac::RbacRepository;

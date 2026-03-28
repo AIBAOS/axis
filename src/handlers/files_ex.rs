@@ -1,14 +1,14 @@
 // 文件管理增强 API（Phase 27）
 // 包含：目录列表、上传、下载（range）、创建文件夹、重命名、删除（批量）、搜索
 
-use actix_web::{web, HttpResponse, Result, http::StatusCode, web::Json};
+use actix_web::{web, HttpResponse, Result, web::Json};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::path::{Path, PathBuf};
 use std::fs;
 use std::time::UNIX_EPOCH;
-use tokio::fs::{File, create_dir_all};
-use tokio::io::{AsyncWriteExt, AsyncReadExt};
+use tokio::fs::create_dir_all;
+use tokio::io::AsyncReadExt;
 use uuid::Uuid;
 
 use crate::models::jwt::JwtClaims;
@@ -272,7 +272,7 @@ pub async fn download_file(
         }));
     }
     
-    let metadata = fs::metadata(&file_path).map_err(|e| {
+    let _metadata = fs::metadata(&file_path).map_err(|e| {
         actix_web::error::ErrorInternalServerError(format!("File error: {}", e))
     })?;
     
@@ -294,7 +294,7 @@ pub async fn download_file(
 // 上传文件（multipart/form-data）
 pub async fn upload_file(
     jwt_claims: web::Data<JwtClaims>,
-    mut payload: web::Payload,
+    _payload: web::Payload,
 ) -> Result<HttpResponse> {
     let user_id = get_user_id_from_claims(jwt_claims.get_ref());
     let user_dir = get_user_file_dir(user_id);
@@ -303,7 +303,7 @@ pub async fn upload_file(
         actix_web::error::ErrorInternalServerError(format!("Create dir error: {}", e))
     })?;
     
-    let mut uploaded_files: Vec<FileInfo> = Vec::new();
+    let uploaded_files: Vec<FileInfo> = Vec::new();
     
     // 简化实现：读取所有 multipart 字段
     // 实际应使用 actix-web-multipart 进行流式处理
@@ -424,7 +424,7 @@ pub async fn delete_files(
     Json(payload): web::Json<BulkDeleteRequest>,
 ) -> Result<HttpResponse> {
     let user_id = get_user_id_from_claims(jwt_claims.get_ref());
-    let base_dir = get_user_file_dir(user_id);
+    let _base_dir = get_user_file_dir(user_id);
     
     let mut deleted: Vec<String> = Vec::new();
     let mut failed: Vec<String> = Vec::new();

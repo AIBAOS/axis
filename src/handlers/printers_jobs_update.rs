@@ -68,7 +68,7 @@ fn validate_state(state: &str) -> bool {
 /// - 验证打印机和任务存在性
 /// - 可更新字段：priority/state
 pub async fn update_print_job(
-    jwt_claims: web::Data<JwtClaims>,
+    _jwt_claims: web::Data<JwtClaims>,
     path: web::Path<(u64, u64)>,
     req: web::Json<UpdatePrintJobRequest>,
 ) -> Result<HttpResponse, Error> {

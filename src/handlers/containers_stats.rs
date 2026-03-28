@@ -2,7 +2,7 @@
 // GET /api/v1/containers/{id}/stats — 获取容器统计信息
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::services::jwt_service::JwtService;
 

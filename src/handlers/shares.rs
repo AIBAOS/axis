@@ -61,6 +61,7 @@ pub async fn list_shares(
                     path: s.path,
                     protocol: s.protocol,
                     status: s.status,
+                    description: s.description,
                     created_at: s.created_at,
                     updated_at: s.updated_at,
                 }
@@ -102,6 +103,7 @@ pub async fn get_share(
                 path: share.path,
                 protocol: share.protocol,
                 status: share.status,
+                description: share.description,
                 created_at: share.created_at,
                 updated_at: share.updated_at,
             };
@@ -140,7 +142,7 @@ pub async fn create_share(
         log::warn!("Path {} does not exist, creating anyway", path);
     }
 
-    match share_repo.create_share(&create_req.name, &path, &create_req.protocol) {
+    match share_repo.create_share(&create_req.name, &path, &create_req.protocol, create_req.description.as_deref(), None, None, false, false, None, false, false, None, false) {
         Ok(share) => {
             let share = crate::models::share::Share {
                 id: share.id,
@@ -148,6 +150,7 @@ pub async fn create_share(
                 path: share.path,
                 protocol: share.protocol,
                 status: share.status,
+                description: share.description,
                 created_at: share.created_at,
                 updated_at: share.updated_at,
             };
@@ -192,6 +195,7 @@ pub async fn update_share(
                 path: share.path,
                 protocol: share.protocol,
                 status: share.status,
+                description: share.description,
                 created_at: share.created_at,
                 updated_at: share.updated_at,
             };
@@ -276,6 +280,7 @@ pub async fn toggle_share(
                 path: share.path,
                 protocol: share.protocol,
                 status: share.status,
+                description: share.description,
                 created_at: share.created_at,
                 updated_at: share.updated_at,
             };

@@ -2,7 +2,7 @@
 // GET /api/v1/storage/usage — 获取全局存储使用统计
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::database::rbac_store::SqliteRbacRepository;
 use crate::services::jwt_service::JwtService;
@@ -40,7 +40,7 @@ pub struct ErrorResponse {
 /// - 返回全局存储统计信息
 pub async fn get_storage_usage(
     req: HttpRequest,
-    rbac_repo: web::Data<SqliteRbacRepository>,
+    _rbac_repo: web::Data<SqliteRbacRepository>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
     // 1. JWT 认证 - 提取并验证 token（任意登录用户）

@@ -6,7 +6,7 @@ use actix_web::{web, HttpResponse, Responder, HttpMessage};
 use serde::{Deserialize, Serialize};
 
 use crate::services::jwt_service::JwtService;
-use crate::models::user::{UserRepository, LoginRequest, LoginResponse, LoginData};
+use crate::models::user::{UserRepository, LoginRequest};
 use crate::database::user_store::SqliteUserRepository;
 
 /// 刷新 Token 请求

@@ -123,7 +123,7 @@ pub async fn create_volume(
         }));
     }
 
-    let (_, pool_name, _, pool_used) = pool.unwrap();
+    let (_, _pool_name, _, pool_used) = pool.unwrap();
     let pool_available = 8796093022208u64 - *pool_used; // 简化计算
 
     // 6. 检查存储池容量是否足够

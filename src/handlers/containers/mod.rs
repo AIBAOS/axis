@@ -3,4 +3,3 @@
 
 pub mod containers;
 
-pub use containers::list_containers;

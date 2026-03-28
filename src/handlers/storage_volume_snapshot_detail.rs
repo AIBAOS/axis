@@ -2,7 +2,7 @@
 // GET /api/v1/storage/volumes/{volume_id}/snapshots/{snapshot_id} — 获取存储卷快照详情
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::database::rbac_store::SqliteRbacRepository;
 use crate::services::jwt_service::JwtService;
@@ -45,7 +45,7 @@ pub struct ErrorResponse {
 pub async fn get_volume_snapshot(
     req: HttpRequest,
     path: web::Path<(u64, u64)>,
-    rbac_repo: web::Data<SqliteRbacRepository>,
+    _rbac_repo: web::Data<SqliteRbacRepository>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
     // 1. JWT 认证 - 提取并验证 token（登录用户）

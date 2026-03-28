@@ -185,7 +185,7 @@ impl SqliteContainerRepository {
             .map_err(|e| format!("Time error: {}", e))?
             .as_secs() as i64;
 
-        let (started_at_sql, stopped_at_sql) = match new_status {
+        let (_started_at_sql, _stopped_at_sql) = match new_status {
             "running" => ("started_at = ?3, stopped_at = NULL,", ""),
             "stopped" | "exited" => ("stopped_at = ?3,", ""),
             _ => ("", ""),

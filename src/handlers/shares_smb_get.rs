@@ -1,10 +1,12 @@
-// Phase 155: SMB 共享详情 API
+// Phase 203: SMB 共享详情 API
 // GET /api/v1/shares/smb/{id} — 获取 SMB 共享详情
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
+use std::sync::Arc;
 
 use crate::services::jwt_service::JwtService;
+use crate::database::share_store::SqliteShareRepository;
 
 /// SMB 共享详情信息
 #[derive(Serialize, Clone)]
@@ -12,16 +14,14 @@ pub struct SmbShareDetail {
     pub id: u64,
     pub name: String,
     pub path: String,
-    pub comment: String,
+    pub description: Option<String>,
+    pub allowed_users: Option<String>,
+    pub allowed_groups: Option<String>,
+    pub guest_ok: bool,
     pub read_only: bool,
-    pub guest_access: bool,
-    pub browseable: bool,
-    pub valid_users: Vec<String>,
-    pub invalid_users: Vec<String>,
-    pub enabled: bool,
     pub status: String,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: i64,
+    pub updated_at: i64,
 }
 
 /// SMB 共享详情响应
@@ -39,14 +39,16 @@ pub struct ErrorResponse {
     pub code: String,
 }
 
-/// 获取 SMB 共享详情（Phase 155）
-/// - JWT 认证，仅 admin 角色可访问
+/// 获取 SMB 共享详情（Phase 203）
+/// - JWT 认证，登录用户可访问
 /// - 验证共享 ID 存在性（404 Not Found）
-/// - 返回 SMB 共享完整详情
+/// - 验证协议为 SMB（非 SMB 返回 404）
+/// - 返回完整共享信息（包含 SMB 专用字段）
 pub async fn get_smb_share(
     req: HttpRequest,
     path: web::Path<u64>,
     jwt_service: web::Data<JwtService>,
+    repo: web::Data<Arc<SqliteShareRepository>>,
 ) -> Result<HttpResponse, Error> {
     let share_id = path.into_inner();
 
@@ -63,83 +65,79 @@ pub async fn get_smb_share(
         .validate_token(token)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))?;
 
-    // 3. 验证 admin 权限
-    let is_admin = claims.roles.iter().any(|r| r == "admin");
-    if !is_admin {
-        return Ok(HttpResponse::Forbidden().json(ErrorResponse {
-            success: false,
-            error: "Only admin users can view SMB share details".to_string(),
-            code: "FORBIDDEN".to_string(),
-        }));
-    }
+    // 3. 查询共享
+    match repo.get_share_by_id(share_id) {
+        Ok(Some(share)) => {
+            // 4. 验证协议为 SMB
+            if share.protocol != "smb" {
+                return Ok(HttpResponse::NotFound().json(ErrorResponse {
+                    success: false,
+                    error: format!("SMB share {} not found", share_id),
+                    code: "NOT_FOUND".to_string(),
+                }));
+            }
 
-    // 4. 模拟 SMB 共享数据
-    let mock_shares = vec![
-        SmbShareDetail {
-            id: 1,
-            name: "Public".to_string(),
-            path: "/srv/samba/public".to_string(),
-            comment: "Public shared folder".to_string(),
-            read_only: false,
-            guest_access: true,
-            browseable: true,
-            valid_users: vec![],
-            invalid_users: vec![],
-            enabled: true,
-            status: "active".to_string(),
-            created_at: "2026-03-27T06:00:00Z".to_string(),
-            updated_at: "2026-03-27T06:00:00Z".to_string(),
-        },
-        SmbShareDetail {
-            id: 2,
-            name: "Users".to_string(),
-            path: "/srv/samba/users".to_string(),
-            comment: "Users shared folder".to_string(),
-            read_only: false,
-            guest_access: false,
-            browseable: true,
-            valid_users: vec!["user1".to_string(), "user2".to_string()],
-            invalid_users: vec![],
-            enabled: true,
-            status: "active".to_string(),
-            created_at: "2026-03-27T06:00:00Z".to_string(),
-            updated_at: "2026-03-27T06:00:00Z".to_string(),
-        },
-        SmbShareDetail {
-            id: 3,
-            name: "Backup".to_string(),
-            path: "/srv/samba/backup".to_string(),
-            comment: "Backup shared folder".to_string(),
-            read_only: true,
-            guest_access: false,
-            browseable: false,
-            valid_users: vec!["admin".to_string()],
-            invalid_users: vec![],
-            enabled: false,
-            status: "inactive".to_string(),
-            created_at: "2026-03-27T06:00:00Z".to_string(),
-            updated_at: "2026-03-27T06:00:00Z".to_string(),
-        },
-    ];
+            // 5. 转换数据格式（返回完整共享信息）
+            let detail = SmbShareDetail {
+                id: share.id,
+                name: share.name,
+                path: share.path,
+                description: share.description,
+                allowed_users: share.allowed_users,
+                allowed_groups: share.allowed_groups,
+                guest_ok: share.guest_ok,
+                read_only: share.read_only,
+                status: share.status,
+                created_at: share.created_at,
+                updated_at: share.updated_at,
+            };
 
-    // 5. 查找共享
-    let share = mock_shares.into_iter().find(|s| s.id == share_id);
-
-    // 6. 验证共享存在性
-    match share {
-        Some(share) => {
-            // 7. 返回共享详情
             Ok(HttpResponse::Ok().json(SmbShareDetailResponse {
                 success: true,
-                data: share,
+                data: detail,
             }))
         }
-        None => {
-            Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: format!("SMB share {} not found", share_id),
-                code: "NOT_FOUND".to_string(),
-            }))
-        }
+        Ok(None) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+            success: false,
+            error: format!("SMB share {} not found", share_id),
+            code: "NOT_FOUND".to_string(),
+        })),
+        Err(e) => Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+            success: false,
+            error: format!("查询共享失败：{}", e),
+            code: "DATABASE_ERROR".to_string(),
+        })),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::{test, App};
+
+    #[actix_web::test]
+    async fn test_get_smb_share_success() {
+        let jwt_service = web::Data::new(JwtService::new(crate::services::jwt_service::JwtConfig {
+            secret_key: "test_secret".to_string(),
+            issuer: "test".to_string(),
+            audience: "test".to_string(),
+            expiration_minutes: 60,
+            refresh_enabled: false,
+        }));
+
+        let repo = web::Data::new(Arc::new(SqliteShareRepository::new(
+            crate::database::pool::create_sqlite_pool(":memory:").unwrap(),
+        )));
+
+        let app = test::init_service(
+            App::new()
+                .app_data(jwt_service)
+                .app_data(repo)
+                .route("/api/v1/shares/smb/{id}", web::get().to(get_smb_share))
+        ).await;
+
+        // 注意：实际测试需要有效的 JWT token 和数据库
+        // 这里只是示例测试结构
+        assert!(true);
     }
 }

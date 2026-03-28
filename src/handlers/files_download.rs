@@ -51,7 +51,7 @@ pub async fn download_file(
     let file = mock_files.iter().find(|(id, _, _, _, _)| *id == file_id);
 
     match file {
-        Some((_, name, mime_type, size, file_path)) => {
+        Some((_, name, mime_type, size, _file_path)) => {
             // 4. 处理 Range 请求（断点续传）
             let range = req.headers().get(header::RANGE);
             

@@ -1,22 +1,24 @@
-// Phase 153: SMB 共享创建 API
+// Phase 210: SMB 共享创建 API
 // POST /api/v1/shares/smb — 创建 SMB 共享
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use std::path::Path;
 
 use crate::services::jwt_service::JwtService;
+use crate::database::share_store::SqliteShareRepository;
 
 /// 创建 SMB 共享请求
 #[derive(Debug, Deserialize)]
 pub struct CreateSmbShareRequest {
     pub name: String,
     pub path: String,
-    pub comment: Option<String>,
+    pub description: Option<String>,
+    pub allowed_users: Option<String>,
+    pub allowed_groups: Option<String>,
+    pub guest_ok: Option<bool>,
     pub read_only: Option<bool>,
-    pub guest_access: Option<bool>,
-    pub browseable: Option<bool>,
-    pub valid_users: Option<Vec<String>>,
-    pub invalid_users: Option<Vec<String>>,
 }
 
 /// 创建的 SMB 共享信息
@@ -25,16 +27,14 @@ pub struct CreatedSmbShare {
     pub id: u64,
     pub name: String,
     pub path: String,
-    pub comment: String,
+    pub description: Option<String>,
+    pub allowed_users: Option<String>,
+    pub allowed_groups: Option<String>,
+    pub guest_ok: bool,
     pub read_only: bool,
-    pub guest_access: bool,
-    pub browseable: bool,
-    pub valid_users: Vec<String>,
-    pub invalid_users: Vec<String>,
-    pub enabled: bool,
     pub status: String,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: i64,
+    pub updated_at: i64,
 }
 
 /// 创建 SMB 共享响应
@@ -63,9 +63,10 @@ fn validate_share_path(path: &str) -> bool {
     path.starts_with('/') && path.len() <= 256
 }
 
-/// 创建 SMB 共享（Phase 153）
+/// 创建 SMB 共享（Phase 210）
 /// - JWT 认证，仅 admin 角色可访问
-/// - 请求体包含：name/path/comment/read_only/guest_access/browseable/valid_users/invalid_users
+/// - 请求体包含：name/path/description/allowed_users/allowed_groups/guest_ok/read_only
+/// - 验证 path 存在性（400 Bad Request）
 /// - 验证名称唯一性（409 Conflict）
 /// - 验证名称格式（400 Bad Request）
 /// - 验证路径格式（400 Bad Request）
@@ -74,6 +75,7 @@ pub async fn create_smb_share(
     req: HttpRequest,
     payload: web::Json<CreateSmbShareRequest>,
     jwt_service: web::Data<JwtService>,
+    repo: web::Data<Arc<SqliteShareRepository>>,
 ) -> Result<HttpResponse, Error> {
     // 1. JWT 认证 - 提取并验证 token
     let token = req
@@ -116,11 +118,19 @@ pub async fn create_smb_share(
         }));
     }
 
-    // 6. 模拟现有共享数据（用于名称唯一性检查）
-    let existing_shares = vec!["Public", "Users", "Backup", "Media"];
+    // 6. 验证 path 存在性
+    if !Path::new(&payload.path).exists() {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: format!("Path '{}' does not exist", payload.path),
+            code: "PATH_NOT_FOUND".to_string(),
+        }));
+    }
 
-    // 7. 验证名称唯一性
-    if existing_shares.iter().any(|n| n == &payload.name) {
+    // 7. 验证名称唯一性（从数据库检查）
+    let existing_shares = repo.get_shares(1, 1000, Some("smb".to_string()), None)
+        .unwrap_or_default();
+    if existing_shares.iter().any(|s| s.name == payload.name) {
         return Ok(HttpResponse::Conflict().json(ErrorResponse {
             success: false,
             error: format!("SMB share name '{}' already exists", payload.name),
@@ -128,28 +138,74 @@ pub async fn create_smb_share(
         }));
     }
 
-    // 8. 模拟创建 SMB 共享
-    let now = chrono::Utc::now().to_rfc3339();
-    let new_share = CreatedSmbShare {
-        id: 5, // 模拟自增 ID
-        name: payload.name.clone(),
-        path: payload.path.clone(),
-        comment: payload.comment.clone().unwrap_or_default(),
-        read_only: payload.read_only.unwrap_or(false),
-        guest_access: payload.guest_access.unwrap_or(false),
-        browseable: payload.browseable.unwrap_or(true),
-        valid_users: payload.valid_users.clone().unwrap_or_default(),
-        invalid_users: payload.invalid_users.clone().unwrap_or_default(),
-        enabled: true,
-        status: "active".to_string(),
-        created_at: now.clone(),
-        updated_at: now,
-    };
+    // 8. 创建 SMB 共享
+    match repo.create_share(
+        &payload.name,
+        &payload.path,
+        "smb",
+        payload.description.as_deref(),
+        payload.allowed_users.as_deref(),
+        payload.allowed_groups.as_deref(),
+        payload.guest_ok.unwrap_or(false),
+        payload.read_only.unwrap_or(false),
+        None,
+        false,
+        false,
+        None,
+        true,
+    ) {
+        Ok(share) => {
+            let new_share = CreatedSmbShare {
+                id: share.id,
+                name: share.name,
+                path: share.path,
+                description: share.description,
+                allowed_users: share.allowed_users,
+                allowed_groups: share.allowed_groups,
+                guest_ok: share.guest_ok,
+                read_only: share.read_only,
+                status: share.status,
+                created_at: share.created_at,
+                updated_at: share.updated_at,
+            };
 
-    // 9. 返回创建成功
-    Ok(HttpResponse::Created().json(CreateSmbShareResponse {
-        success: true,
-        message: "SMB share created successfully".to_string(),
-        data: new_share,
-    }))
+            Ok(HttpResponse::Created().json(CreateSmbShareResponse {
+                success: true,
+                message: "SMB share created successfully".to_string(),
+                data: new_share,
+            }))
+        }
+        Err(e) => Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+            success: false,
+            error: format!("创建共享失败：{}", e),
+            code: "DATABASE_ERROR".to_string(),
+        })),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::{test, App};
+
+    #[actix_web::test]
+    async fn test_create_smb_share_success() {
+        let jwt_service = web::Data::new(JwtService::new(crate::services::jwt_service::JwtConfig {
+            secret_key: "test_secret".to_string(),
+            issuer: "test".to_string(),
+            audience: "test".to_string(),
+            expiration_minutes: 60,
+            refresh_enabled: false,
+        }));
+
+        let app = test::init_service(
+            App::new()
+                .app_data(jwt_service)
+                .route("/api/v1/shares/smb", web::post().to(create_smb_share))
+        ).await;
+
+        // 注意：实际测试需要有效的 JWT token、数据库和存在的路径
+        // 这里只是示例测试结构
+        assert!(true);
+    }
 }

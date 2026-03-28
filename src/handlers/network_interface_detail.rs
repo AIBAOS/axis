@@ -2,7 +2,7 @@
 // GET /api/v1/network/interfaces/{id} — 获取网络接口详情
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::services::jwt_service::JwtService;
 

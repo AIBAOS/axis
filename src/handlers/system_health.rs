@@ -1,7 +1,7 @@
 // Phase 59 - 系统健康检查 API
 // GET /api/v1/system/health — 系统健康检查
 
-use actix_web::{web, HttpResponse, Error, HttpRequest};
+use actix_web::{HttpResponse, Error, HttpRequest};
 use serde::{Deserialize, Serialize};
 
 use crate::models::jwt::JwtClaims;

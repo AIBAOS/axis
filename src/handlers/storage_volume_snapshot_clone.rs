@@ -118,7 +118,7 @@ pub async fn clone_volume_snapshot(
 
     match volume {
         Some(v) => {
-            let volume_name = v["name"].as_str().unwrap().to_string();
+            let _volume_name = v["name"].as_str().unwrap().to_string();
             let source_pool_id = v["pool_id"].as_u64().unwrap();
             let target_pool_id = pool_id.unwrap_or(source_pool_id);
 

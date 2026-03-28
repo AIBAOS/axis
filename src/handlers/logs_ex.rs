@@ -5,7 +5,6 @@ use actix_web::{web, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::fs;
-use std::path::Path;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum LogLevel {

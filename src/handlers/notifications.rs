@@ -43,6 +43,7 @@ pub async fn get_notifications(
     match repo.get_notifications(
         query.notification_type.as_deref(),
         query.status.as_deref(),
+        None,
         page,
         page_size,
     ) {
@@ -94,6 +95,7 @@ pub async fn create_notification(
         &payload.message,
         &payload.notification_type,
         &payload.priority,
+        None,
         payload.target_user_id,
         payload.action_url.as_deref(),
     ) {
