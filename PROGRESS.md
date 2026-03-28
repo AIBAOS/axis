@@ -69,14 +69,16 @@
 
 - [ ] Phase 241 待安排
 
-- [x] Phase 240 媒体照片删除 API - 2026-03-28 11:25
+- [x] Phase 240 媒体照片删除 API - 2026-03-28 11:30 (增强版)
   - DELETE /api/v1/media/photos/{id} — 删除照片
   - JWT 认证，登录用户可访问
+  - 权限验证：仅照片所有者可删除（403 Forbidden）
   - 验证照片 ID 存在性（404 Not Found）
-  - 删除成功返回 200 OK
-  - 错误处理：401/404/500
+  - 删除成功返回 204 No Content
+  - 错误处理：401/403/404/500
   - 单元测试：已编写
-  - Commit: 86f268a
+  - 文档：docs/media_photo_delete_api.md
+  - Commit: 86f268a + 增强版
 
 - [x] Phase 239 媒体照片上传 API - 2026-03-28 11:20 (增强版)
   - POST /api/v1/media/photos — 上传照片
