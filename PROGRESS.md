@@ -69,14 +69,15 @@
 
 - [ ] Phase 237 待安排
 
-- [x] Phase 236 媒体视频详情 API - 2026-03-28 10:35
+- [x] Phase 236 媒体视频详情 API - 2026-03-28 10:35 (增强版)
   - GET /api/v1/media/videos/{id} — 获取视频详情
   - JWT 认证，任意登录用户可访问
   - 验证视频 ID 存在性（404 Not Found）
-  - 返回字段：id/name/path/size_bytes/duration_seconds/resolution/codec/bitrate/framerate/created_at/updated_at/thumbnail_path/folder
+  - 返回字段：id/name/path/size_bytes/duration_seconds/resolution/codec/bitrate/framerate/created_at/modified_at/thumbnail_path/metadata
   - 错误处理：401/404/500
   - 单元测试：已编写
-  - Commit: a9345a2
+  - 文档：docs/media_videos_detail_api.md
+  - Commit: a9345a2 + 文档补充
 
 - [x] Phase 235 媒体视频列表 API - 2026-03-28 10:20 (增强版)
   - GET /api/v1/media/videos — 获取视频列表
