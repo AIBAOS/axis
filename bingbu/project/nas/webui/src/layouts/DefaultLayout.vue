@@ -22,6 +22,9 @@
             <router-link to="/users" class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">
               用户管理
             </router-link>
+            <router-link to="/backups" class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">
+              备份管理
+            </router-link>
             <button @click="logout" class="text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400">
               退出
             </button>
@@ -52,6 +55,9 @@
         </router-link>
         <router-link to="/users" class="block text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400" @click="showMobileMenu = false">
           用户管理
+        </router-link>
+        <router-link to="/backups" class="block text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400" @click="showMobileMenu = false">
+          备份管理
         </router-link>
         <button @click="logout; showMobileMenu = false" class="block text-left text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400">
           退出

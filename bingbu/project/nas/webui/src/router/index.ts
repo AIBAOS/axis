@@ -5,6 +5,7 @@ import Dashboard from '../views/Dashboard.vue'
 import Files from '../views/Files.vue'
 import Storage from '../views/Storage.vue'
 import Users from '../views/Users'
+import Backups from '../views/Backups'
 
 const routes = [
   {
@@ -39,6 +40,12 @@ const routes = [
     path: '/users',
     name: 'Users',
     component: Users,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/backups',
+    name: 'Backups',
+    component: Backups,
     meta: { requiresAuth: true },
   },
 ]
