@@ -120,7 +120,7 @@ pub async fn update_webdav_share(
     }
 
     // 6. 从数据库查询共享是否存在且为 WebDAV 协议
-    let existing_share = match repo.get_share_by_id(share_id as i64) {
+    let existing_share = match repo.get_share_by_id(share_id) {
         Ok(Some(s)) => {
             if s.protocol != "webdav" {
                 return Ok(HttpResponse::NotFound().json(ErrorResponse {
