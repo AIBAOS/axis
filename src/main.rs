@@ -227,6 +227,7 @@ use handlers::shares_nfs_get::get_nfs_share;
 use handlers::shares_nfs_update::update_nfs_share;
 use handlers::shares_nfs_delete::delete_nfs_share;
 use handlers::shares_webdav_list::list_webdav_shares;
+use handlers::shares_webdav_get::get_webdav_share;
 //     create_share,
 //     get_share,
 //     update_share,
@@ -596,6 +597,7 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/shares/nfs/{id}", web::delete().to(delete_nfs_share))
             // WebDAV 共享列表 API routes (Phase 215)
             .route("/api/v1/shares/webdav", web::get().to(list_webdav_shares))
+            .route("/api/v1/shares/webdav/{id}", web::get().to(get_webdav_share))
             // 文件列表 API routes (Phase 38)
             .route("/api/v1/files", web::get().to(list_files))
             // 文件详情 API routes (Phase 39)
