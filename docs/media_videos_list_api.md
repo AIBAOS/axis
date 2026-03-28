@@ -1,46 +1,33 @@
-# 媒体视频列表 API
+# 媒体视频列表 API 文档
 
-## Phase 235
+## 概述
 
-## 接口说明
+本文档描述 Axis NAS 系统中获取视频列表 API 的实现细节。
 
-获取媒体库中的视频列表，支持分页和目录筛选。
+## API 端点
 
-## 请求
+- **路径**: `GET /api/v1/media/videos`
+- **版本**: v1
+- **Phase**: 235
 
-`GET /api/v1/media/videos`
+## 认证
 
-### 请求头
+- **类型**: JWT Bearer Token
+- **权限**: 任意登录用户可访问
 
-| 字段 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| Authorization | string | 是 | JWT Token，格式：`Bearer <token>` |
+## 请求参数
 
-### 查询参数
+### Query 参数
 
-| 字段 | 类型 | 必填 | 默认值 | 说明 |
+| 参数 | 类型 | 必需 | 默认值 | 描述 |
 |------|------|------|--------|------|
-| page | integer | 否 | 1 | 页码（从 1 开始） |
-| per_page | integer | 否 | 20 | 每页数量（最大 100） |
-| folder | string | 否 | - | 按目录路径前缀筛选 |
+| `page` | number | 否 | 1 | 页码（从 1 开始） |
+| `per_page` | number | 否 | 20 | 每页数量（最大 100） |
+| `folder` | string | 否 | - | 目录筛选（可选，按路径前缀过滤） |
 
-### 请求示例
+## 响应格式
 
-**获取视频列表（第一页）：**
-```bash
-curl -X GET "http://localhost:8080/api/v1/media/videos?page=1&per_page=20" \
-  -H "Authorization: Bearer <jwt_token>"
-```
-
-**按目录筛选：**
-```bash
-curl -X GET "http://localhost:8080/api/v1/media/videos?folder=/media/videos/movies" \
-  -H "Authorization: Bearer <jwt_token>"
-```
-
-## 响应
-
-### 成功响应（200 OK）
+### 成功响应 (200 OK)
 
 ```json
 {
@@ -53,7 +40,7 @@ curl -X GET "http://localhost:8080/api/v1/media/videos?folder=/media/videos/movi
       "size_bytes": 2147483648,
       "duration_seconds": 7200,
       "resolution": "1920x1080",
-      "created_at": 1711497600,
+      "created_at": 1711500000,
       "thumbnail_path": "/media/thumbnails/movie_001.jpg"
     }
   ],
@@ -63,37 +50,19 @@ curl -X GET "http://localhost:8080/api/v1/media/videos?folder=/media/videos/movi
 }
 ```
 
-### 返回字段说明
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| success | boolean | 请求是否成功 |
-| data | array | 视频列表 |
-| data[].id | integer | 视频 ID |
-| data[].name | string | 视频文件名 |
-| data[].path | string | 视频文件路径 |
-| data[].size_bytes | integer | 文件大小（字节） |
-| data[].duration_seconds | integer | 时长（秒） |
-| data[].resolution | string | 分辨率（如 1920x1080） |
-| data[].created_at | integer | 创建时间（Unix 时间戳） |
-| data[].thumbnail_path | string | 缩略图路径 |
-| total_count | integer | 总记录数 |
-| page | integer | 当前页码 |
-| per_page | integer | 每页数量 |
-
 ### 错误响应
 
-#### 401 Unauthorized - 未认证或 Token 无效
+#### 401 Unauthorized - 认证失败
 
 ```json
 {
   "success": false,
-  "error": "Invalid or expired token",
+  "error": "Missing or invalid Authorization header",
   "code": "UNAUTHORIZED"
 }
 ```
 
-#### 500 Internal Server Error - 服务器错误
+#### 500 Internal Server Error - 系统错误
 
 ```json
 {
@@ -103,21 +72,157 @@ curl -X GET "http://localhost:8080/api/v1/media/videos?folder=/media/videos/movi
 }
 ```
 
-## 权限要求
+## 数据模型
 
-- 需要 JWT 认证
-- 任意登录用户可访问
+### VideoInfo
 
-## 业务逻辑
+| 字段 | 类型 | 描述 |
+|------|------|------|
+| `id` | number | 视频 ID |
+| `name` | string | 视频文件名 |
+| `path` | string | 视频文件路径 |
+| `size_bytes` | number | 文件大小（字节） |
+| `duration_seconds` | number | 视频时长（秒） |
+| `resolution` | string | 分辨率（如 "1920x1080"） |
+| `created_at` | number | 创建时间戳（Unix 时间戳） |
+| `thumbnail_path` | string | 缩略图路径 |
 
-1. 验证 JWT Token 有效性
-2. 解析分页参数（page/per_page）
-3. 解析筛选参数（folder）
-4. 应用目录筛选条件
-5. 应用分页
-6. 返回视频列表和总数
+### VideoListResponse
+
+| 字段 | 类型 | 描述 |
+|------|------|------|
+| `success` | boolean | 操作是否成功 |
+| `data` | VideoInfo[] | 视频列表 |
+| `total_count` | number | 视频总数 |
+| `page` | number | 当前页码 |
+| `per_page` | number | 每页数量 |
+
+## 错误代码
+
+| 代码 | HTTP 状态码 | 描述 |
+|------|-----------|------|
+| `UNAUTHORIZED` | 401 | 未提供或无效的认证令牌 |
+| `INTERNAL_ERROR` | 500 | 系统错误 |
+
+## 示例
+
+### 请求（第一页，每页 20 个）
+
+```bash
+curl -X GET "http://localhost:8080/api/v1/media/videos?page=1&per_page=20" \
+  -H "Authorization: Bearer USER_JWT_TOKEN"
+```
+
+### 响应
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "movie_001.mp4",
+      "path": "/media/videos/movie_001.mp4",
+      "size_bytes": 2147483648,
+      "duration_seconds": 7200,
+      "resolution": "1920x1080",
+      "created_at": 1711500000,
+      "thumbnail_path": "/media/thumbnails/movie_001.jpg"
+    },
+    {
+      "id": 2,
+      "name": "movie_002.mp4",
+      "path": "/media/videos/movie_002.mp4",
+      "size_bytes": 3221225472,
+      "duration_seconds": 9000,
+      "resolution": "3840x2160",
+      "created_at": 1711400000,
+      "thumbnail_path": "/media/thumbnails/movie_002.jpg"
+    }
+  ],
+  "total_count": 125,
+  "page": 1,
+  "per_page": 20
+}
+```
+
+### 请求（按目录筛选）
+
+```bash
+curl -X GET "http://localhost:8080/api/v1/media/videos?folder=/media/videos/movies&per_page=50" \
+  -H "Authorization: Bearer USER_JWT_TOKEN"
+```
+
+### 请求（第二页，每页 50 个）
+
+```bash
+curl -X GET "http://localhost:8080/api/v1/media/videos?page=2&per_page=50" \
+  -H "Authorization: Bearer USER_JWT_TOKEN"
+```
+
+## 权限说明
+
+- **任意登录用户**: 可访问视频列表
+- **未认证用户**: 无权访问（返回 401 Unauthorized）
+
+## 实现细节
+
+### 分页逻辑
+- 默认每页 20 条记录
+- 最大每页 100 条记录
+- 页码从 1 开始
+
+### 筛选功能
+- **folder**: 按路径前缀精确匹配
+  - 例如：`folder=/media/videos/movies` 将返回所有路径以 `/media/videos/movies` 开头的视频
+
+### 视频字段说明
+- **size_bytes**: 视频文件大小（字节）
+- **duration_seconds**: 视频时长（秒）
+- **resolution**: 视频分辨率（宽 x 高）
+- **thumbnail_path**: 缩略图文件路径
+
+### 数据来源
+- 当前为模拟实现，返回固定视频列表
+- 实际实现可：
+  - 扫描媒体库目录获取视频文件
+  - 查询媒体数据库获取视频信息
+  - 使用 ffprobe 等工具提取视频元数据
+
+## 相关接口
+
+- `GET /api/v1/media/info` - 获取媒体库统计信息
+- `GET /api/v1/media/audios` - 获取音频列表
+- `GET /api/v1/media/photos` - 获取照片列表
+- `GET /api/v1/media/videos/{id}` - 获取视频详情
+
+## 测试验证
+
+```bash
+# 编译检查
+cargo check
+
+# 运行测试（如果有）
+cargo test
+
+# 测试获取视频列表
+curl -X GET "http://localhost:8080/api/v1/media/videos?page=1&per_page=20" \
+  -H "Authorization: Bearer USER_JWT_TOKEN"
+
+# 预期：200 OK + 视频列表
+
+# 测试未认证访问
+curl -X GET "http://localhost:8080/api/v1/media/videos"
+
+# 预期：401 Unauthorized
+
+# 测试目录筛选
+curl -X GET "http://localhost:8080/api/v1/media/videos?folder=/media/videos" \
+  -H "Authorization: Bearer USER_JWT_TOKEN"
+
+# 预期：200 OK + 筛选后的视频列表
+```
 
 ## 版本历史
 
-- **Phase 232** (2026-03-28): 媒体模块 - 视频列表 API 初始实现
-- **Phase 235** (2026-03-28): 媒体模块 - 视频列表 API 增强版（添加 folder 筛选）
+- **Phase 235** (2026-03-28): 增强版实现，添加 folder 筛选功能
