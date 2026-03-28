@@ -14,6 +14,7 @@
           </div>
           <nav class="flex space-x-4">
             <router-link to="/" class="text-primary-600 hover:text-primary-700 font-medium">首页</router-link>
+            <router-link to="/files" class="text-gray-600 hover:text-gray-900 font-medium">文件</router-link>
             <router-link to="/about" class="text-gray-600 hover:text-gray-900 font-medium">关于</router-link>
           </nav>
         </div>
@@ -35,7 +36,7 @@
 
         <!-- 快速入口 -->
         <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="card hover:shadow-lg transition-shadow cursor-pointer">
+          <router-link to="/files" class="card hover:shadow-lg transition-shadow cursor-pointer block">
             <div class="text-center">
               <div class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -45,7 +46,7 @@
               <h3 class="text-lg font-semibold text-gray-900 mb-2">文件管理</h3>
               <p class="text-gray-600 text-sm">浏览和管理您的文件</p>
             </div>
-          </div>
+          </router-link>
 
           <div class="card hover:shadow-lg transition-shadow cursor-pointer">
             <div class="text-center">
