@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 00:25 UTC
+> 最后更新：2026-03-28 00:35 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 2c2ba00 |
-| 提交时间 | 2026-03-28 00:25 UTC |
-| 当前阶段 | Phase 195 备份执行历史 API |
+| 最新 commit | e70b87b |
+| 提交时间 | 2026-03-28 00:35 UTC |
+| 当前阶段 | Phase 196 备份统计 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,7 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 195 待安排
+- [ ] Phase 197 待安排
 
 ---
 
@@ -78,6 +78,14 @@
 ---
 
 ## ✅ 已完成事项
+
+- [x] 备份统计 API (Phase 196) - 2026-03-28 00:35
+  - GET /api/v1/backups/stats — 获取备份任务和执行的统计信息
+  - JWT 认证，admin 角色可访问
+  - 返回字段：total_backups/active_backups/archived_backups/total_executions/successful_executions/failed_executions/running_executions
+  - 用于仪表板展示备份模块整体状态
+  - 文档：docs/backups_stats_api.md
+  - Commit: e70b87b
 
 - [x] 备份执行历史 API (Phase 195) - 2026-03-28 00:25
   - GET /api/v1/backups/{id}/execution-history — 获取备份任务执行历史记录
