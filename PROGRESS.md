@@ -6,7 +6,7 @@
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | [待提交] |
+| 最新 commit | 394dbdb |
 | 提交时间 | 2026-03-28 15:30 UTC |
 | 当前阶段 | Phase 255 系统定时任务创建 API |
 | 状态 | ✅ 已完成 |
@@ -77,7 +77,7 @@
   - 错误处理：401/403/400/409/500
   - 单元测试：已编写（3 个测试用例）
   - 文档：docs/system_cron_jobs_create_api.md
-  - Commit: [待提交]
+  - Commit: 394dbdb
 
 - [x] Phase 254 系统定时任务列表 API - 2026-03-28 15:05
   - GET /api/v1/system/cron-jobs — 获取系统定时任务列表
