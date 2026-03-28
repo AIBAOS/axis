@@ -6,6 +6,7 @@ import Files from '../views/Files.vue'
 import Storage from '../views/Storage.vue'
 import Users from '../views/Users'
 import Backups from '../views/Backups'
+import Settings from '../views/Settings'
 
 const routes = [
   {
@@ -46,6 +47,12 @@ const routes = [
     path: '/backups',
     name: 'Backups',
     component: Backups,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: Settings,
     meta: { requiresAuth: true },
   },
 ]
