@@ -196,8 +196,33 @@ class ApiClient {
   }
 
   // User methods
-  async getUsers() {
-    return this.get('/users');
+  async getUsers(params?: { page?: number; per_page?: number; role?: string; status?: string }) {
+    return this.get('/users', { params });
+  }
+
+  async getUserDetail(id: number) {
+    return this.get(`/users/${id}`);
+  }
+
+  async createUser(data: {
+    username: string;
+    password: string;
+    email: string;
+    role: string;
+  }) {
+    return this.post('/users', data);
+  }
+
+  async updateUser(id: number, data: {
+    email?: string;
+    role?: string;
+    is_active?: boolean;
+  }) {
+    return this.put(`/users/${id}`, data);
+  }
+
+  async deleteUser(id: number) {
+    return this.delete(`/users/${id}`);
   }
 }
 
