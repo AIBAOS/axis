@@ -67,7 +67,20 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 250 待安排
+- [ ] Phase 251 待安排
+
+- [x] Phase 250 系统资源监控 API - 2026-03-28 13:50
+  - GET /api/v1/system/resources — 获取系统资源使用情况
+  - JWT 认证，admin 角色可访问
+  - 返回字段：cpu/memory/disk_io/network_io/timestamp
+  - CPU 信息：usage_percent/load_1m/load_5m/load_15m/core_count
+  - 内存信息：total_bytes/used_bytes/available_bytes/usage_percent
+  - 磁盘 IO：read_bytes_sec/write_bytes_sec/read_ops_sec/write_ops_sec
+  - 网络 IO：rx_bytes_sec/tx_bytes_sec/rx_packets_sec/tx_packets_sec
+  - 错误处理：401/403/500
+  - 单元测试：已编写（2 个测试用例）
+  - 文档：docs/system_resources_api.md
+  - Commit: [待提交]
 
 - [x] Phase 249 系统日志查询 API - 2026-03-28 13:35
   - GET /api/v1/system/logs — 获取系统日志列表
