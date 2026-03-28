@@ -6,7 +6,7 @@
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | [待提交] |
+| 最新 commit | 15d64eb |
 | 提交时间 | 2026-03-28 10:20 UTC |
 | 当前阶段 | Phase 235 媒体视频列表 API |
 | 状态 | ✅ 已完成 (增强版) |
@@ -79,7 +79,7 @@
   - 错误处理：401/500
   - 单元测试：已编写
   - 文档：docs/media_videos_list_api.md
-  - Commit: [待提交]
+  - Commit: 15d64eb
 
 - [x] Phase 104 删除用户 API - 2026-03-28 10:10 (增强版)
   - DELETE /api/v1/users/{id} — 删除用户
