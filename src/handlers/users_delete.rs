@@ -24,13 +24,6 @@ pub struct ErrorResponse {
     pub code: String,
 }
 
-/// 删除响应
-#[derive(Serialize)]
-pub struct DeleteResponse {
-    pub success: bool,
-    pub message: String,
-}
-
 /// 删除用户（Phase 104 增强版）
 /// - JWT 认证，仅 admin 角色可访问
 /// - 用户不存在返回 404 Not Found
@@ -41,7 +34,6 @@ pub async fn delete_user(
     req: HttpRequest,
     path: web::Path<u64>,
     user_repo: web::Data<SqliteUserRepository>,
-    rbac_repo: web::Data<SqliteRbacRepository>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
     // 1. JWT 认证 - 提取并验证 token
@@ -57,9 +49,8 @@ pub async fn delete_user(
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))?;
 
     // 2. 权限校验 - 仅 admin 角色可删除用户
-    let current_user_id = claims.sub.parse().unwrap_or(0);
-    let user_roles = rbac_repo.get_roles_by_user(current_user_id);
-    let is_admin = user_roles.iter().any(|r| r.name == "admin");
+    let current_user_id = claims.user_id;
+    let is_admin = claims.roles.iter().any(|r| r == "admin");
     
     if !is_admin {
         return Ok(HttpResponse::Forbidden().json(ErrorResponse {
@@ -81,7 +72,7 @@ pub async fn delete_user(
     }
 
     // 4. 查询用户是否存在
-    let existing_user = user_repo
+    let existing_user = user_repo.get_ref()
         .find_by_id(target_user_id)
         .map_err(|e| {
             log::error!("Failed to get user {}: {}", target_user_id, e);
@@ -100,7 +91,7 @@ pub async fn delete_user(
     };
 
     // 5. 删除用户
-    user_repo.delete(target_user_id)
+    user_repo.get_ref().delete(target_user_id)
         .map_err(|e| {
             log::error!("Failed to delete user {}: {}", target_user_id, e);
             actix_web::error::ErrorInternalServerError(format!("Failed to delete user: {}", e))
