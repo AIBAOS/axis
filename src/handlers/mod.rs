@@ -188,3 +188,4 @@ pub mod media_info;
 pub mod media_videos;
 pub mod media_audios;
 pub mod media_photos;
+pub mod media_video_detail;
