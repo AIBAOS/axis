@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 12:15 UTC
+> 最后更新：2026-03-28 12:30 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 0ba518f |
-| 提交时间 | 2026-03-28 12:15 UTC |
-| 当前阶段 | Phase 244 容器日志 API |
+| 最新 commit | [待提交] |
+| 提交时间 | 2026-03-28 12:30 UTC |
+| 当前阶段 | Phase 245 系统信息 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,16 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 245 待安排
+- [ ] Phase 246 待安排
+
+- [x] Phase 245 系统信息 API - 2026-03-28 12:30
+  - GET /api/v1/system/info — 获取系统信息
+  - JWT 认证，admin 角色可访问
+  - 返回字段：hostname/os_version/kernel_version/cpu_model/cpu_cores/total_memory_gb/uptime_seconds/boot_time
+  - 错误处理：401/403/500
+  - 单元测试：已编写
+  - 文档：docs/system_info_api.md
+  - Commit: [待提交]
 
 - [x] Phase 244 容器日志 API - 2026-03-28 12:15
   - GET /api/v1/containers/{id}/logs — 获取容器日志
