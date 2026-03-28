@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 02:35 UTC
+> 最后更新：2026-03-28 02:45 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 6746351 |
-| 提交时间 | 2026-03-28 02:35 UTC |
-| 当前阶段 | Phase 205 NFS 共享更新 API |
+| 最新 commit | 161f742 |
+| 提交时间 | 2026-03-28 02:45 UTC |
+| 当前阶段 | Phase 206 NFS 共享删除 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,7 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 206 待安排
+- [ ] Phase 207 待安排
 
 - [x] Phase 203 SMB 共享详情 API - 2026-03-28 02:05
   - [x] GET /api/v1/shares/smb — 获取 SMB 共享列表
@@ -86,6 +86,16 @@
 ---
 
 ## ✅ 已完成事项
+
+- [x] NFS 共享删除 API (Phase 206) - 2026-03-28 02:45
+  - DELETE /api/v1/shares/nfs/{id} — 删除 NFS 共享（SQLite 持久化版）
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteShareRepository 实现真实数据库删除
+  - 验证共享 ID 存在性（404 Not Found）
+  - 验证协议类型（非 NFS 返回 404）
+  - 删除成功返回 204 No Content
+  - 文档：docs/shares_nfs_delete_api.md
+  - Commit: 161f742
 
 - [x] NFS 共享更新 API (Phase 205) - 2026-03-28 02:35
   - PUT /api/v1/shares/nfs/{id} — 更新 NFS 共享（SQLite 持久化版）
