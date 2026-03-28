@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 14:00 UTC
+> 最后更新：2026-03-28 14:40 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | c440219 |
-| 提交时间 | 2026-03-28 14:00 UTC |
-| 当前阶段 | Phase 251 系统进程列表 API |
+| 最新 commit | [待提交] |
+| 提交时间 | 2026-03-28 14:40 UTC |
+| 当前阶段 | Phase 253 进程信号发送 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,6 +67,18 @@
 
 ## 📋 待办事项
 
+- [x] Phase 253 进程信号发送 API - 2026-03-28 14:40
+  - POST /api/v1/system/processes/{pid}/signal — 向进程发送信号
+  - JWT 认证，admin 角色可访问
+  - 支持信号：SIGTERM/SIGHUP/SIGINT/SIGKILL/SIGUSR1/SIGUSR2
+  - 验证进程 PID 存在性（404 Not Found）
+  - 保护系统关键进程（403 Forbidden）
+  - 返回字段：success/message/pid/signal/sent_at
+  - 错误处理：401/403/400/404/500
+  - 单元测试：已编写（2 个测试用例）
+  - 文档：docs/system_process_signal_api.md
+  - Commit: [待提交]
+
 - [x] Phase 252 终止进程 API - 2026-03-28 14:15
   - POST /api/v1/system/processes/{pid}/terminate — 终止指定进程
   - JWT 认证，admin 角色可访问
@@ -74,8 +86,6 @@
   - 系统关键进程不可终止（403 Forbidden）
   - 返回 200 OK + { success, message, pid, terminated_at }
   - 错误处理：401/403/404/500
-
-- [ ] Phase 253 待安排
 
 - [x] Phase 251 系统进程列表 API - 2026-03-28 14:00
   - GET /api/v1/system/processes — 获取系统进程列表
