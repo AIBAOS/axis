@@ -13,11 +13,61 @@
           </div>
         </div>
       </div>
+
+      <!-- Navigation Links -->
+      <div class="bg-primary-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="flex space-x-4">
+            <router-link
+              to="/"
+              class="px-3 py-2 rounded-md text-sm font-medium hover:bg-primary-600"
+              active-class="bg-primary-600"
+            >
+              🏠 首页
+            </router-link>
+            <router-link
+              to="/backups"
+              class="px-3 py-2 rounded-md text-sm font-medium hover:bg-primary-600"
+              active-class="bg-primary-600"
+            >
+              📦 备份管理
+            </router-link>
+            <router-link
+              to="/files"
+              class="px-3 py-2 rounded-md text-sm font-medium hover:bg-primary-600"
+              active-class="bg-primary-600"
+            >
+              📁 文件管理
+            </router-link>
+            <router-link
+              to="/users"
+              class="px-3 py-2 rounded-md text-sm font-medium hover:bg-primary-600"
+              active-class="bg-primary-600"
+            >
+              👥 用户管理
+            </router-link>
+            <router-link
+              to="/system"
+              class="px-3 py-2 rounded-md text-sm font-medium hover:bg-primary-600"
+              active-class="bg-primary-600"
+            >
+              ⚙️ 系统设置
+            </router-link>
+          </div>
+        </div>
+      </div>
     </nav>
 
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
       <router-view />
     </main>
+
+    <footer class="bg-gray-800 text-gray-400 py-4 mt-8">
+      <div class="max-w-7xl mx-auto px-4 text-center text-sm">
+        <p>Axis NAS Management Panel &copy; 2026</p>
+        <p class="mt-1">Powered by Axis Backend API</p>
+      </div>
+    </footer>
   </div>
 </template>
 
