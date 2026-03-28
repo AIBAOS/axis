@@ -126,6 +126,7 @@ use handlers::printers_delete::delete_printer;
 use handlers::system_health::get_system_health;
 use handlers::system_restart::restart_system;
 use handlers::system_shutdown::shutdown_system;
+use handlers::media_info::get_media_info;
 use handlers::storage_volume_snapshot_create::create_volume_snapshot as create_volume_snapshot;
 use handlers::storage_volume_snapshots_list::list_volume_snapshots as list_volume_snapshots;
 use handlers::storage_volume_snapshot_detail::get_volume_snapshot as get_volume_snapshot;
@@ -741,6 +742,8 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/system/health", web::get().to(get_system_health))
             .route("/api/v1/system/restart", web::post().to(restart_system))
             .route("/api/v1/system/shutdown", web::post().to(shutdown_system))
+            // 媒体信息 API routes (Phase 231)
+            .route("/api/v1/media/info", web::get().to(get_media_info))
             .route("/api/v1/system/logs", web::get().to(get_system_logs))
             .route("/api/v1/system/logs/{id}", web::get().to(get_system_log_detail))
             .route("/api/v1/system/logs/export", web::post().to(export_system_logs))
