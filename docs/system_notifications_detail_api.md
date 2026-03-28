@@ -1,93 +1,66 @@
-# 通知详情 API
+# 系统通知详情 API 文档
 
-## Phase 209
+## 概述
 
-## 接口说明
+本文档描述 Axis NAS 系统中获取系统通知详情 API 的实现细节。
 
-获取单个通知的详细信息。系统通知和用户个人通知都可通过此接口查看。
+## API 端点
 
-## 请求
+- **路径**: `GET /api/v1/system/notifications/{id}`
+- **版本**: v1
+- **Phase**: 209
 
-`GET /api/v1/system/notifications/{id}`
+## 认证
 
-### 请求头
+- **类型**: JWT Bearer Token
+- **权限**: 登录用户可访问
 
-| 字段 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| Authorization | string | 是 | JWT Token，格式：`Bearer <token>` |
+## 请求参数
 
-### 路径参数
+### Path 参数
 
-| 字段 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| id | integer | 是 | 通知 ID |
+| 参数 | 类型 | 必需 | 描述 |
+|------|------|------|------|
+| `id` | number | 是 | 通知 ID |
 
-### 请求体
+## 响应格式
 
-无
-
-## 响应
-
-### 成功响应（200 OK）
+### 成功响应 (200 OK)
 
 ```json
 {
   "success": true,
   "data": {
-    "id": 123,
+    "id": 1,
     "type": "info",
-    "title": "系统维护通知",
-    "message": "系统将于今晚 23:00 进行例行维护",
+    "title": "系统更新",
+    "message": "系统已更新到最新版本",
     "source": "system",
     "status": "unread",
-    "created_at": 1711584000,
+    "created_at": 1711500000,
     "read_at": null,
     "metadata": {
-      "priority": "high",
+      "priority": "normal",
       "target_user_id": null,
-      "action_url": "/admin/maintenance"
+      "action_url": "/settings/update"
     }
   }
 }
 ```
 
-### 返回字段说明
-
-#### data 对象字段
-
-| 字段 | 类型 | 说明 |
-| ---- | ---- |
-| id | integer | 通知 ID |
-| type | string | 通知类型（info/warning/error/critical） |
-| title | string | 通知标题 |
-| message | string | 通知内容 |
-| source | string | 通知来源（可选） |
-| status | string | 状态（unread/read） |
-| created_at | integer | 创建时间（Unix 时间戳） |
-| read_at | integer | 已读时间（未读时为 null） |
-| metadata | object | 通知元数据 |
-
-#### metadata 对象字段
-
-| 字段 | 类型 | 说明 |
-| ---- | ---- |
-| priority | string | 优先级（low/normal/high/critical） |
-| target_user_id | integer | 目标用户 ID（系统通知为 null） |
-| action_url | string | 操作链接（可选） |
-
 ### 错误响应
 
-#### 401 Unauthorized - 未认证或 Token 无效
+#### 404 Not Found - 通知不存在
 
 ```json
 {
   "success": false,
-  "error": "Invalid or expired token",
-  "code": "UNAUTHORIZED"
+  "error": "Notification 999 not found",
+  "code": "NOT_FOUND"
 }
 ```
 
-#### 403 Forbidden - 非归属用户
+#### 403 Forbidden - 无权查看
 
 ```json
 {
@@ -97,13 +70,13 @@
 }
 ```
 
-#### 404 Not Found - 通知不存在
+#### 401 Unauthorized - 认证失败
 
 ```json
 {
   "success": false,
-  "error": "Notification 123 not found",
-  "code": "NOT_FOUND"
+  "error": "Missing or invalid Authorization header",
+  "code": "UNAUTHORIZED"
 }
 ```
 
@@ -112,59 +85,184 @@
 ```json
 {
   "success": false,
-  "error": "查询通知失败：database is locked",
+  "error": "查询通知失败：数据库错误",
   "code": "DATABASE_ERROR"
 }
 ```
 
+## 数据模型
+
+### NotificationDetail
+
+| 字段 | 类型 | 描述 |
+|------|------|------|
+| `id` | number | 通知 ID |
+| `type` | string | 通知类型：`info` / `warning` / `error` / `critical` |
+| `title` | string | 通知标题 |
+| `message` | string | 通知内容 |
+| `source` | string? | 通知来源 |
+| `status` | string | 状态：`read` / `unread` |
+| `created_at` | number | 创建时间（Unix 时间戳） |
+| `read_at` | number? | 已读时间（Unix 时间戳） |
+| `metadata` | NotificationMetadata? | 元数据 |
+
+### NotificationMetadata
+
+| 字段 | 类型 | 描述 |
+|------|------|------|
+| `priority` | string? | 优先级：`low` / `normal` / `high` / `urgent` |
+| `target_user_id` | number? | 目标用户 ID（NULL 为系统通知） |
+| `action_url` | string? | 操作链接 |
+
+### NotificationDetailResponse
+
+| 字段 | 类型 | 描述 |
+|------|------|------|
+| `success` | boolean | 操作是否成功 |
+| `data` | NotificationDetail | 通知详情 |
+
+## 错误代码
+
+| 代码 | HTTP 状态码 | 描述 |
+|------|-----------|------|
+| `UNAUTHORIZED` | 401 | 未提供或无效的认证令牌 |
+| `FORBIDDEN` | 403 | 无权查看此通知 |
+| `NOT_FOUND` | 404 | 通知不存在 |
+| `DATABASE_ERROR` | 500 | 数据库查询失败 |
+
+## 权限说明
+
+### 通知归属规则
+
+| 用户类型 | 可查看的通知 |
+|----------|-------------|
+| **Admin 用户** | 所有通知（系统通知 + 个人通知） |
+| **普通用户** | 仅自己的通知（target_user_id = user_id）+ 系统通知（target_user_id IS NULL） |
+
+### 示例场景
+
+1. **Admin 查看系统通知** → ✅ 允许
+2. **Admin 查看他人通知** → ✅ 允许
+3. **普通用户查看系统通知** → ✅ 允许
+4. **普通用户查看自己的通知** → ✅ 允许
+5. **普通用户查看他人通知** → ❌ 403 Forbidden
+
 ## 示例
 
-### 获取通知详情
+### 请求
 
 ```bash
-curl -X GET "http://localhost:8080/api/v1/system/notifications/123" \
-  -H "Authorization: Bearer <jwt_token>"
+curl -X GET "http://localhost:8080/api/v1/system/notifications/1" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
-### 响应（成功）
+### 响应（系统通知）
 
 ```json
 {
   "success": true,
   "data": {
-    "id": 123,
+    "id": 1,
     "type": "info",
-    "title": "系统维护通知",
-    "message": "系统将于今晚 23:00 进行例行维护",
+    "title": "系统更新",
+    "message": "系统已更新到最新版本",
     "source": "system",
     "status": "unread",
-    "created_at": 1711584000,
+    "created_at": 1711500000,
     "read_at": null,
     "metadata": {
-      "priority": "high",
+      "priority": "normal",
       "target_user_id": null,
-      "action_url": "/admin/maintenance"
+      "action_url": "/settings/update"
     }
   }
 }
 ```
 
-## 权限要求
+### 响应（个人通知）
 
-- 需要 JWT 认证
-- **登录用户可访问**
-- **归属验证**：
-  - admin 用户可查看任意通知
-  - 普通用户只能查看自己的通知或系统通知（target_user_id IS NULL）
+```json
+{
+  "success": true,
+  "data": {
+    "id": 2,
+    "type": "warning",
+    "title": "存储空间不足",
+    "message": "您的存储空间已使用 90%",
+    "source": "storage",
+    "status": "unread",
+    "created_at": 1711600000,
+    "read_at": null,
+    "metadata": {
+      "priority": "high",
+      "target_user_id": 123,
+      "action_url": "/storage"
+    }
+  }
+}
+```
 
-## 业务逻辑
+## 实现细节
 
-1. 验证 JWT Token 有效性
-2. 验证用户角色（admin 可查看任意）
-3. 验证通知归属（普通用户仅能查看自己的或系统通知）
-4. 查询通知详情
-5. 返回完整信息
+### 数据库查询
+
+- **查询**: `get_notification_by_id(id)`
+- **数据库**: SQLite
+- **框架**: Actix-web
+- **仓库**: SqliteNotificationRepository
+
+### 状态判断
+
+- `is_read = true` → `status = "read"`
+- `is_read = false` → `status = "unread"`
+
+## 数据库表结构
+
+```sql
+CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'info',
+    priority TEXT NOT NULL DEFAULT 'normal',
+    source TEXT,
+    target_user_id INTEGER,
+    is_read INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    read_at INTEGER,
+    action_url TEXT
+);
+```
+
+## 相关接口
+
+- `GET /api/v1/system/notifications` - 获取系统通知列表
+- `PUT /api/v1/system/notifications/{id}/read` - 标记系统通知为已读
+- `POST /api/v1/system/notifications/{id}/mark-read` - 标记通知为已读
+- `DELETE /api/v1/system/notifications/{id}` - 删除系统通知
+
+## 测试验证
+
+```bash
+# 编译检查
+cargo check
+
+# 运行测试（如果有）
+cargo test
+
+# 测试查看系统通知
+curl -X GET "http://localhost:8080/api/v1/system/notifications/1" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# 预期：200 OK + 通知详情
+
+# 测试查看不存在的通知
+curl -X GET "http://localhost:8080/api/v1/system/notifications/999" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# 预期：404 Not Found
+```
 
 ## 版本历史
 
-- **Phase 209** (2026-03-28): 通知详情 API
+- **Phase 209** (2026-03-28): 初始实现，SQLite 持久化
