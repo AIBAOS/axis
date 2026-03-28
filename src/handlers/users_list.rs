@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 use crate::services::jwt_service::JwtService;
 use crate::database::user_store::SqliteUserRepository;
+use crate::models::user::UserRepository;
 
 /// 用户查询参数
 #[derive(Debug, Deserialize)]
@@ -92,7 +93,7 @@ pub async fn list_users(
     }
 
     // 4. 从数据库获取用户列表
-    match user_repo.list_all() {
+    match user_repo.get_ref().list_all() {
         Ok(users) => {
             // 5. 应用角色筛选
             let filtered_users: Vec<_> = if let Some(ref role) = query.role {

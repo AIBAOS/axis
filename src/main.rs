@@ -243,7 +243,6 @@ use handlers::users_list::list_users;
 //     delete_share,
 //     toggle_share,
 // };
-use handlers::users_list::list_users;
 use handlers::users_get_by_id::get_user_by_id;
 use handlers::users_create::create_user;
 use handlers::users_update::update_user;
