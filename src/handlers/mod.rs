@@ -107,6 +107,7 @@ pub mod logs_ex;
 pub mod database;
 pub mod settings;
 pub mod notifications;
+pub mod system_notifications_list;
 pub mod system_update;
 pub mod system_logs;
 pub mod system_logs_detail;
