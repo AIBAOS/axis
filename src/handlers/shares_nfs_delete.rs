@@ -1,10 +1,12 @@
-// Phase 160: NFS 共享删除 API
+// Phase 206: NFS 共享删除 API (数据库版本)
 // DELETE /api/v1/shares/nfs/{id} — 删除 NFS 共享
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::Serialize;
+use std::sync::Arc;
 
 use crate::services::jwt_service::JwtService;
+use crate::database::share_store::SqliteShareRepository;
 
 /// 错误响应
 #[derive(Serialize)]
@@ -14,14 +16,17 @@ pub struct ErrorResponse {
     pub code: String,
 }
 
-/// 删除 NFS 共享（Phase 160）
+/// 删除 NFS 共享（Phase 206 - 数据库版本）
 /// - JWT 认证，仅 admin 角色可访问
+/// - 使用 SqliteShareRepository 实现真实数据库删除
 /// - 验证共享 ID 存在性（404 Not Found）
+/// - 验证协议类型（非 NFS 返回 404）
 /// - 删除成功返回 204 No Content
 pub async fn delete_nfs_share(
     req: HttpRequest,
     path: web::Path<u64>,
     jwt_service: web::Data<JwtService>,
+    repo: web::Data<Arc<SqliteShareRepository>>,
 ) -> Result<HttpResponse, Error> {
     let share_id = path.into_inner();
 
@@ -48,23 +53,53 @@ pub async fn delete_nfs_share(
         }));
     }
 
-    // 4. 模拟现有 NFS 共享数据
-    let mock_shares = vec![1u64, 2u64, 3u64];
+    // 4. 从数据库查询共享是否存在且为 NFS 协议
+    let share = match repo.get_share_by_id(share_id as i64) {
+        Ok(Some(s)) => {
+            if s.protocol != "nfs" {
+                return Ok(HttpResponse::NotFound().json(ErrorResponse {
+                    success: false,
+                    error: format!("NFS share {} not found", share_id),
+                    code: "NOT_FOUND".to_string(),
+                }));
+            }
+            s
+        }
+        Ok(None) => {
+            return Ok(HttpResponse::NotFound().json(ErrorResponse {
+                success: false,
+                error: format!("NFS share {} not found", share_id),
+                code: "NOT_FOUND".to_string(),
+            }));
+        }
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("查询共享失败：{}", e),
+                code: "DATABASE_ERROR".to_string(),
+            }));
+        }
+    };
 
-    // 5. 验证共享存在性
-    let share_exists = mock_shares.iter().any(|id| *id == share_id);
-
-    if !share_exists {
-        return Ok(HttpResponse::NotFound().json(ErrorResponse {
-            success: false,
-            error: format!("NFS share {} not found", share_id),
-            code: "NOT_FOUND".to_string(),
-        }));
+    // 5. 使用数据库删除共享
+    match repo.delete_share(share_id as i64) {
+        Ok(true) => {
+            // 6. 返回删除成功（204 No Content）
+            Ok(HttpResponse::NoContent().finish())
+        }
+        Ok(false) => {
+            Ok(HttpResponse::NotFound().json(ErrorResponse {
+                success: false,
+                error: format!("NFS share {} not found", share_id),
+                code: "NOT_FOUND".to_string(),
+            }))
+        }
+        Err(e) => {
+            Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("删除共享失败：{}", e),
+                code: "DATABASE_ERROR".to_string(),
+            }))
+        }
     }
-
-    // 6. 模拟删除共享
-    // （在实际实现中，这里会调用数据库或文件系统删除共享配置）
-
-    // 7. 返回删除成功（204 No Content）
-    Ok(HttpResponse::NoContent().finish())
 }
