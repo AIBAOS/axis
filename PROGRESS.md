@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 05:25 UTC
+> 最后更新：2026-03-28 05:35 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 5d09684 |
-| 提交时间 | 2026-03-28 05:25 UTC |
-| 当前阶段 | Phase 216 WebDAV 共享详情 API |
+| 最新 commit | 7c3f48f |
+| 提交时间 | 2026-03-28 05:35 UTC |
+| 当前阶段 | Phase 217 WebDAV 共享创建 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,17 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 217 待安排
+- [ ] Phase 218 待安排
+
+- [x] Phase 217 WebDAV 共享创建 API - 2026-03-28 05:35
+  - [x] POST /api/v1/shares/webdav — 创建 WebDAV 共享
+  - [x] JWT 认证，admin 角色可访问
+  - [x] 使用 SqliteShareRepository 实现真实数据库创建
+  - [x] 验证名称格式（400 Bad Request）
+  - [x] 验证路径格式（400 Bad Request）
+  - [x] 验证名称唯一性（409 Conflict）
+  - [x] 返回字段：id/name/path/description/public/status/created_at/updated_at
+  - Commit: 7c3f48f
 
 - [x] Phase 216 WebDAV 共享详情 API - 2026-03-28 05:25
   - [x] GET /api/v1/shares/webdav/{id} — 获取 WebDAV 共享详情
