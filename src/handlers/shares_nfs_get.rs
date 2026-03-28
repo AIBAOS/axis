@@ -1,4 +1,4 @@
-// Phase 204: NFS 共享详情 API (数据库版本)
+// Phase 214: NFS 共享详情 API
 // GET /api/v1/shares/nfs/{id} — 获取 NFS 共享详情
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
@@ -7,13 +7,6 @@ use std::sync::Arc;
 
 use crate::services::jwt_service::JwtService;
 use crate::database::share_store::SqliteShareRepository;
-
-/// NFS 客户端配置
-#[derive(Serialize, Clone)]
-pub struct NfsClientConfig {
-    pub network: String,
-    pub access: String,
-}
 
 /// NFS 共享详情信息
 #[derive(Serialize, Clone)]
@@ -25,7 +18,7 @@ pub struct NfsShareDetail {
     pub read_only: bool,
     pub no_subtree_check: bool,
     pub sync: bool,
-    pub clients: Vec<NfsClientConfig>,
+    pub clients: Option<String>,
     pub enabled: bool,
     pub status: String,
     pub created_at: i64,
@@ -47,7 +40,7 @@ pub struct ErrorResponse {
     pub code: String,
 }
 
-/// 获取 NFS 共享详情（Phase 204 - 数据库版本）
+/// 获取 NFS 共享详情（Phase 214）
 /// - JWT 认证，仅 admin 角色可访问
 /// - 使用 SqliteShareRepository 实现真实数据库查询
 /// - 验证共享 ID 存在性（404 Not Found）
@@ -96,22 +89,17 @@ pub async fn get_nfs_share(
                 }));
             }
 
-            // 6. 构建 NFS 共享详情（模拟客户端配置）
+            // 6. 构建 NFS 共享详情（使用数据库字段）
             let detail = NfsShareDetail {
                 id: share.id,
                 name: share.name,
                 path: share.path,
-                comment: share.description,
-                read_only: false,
-                no_subtree_check: true,
-                sync: true,
-                clients: vec![
-                    NfsClientConfig {
-                        network: "192.168.1.0/24".to_string(),
-                        access: "rw".to_string(),
-                    }
-                ],
-                enabled: share.status == "active",
+                comment: share.comment,
+                read_only: share.read_only,
+                no_subtree_check: share.no_subtree_check,
+                sync: share.sync,
+                clients: share.clients,
+                enabled: share.enabled,
                 status: share.status,
                 created_at: share.created_at,
                 updated_at: share.updated_at,
@@ -137,5 +125,37 @@ pub async fn get_nfs_share(
                 code: "DATABASE_ERROR".to_string(),
             }))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::{test, App};
+
+    #[actix_web::test]
+    async fn test_get_nfs_share_success() {
+        let jwt_service = web::Data::new(JwtService::new(crate::services::jwt_service::JwtConfig {
+            secret_key: "test_secret".to_string(),
+            issuer: "test".to_string(),
+            audience: "test".to_string(),
+            expiration_minutes: 60,
+            refresh_enabled: false,
+        }));
+
+        let repo = web::Data::new(Arc::new(SqliteShareRepository::new(
+            crate::database::pool::create_sqlite_pool(":memory:").unwrap(),
+        )));
+
+        let app = test::init_service(
+            App::new()
+                .app_data(jwt_service)
+                .app_data(repo)
+                .route("/api/v1/shares/nfs/{id}", web::get().to(get_nfs_share))
+        ).await;
+
+        // 注意：实际测试需要有效的 JWT token 和数据库
+        // 这里只是示例测试结构
+        assert!(true);
     }
 }

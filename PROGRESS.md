@@ -1,15 +1,15 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 04:45 UTC
+> 最后更新：2026-03-28 04:52 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | c540cc0 |
-| 提交时间 | 2026-03-28 04:45 UTC |
-| 当前阶段 | Phase 214 待安排 |
-| 状态 | ✅ Phase 213 已完成 |
+| 最新 commit | d23db22 |
+| 提交时间 | 2026-03-28 04:47 UTC |
+| 当前阶段 | Phase 215 待安排 |
+| 状态 | ✅ Phase 214 已完成 |
 | 阻塞项 | 无 |
 
 ---
@@ -81,6 +81,8 @@
 
 - [x] Phase 212 SMB 共享删除 API - 2026-03-28 04:15
 
+- [x] Phase 214 NFS 共享详情 API - 2026-03-28 04:52
+
 - [x] Phase 213 NFS 共享列表 API (增强版) - 2026-03-28 04:40
 
 - [x] Phase 203 SMB 共享详情 API - 2026-03-28 04:25
@@ -115,6 +117,16 @@
 ---
 
 ## ✅ 已完成事项
+
+- [x] NFS 共享详情 API (Phase 214) - 2026-03-28 04:52
+  - GET /api/v1/shares/nfs/{id} — 获取 NFS 共享详情
+  - JWT 认证，仅 admin 用户可访问
+  - 使用 SqliteShareRepository 真实数据库查询
+  - 验证共享 ID 存在性（404 Not Found）
+  - 验证协议类型（仅 NFS）
+  - 返回 NFS 共享完整详情
+  - 文档：docs/shares_nfs_get_api.md
+  - Commit: (待提交)
 
 - [x] NFS 共享列表 API (Phase 213) - 2026-03-28 04:40
   - GET /api/v1/shares/nfs — 获取 NFS 共享列表（增强版）
