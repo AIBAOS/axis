@@ -16,6 +16,7 @@
             <router-link to="/" class="text-primary-600 hover:text-primary-700 font-medium">首页</router-link>
             <router-link to="/files" class="text-gray-600 hover:text-gray-900 font-medium">文件</router-link>
             <router-link to="/storage" class="text-gray-600 hover:text-gray-900 font-medium">存储</router-link>
+            <router-link to="/users" class="text-gray-600 hover:text-gray-900 font-medium">用户</router-link>
             <router-link to="/about" class="text-gray-600 hover:text-gray-900 font-medium">关于</router-link>
           </nav>
         </div>
@@ -61,18 +62,17 @@
             </div>
           </router-link>
 
-          <div class="card hover:shadow-lg transition-shadow cursor-pointer">
+          <router-link to="/users" class="card hover:shadow-lg transition-shadow cursor-pointer block">
             <div class="text-center">
               <div class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
               </div>
-              <h3 class="text-lg font-semibold text-gray-900 mb-2">系统设置</h3>
-              <p class="text-gray-600 text-sm">配置系统参数</p>
+              <h3 class="text-lg font-semibold text-gray-900 mb-2">用户管理</h3>
+              <p class="text-gray-600 text-sm">管理用户和权限</p>
             </div>
-          </div>
+          </router-link>
         </div>
       </div>
     </main>
