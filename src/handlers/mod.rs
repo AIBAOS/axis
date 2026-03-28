@@ -91,6 +91,7 @@ pub mod users_get_by_id_v2;
 pub mod users_create;
 pub mod users_update;
 pub mod users_detail;
+pub mod users_detail_v2;
 pub mod users_delete;
 pub mod downloads;
 pub mod system_info;

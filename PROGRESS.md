@@ -67,9 +67,24 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 226 待安排
-
 - [x] Phase 225 用户列表 API - 2026-03-28 07:45
+  - GET /api/v1/users — 获取用户列表
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteUserRepository 真实数据库查询
+  - 支持分页：page/per_page（默认 20，最大 100）
+  - 支持筛选：role
+  - 返回字段：id/username/email/roles/is_active/created_at/updated_at/last_login
+  - 文档：docs/users_list_api.md
+
+- [x] 用户详情 API (Phase 226) - 2026-03-28 08:00
+  - GET /api/v1/users/{id} — 获取用户详情
+  - JWT 认证，登录用户可访问
+  - 使用 SqliteUserRepository 真实数据库查询
+  - 权限控制：admin 可查看任意用户，普通用户只能查看自己
+  - 验证用户 ID 存在性（404 Not Found）
+  - 返回字段：id/username/email/roles/is_active/created_at/updated_at/last_login（不含密码）
+  - 单元测试：2 个测试用例
+  - 文档：docs/users_detail_api.md
   - [x] GET /api/v1/users — 获取用户列表
   - [x] JWT 认证，admin 角色可访问
   - [x] 使用 SqliteUserRepository 实现真实数据库查询
