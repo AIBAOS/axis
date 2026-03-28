@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 06:40 UTC
+> 最后更新：2026-03-28 06:55 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | b281fb8 |
-| 提交时间 | 2026-03-28 06:40 UTC |
-| 当前阶段 | Phase 220 FTP 共享列表 API |
+| 最新 commit | 0b107cb |
+| 提交时间 | 2026-03-28 06:55 UTC |
+| 当前阶段 | Phase 221 FTP 共享详情 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,16 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 221 待安排
+- [ ] Phase 222 待安排
+
+- [x] Phase 221 FTP 共享详情 API - 2026-03-28 06:55
+  - [x] GET /api/v1/shares/ftp/{id} — 获取 FTP 共享详情
+  - [x] JWT 认证，admin 角色可访问
+  - [x] 使用 SqliteShareRepository 实现真实数据库查询
+  - [x] 验证共享 ID 存在性（404 Not Found）
+  - [x] 验证协议类型（仅 FTP）
+  - [x] 返回字段：id/name/path/description/public/status/created_at/updated_at
+  - Commit: 0b107cb
 
 - [x] Phase 220 FTP 共享列表 API - 2026-03-28 06:40
   - [x] GET /api/v1/shares/ftp — 获取 FTP 共享列表
