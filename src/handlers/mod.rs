@@ -39,6 +39,7 @@ pub mod shares_nfs_update;
 pub mod shares_nfs_delete;
 pub mod shares_webdav_list;
 pub mod shares_webdav_get;
+pub mod shares_webdav_create;
 pub mod shared_folder_create;
 pub mod shared_folder_list;
 pub mod shared_folder_detail;
