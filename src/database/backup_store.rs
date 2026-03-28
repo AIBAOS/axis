@@ -273,4 +273,37 @@ impl SqliteBackupRepository {
         // 返回恢复后的备份信息
         self.get_backup_by_id(id)
     }
+
+    /// 归档备份任务（状态从 active → archived）
+    pub fn archive_backup(&self, id: i64) -> Result<Option<BackupRow>, String> {
+        let conn = self.get_connection()?;
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|e| format!("Time error: {}", e))?
+            .as_secs() as i64;
+
+        // 先检查备份是否存在且状态为 active
+        let backup = self.get_backup_by_id(id)?;
+        match &backup {
+            Some(b) => {
+                if b.status != "active" {
+                    return Err(format!("备份状态为 '{}'，仅 active 状态的备份可归档", b.status));
+                }
+            }
+            None => return Ok(None),
+        }
+
+        // 更新状态为 archived
+        let affected = conn.execute(
+            "UPDATE backups SET status = 'archived', updated_at = ?1 WHERE id = ?2 AND status = 'active'",
+            params![now, id],
+        ).map_err(|e| format!("Update failed: {}", e))?;
+
+        if affected == 0 {
+            return Ok(None);
+        }
+
+        // 返回归档后的备份信息
+        self.get_backup_by_id(id)
+    }
 }
