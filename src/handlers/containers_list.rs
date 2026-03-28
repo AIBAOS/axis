@@ -90,10 +90,10 @@ pub async fn list_containers(
 
     // 4. 从数据库获取容器列表
     match repo.get_containers(None, page, per_page) {
-        Ok(containers) => {
+        Ok((containers, total)) => {
             // 5. 转换为响应格式
             let data: Vec<ContainerInfo> = containers.into_iter().map(|c| ContainerInfo {
-                id: c.id,
+                id: c.id as u64,
                 name: c.name,
                 image: c.image,
                 status: c.status,
@@ -101,7 +101,6 @@ pub async fn list_containers(
             }).collect();
 
             // 6. 计算分页信息
-            let total = data.len() as u64;
             let total_pages = if total == 0 { 1 } else { (total + per_page as u64 - 1) / per_page as u64 };
 
             Ok(HttpResponse::Ok().json(ContainerListResponse {
