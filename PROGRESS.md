@@ -1,15 +1,15 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 04:52 UTC
+> 最后更新：2026-03-28 05:10 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | d23db22 |
-| 提交时间 | 2026-03-28 04:47 UTC |
-| 当前阶段 | Phase 215 待安排 |
-| 状态 | ✅ Phase 214 已完成 |
+| 最新 commit | a6033d6 |
+| 提交时间 | 2026-03-28 05:10 UTC |
+| 当前阶段 | Phase 215 WebDAV 共享列表 API |
+| 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
 ---
@@ -67,7 +67,16 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 214 待安排
+- [ ] Phase 216 待安排
+
+- [x] Phase 215 WebDAV 共享列表 API - 2026-03-28 05:10
+  - [x] GET /api/v1/shares/webdav — 获取 WebDAV 共享列表
+  - [x] JWT 认证，admin 角色可访问
+  - [x] 使用 SqliteShareRepository 实现真实数据库查询
+  - [x] 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - [x] 支持筛选：status(active/inactive)
+  - [x] 返回字段：id/name/path/description/public/status/created_at/updated_at
+  - Commit: a6033d6
 
 - [x] Phase 213 NFS 共享列表 API 增强版 - 2026-03-28 04:45
   - [x] GET /api/v1/shares/nfs — 获取 NFS 共享列表（数据库版本）
