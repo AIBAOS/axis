@@ -319,6 +319,7 @@ impl SqliteShareRepository {
             path: path.clone().unwrap_or(share.path),
             protocol: protocol.clone().unwrap_or(share.protocol),
             status: status.clone().unwrap_or(share.status),
+            description: share.description,
             created_at: share.created_at,
             updated_at: now,
         })
@@ -365,6 +366,7 @@ impl SqliteShareRepository {
             path: share.path,
             protocol: share.protocol,
             status: new_status.to_string(),
+            description: share.description,
             created_at: share.created_at,
             updated_at: now,
         })

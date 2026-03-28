@@ -89,6 +89,7 @@ pub async fn mark_system_notification_as_read(
                     // 7. 获取更新后的通知信息
                     match repo.get_notification_by_id(notification_id) {
                         Ok(Some(updated)) => {
+                            let title = updated.title.clone();
                             let summary = NotificationSummary {
                                 id: updated.id,
                                 title: updated.title,
@@ -99,7 +100,7 @@ pub async fn mark_system_notification_as_read(
                             };
                             Ok(HttpResponse::Ok().json(MarkAsReadResponse {
                                 success: true,
-                                message: format!("通知 '{}' 已标记为已读", updated.title),
+                                message: format!("通知 '{}' 已标记为已读", title),
                                 notification: Some(summary),
                             }))
                         }
