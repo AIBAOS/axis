@@ -6,7 +6,7 @@
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | [待提交] |
+| 最新 commit | fb9a246 |
 | 提交时间 | 2026-03-28 10:50 UTC |
 | 当前阶段 | Phase 237 媒体音频详情 API |
 | 状态 | ✅ 已完成 |
@@ -77,7 +77,7 @@
   - 错误处理：401/404/500
   - 单元测试：已编写
   - 文档：docs/media_audio_detail_api.md
-  - Commit: [待提交]
+  - Commit: fb9a246
 
 - [x] Phase 236 媒体视频详情 API - 2026-03-28 10:35 (增强版)
   - GET /api/v1/media/videos/{id} — 获取视频详情
