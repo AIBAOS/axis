@@ -185,3 +185,4 @@ pub mod storage_pool_update;
 pub mod storage_volume_snapshots_create;
 pub mod users_logout;
 pub mod media_info;
+pub mod media_videos;
