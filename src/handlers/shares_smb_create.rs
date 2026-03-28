@@ -4,6 +4,7 @@
 use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use std::path::Path;
 
 use crate::services::jwt_service::JwtService;
 use crate::database::share_store::SqliteShareRepository;
@@ -13,12 +14,8 @@ use crate::database::share_store::SqliteShareRepository;
 pub struct CreateSmbShareRequest {
     pub name: String,
     pub path: String,
-    pub comment: Option<String>,
-    pub read_only: Option<bool>,
-    pub guest_access: Option<bool>,
-    pub browseable: Option<bool>,
-    pub valid_users: Option<Vec<String>>,
-    pub invalid_users: Option<Vec<String>>,
+    pub description: Option<String>,
+    pub public: Option<bool>,
 }
 
 /// 创建的 SMB 共享信息
@@ -27,16 +24,11 @@ pub struct CreatedSmbShare {
     pub id: u64,
     pub name: String,
     pub path: String,
-    pub comment: String,
-    pub read_only: bool,
-    pub guest_access: bool,
-    pub browseable: bool,
-    pub valid_users: Vec<String>,
-    pub invalid_users: Vec<String>,
-    pub enabled: bool,
+    pub description: Option<String>,
+    pub public: bool,
     pub status: String,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: i64,
+    pub updated_at: i64,
 }
 
 /// 创建 SMB 共享响应
@@ -65,10 +57,10 @@ fn validate_share_path(path: &str) -> bool {
     path.starts_with('/') && path.len() <= 256
 }
 
-/// 创建 SMB 共享（Phase 201 - 数据库版本）
+/// 创建 SMB 共享（Phase 201）
 /// - JWT 认证，仅 admin 角色可访问
-/// - 使用 SqliteShareRepository 实现真实数据库创建
-/// - 请求体包含：name/path/comment/read_only/guest_access/browseable/valid_users/invalid_users
+/// - 请求体包含：name/path/description/public
+/// - 验证 path 存在性（400 Bad Request）
 /// - 验证名称唯一性（409 Conflict）
 /// - 验证名称格式（400 Bad Request）
 /// - 验证路径格式（400 Bad Request）
@@ -120,26 +112,40 @@ pub async fn create_smb_share(
         }));
     }
 
-    // 6. 使用数据库创建 SMB 共享
-    match repo.create_share(&payload.name, &payload.path, "smb") {
+    // 6. 验证 path 存在性
+    if !Path::new(&payload.path).exists() {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: format!("Path '{}' does not exist", payload.path),
+            code: "PATH_NOT_FOUND".to_string(),
+        }));
+    }
+
+    // 7. 验证名称唯一性（从数据库检查）
+    let existing_shares = repo.get_shares(1, 1000, Some("smb".to_string()), None)
+        .unwrap_or_default();
+    if existing_shares.iter().any(|s| s.name == payload.name) {
+        return Ok(HttpResponse::Conflict().json(ErrorResponse {
+            success: false,
+            error: format!("SMB share name '{}' already exists", payload.name),
+            code: "NAME_CONFLICT".to_string(),
+        }));
+    }
+
+    // 8. 创建 SMB 共享
+    match repo.create_share(&payload.name, &payload.path, "smb", payload.description.as_deref()) {
         Ok(share) => {
             let new_share = CreatedSmbShare {
-                id: share.id as u64,
+                id: share.id,
                 name: share.name,
                 path: share.path,
-                comment: payload.comment.clone().unwrap_or_default(),
-                read_only: payload.read_only.unwrap_or(false),
-                guest_access: payload.guest_access.unwrap_or(false),
-                browseable: payload.browseable.unwrap_or(true),
-                valid_users: payload.valid_users.clone().unwrap_or_default(),
-                invalid_users: payload.invalid_users.clone().unwrap_or_default(),
-                enabled: share.status == "active",
+                description: share.description,
+                public: payload.public.unwrap_or(false),
                 status: share.status,
-                created_at: share.created_at.to_string(),
-                updated_at: share.updated_at.to_string(),
+                created_at: share.created_at,
+                updated_at: share.updated_at,
             };
 
-            // 7. 返回创建成功
             Ok(HttpResponse::Created().json(CreateSmbShareResponse {
                 success: true,
                 message: "SMB share created successfully".to_string(),
@@ -148,7 +154,7 @@ pub async fn create_smb_share(
         }
         Err(e) => Ok(HttpResponse::InternalServerError().json(ErrorResponse {
             success: false,
-            error: format!("创建 SMB 共享失败：{}", e),
+            error: format!("创建共享失败：{}", e),
             code: "DATABASE_ERROR".to_string(),
         })),
     }
