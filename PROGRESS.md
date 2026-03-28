@@ -76,7 +76,7 @@
   - 错误处理：401/403/500
   - 单元测试：已编写
   - 文档：docs/system_settings_api.md
-  - Commit: [待提交]
+  - Commit: 2537065
 
 - [x] Phase 245 系统信息 API - 2026-03-28 12:30
   - GET /api/v1/system/info — 获取系统信息
