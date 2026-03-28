@@ -1,69 +1,62 @@
-# NFS 共享更新 API
+# NFS 共享更新 API 文档
 
-## Phase 158
+## 概述
 
-## 接口说明
+本文档描述 Axis NAS 系统中更新 NFS 共享 API 的实现细节。
 
-更新指定 NFS 共享的配置，支持部分字段更新。
+## API 端点
 
-## 请求
+- **路径**: `PUT /api/v1/shares/nfs/{id}`
+- **版本**: v1
+- **Phase**: 205
 
-`PUT /api/v1/shares/nfs/{id}`
+## 认证
 
-### 路径参数
+- **类型**: JWT Bearer Token
+- **权限**: 仅 Admin 用户可访问
 
-| 字段 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| id | u64 | 是 | 共享 ID |
+## 请求参数
 
-### 请求头
+### Path 参数
 
-| 字段 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| Authorization | string | 是 | JWT Token，格式：`Bearer <token>` |
-| Content-Type | string | 是 | `application/json` |
+| 参数 | 类型 | 必需 | 描述 |
+|------|------|------|------|
+| `id` | number | 是 | NFS 共享 ID |
 
-### 请求体
-
-所有字段均为可选，支持部分更新：
+### Request Body
 
 ```json
 {
-  "name": "NewName",
-  "path": "/srv/nfs/newpath",
-  "comment": "Updated comment",
-  "read_only": true,
-  "no_subtree_check": true,
-  "sync": true,
+  "name": "string (optional)",
+  "path": "string (optional)",
+  "comment": "string (optional)",
+  "read_only": "boolean (optional)",
+  "no_subtree_check": "boolean (optional)",
+  "sync": "boolean (optional)",
   "clients": [
     {
-      "network": "192.168.1.0/24",
-      "access": "rw"
+      "network": "string (CIDR)",
+      "access": "string (ro/rw)"
     }
   ]
 }
 ```
 
-| 字段 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| name | string | 否 | 共享名称（1-64 字符，字母数字 -_.） |
-| path | string | 否 | 共享路径（必须以/开头，最大 256 字符） |
-| comment | string | 否 | 备注描述 |
-| read_only | boolean | 否 | 是否只读 |
-| no_subtree_check | boolean | 否 | 是否禁用子树检查 |
-| sync | boolean | 否 | 是否同步写入 |
-| clients | ClientConfig[] | 否 | 客户端配置列表 |
+### 字段说明
 
-### ClientConfig 对象
+| 字段 | 类型 | 必需 | 描述 |
+|------|------|------|------|
+| `name` | string | 否 | 共享名称（1-64 字符） |
+| `path` | string | 否 | 共享路径（必须以 / 开头） |
+| `comment` | string | 否 | 共享描述 |
+| `read_only` | boolean | 否 | 是否只读 |
+| `no_subtree_check` | boolean | 否 | 不检查子树 |
+| `sync` | boolean | 否 | 同步写入 |
+| `clients` | array | 否 | 客户端配置列表 |
 
-| 字段 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| network | string | 是 | 客户端网络（CIDR 格式，如 192.168.1.0/24） |
-| access | string | 是 | 访问权限（ro/rw） |
+## 响应格式
 
-## 响应
-
-### 成功响应（200 OK）
+### 成功响应 (200 OK)
 
 ```json
 {
@@ -71,10 +64,10 @@
   "message": "NFS share updated successfully",
   "data": {
     "id": 1,
-    "name": "NewName",
-    "path": "/srv/nfs/newpath",
-    "comment": "Updated comment",
-    "read_only": true,
+    "name": "Home",
+    "path": "/srv/nfs/home",
+    "comment": "用户主目录共享",
+    "read_only": false,
     "no_subtree_check": true,
     "sync": true,
     "clients": [
@@ -85,15 +78,25 @@
     ],
     "enabled": true,
     "status": "active",
-    "created_at": "2026-03-27T06:00:00Z",
-    "updated_at": "2026-03-27T08:00:00Z"
+    "created_at": 1711500000,
+    "updated_at": 1711600000
   }
 }
 ```
 
 ### 错误响应
 
-#### 400 Bad Request - 参数无效
+#### 404 Not Found - 共享不存在
+
+```json
+{
+  "success": false,
+  "error": "NFS share 999 not found",
+  "code": "NOT_FOUND"
+}
+```
+
+#### 400 Bad Request - 名称格式无效
 
 ```json
 {
@@ -103,6 +106,8 @@
 }
 ```
 
+#### 400 Bad Request - 路径格式无效
+
 ```json
 {
   "success": false,
@@ -111,37 +116,23 @@
 }
 ```
 
-```json
-{
-  "success": false,
-  "error": "At least one client configuration is required",
-  "code": "INVALID_CLIENTS"
-}
-```
+#### 400 Bad Request - 客户端配置无效
 
 ```json
 {
   "success": false,
-  "error": "Invalid client network '192.168.1.1'. Must be CIDR format (e.g., 192.168.1.0/24)",
+  "error": "Invalid client network '192.168.1'. Must be CIDR format (e.g., 192.168.1.0/24)",
   "code": "INVALID_NETWORK"
 }
 ```
 
-```json
-{
-  "success": false,
-  "error": "Invalid client access 'read'. Must be 'ro' or 'rw'",
-  "code": "INVALID_ACCESS"
-}
-```
-
-#### 401 Unauthorized - 未认证或 Token 无效
+#### 409 Conflict - 名称已存在
 
 ```json
 {
   "success": false,
-  "error": "Invalid or expired token",
-  "code": "UNAUTHORIZED"
+  "error": "Share name 'Home' already exists",
+  "code": "NAME_CONFLICT"
 }
 ```
 
@@ -155,165 +146,173 @@
 }
 ```
 
-#### 404 Not Found - 共享不存在
+#### 401 Unauthorized - 认证失败
 
 ```json
 {
   "success": false,
-  "error": "NFS share 999 not found",
-  "code": "NOT_FOUND"
+  "error": "Missing or invalid Authorization header",
+  "code": "UNAUTHORIZED"
 }
 ```
 
-#### 409 Conflict - 名称冲突
+## 数据模型
 
-```json
-{
-  "success": false,
-  "error": "NFS share name 'Data' already exists",
-  "code": "NAME_CONFLICT"
-}
-```
+### UpdateNfsShareRequest
+
+| 字段 | 类型 | 描述 |
+|------|------|------|
+| `name` | string? | 共享名称 |
+| `path` | string? | 共享路径 |
+| `comment` | string? | 共享描述 |
+| `read_only` | boolean? | 是否只读 |
+| `no_subtree_check` | boolean? | 不检查子树 |
+| `sync` | boolean? | 同步写入 |
+| `clients` | NfsClientConfig[]? | 客户端配置列表 |
+
+### NfsClientConfig
+
+| 字段 | 类型 | 描述 |
+|------|------|------|
+| `network` | string | 网络 CIDR（如 192.168.1.0/24） |
+| `access` | string | 访问权限：`ro` / `rw` |
+
+### NfsShareInfo
+
+| 字段 | 类型 | 描述 |
+|------|------|------|
+| `id` | number | 共享 ID |
+| `name` | string | 共享名称 |
+| `path` | string | 共享路径 |
+| `comment` | string? | 共享描述 |
+| `read_only` | boolean | 是否只读 |
+| `no_subtree_check` | boolean | 不检查子树 |
+| `sync` | boolean | 同步写入 |
+| `clients` | NfsClientConfig[] | 客户端配置列表 |
+| `enabled` | boolean | 是否启用 |
+| `status` | string | 状态：`active` / `inactive` |
+| `created_at` | number | 创建时间（Unix 时间戳） |
+| `updated_at` | number | 更新时间（Unix 时间戳） |
+
+### UpdateNfsShareResponse
+
+| 字段 | 类型 | 描述 |
+|------|------|------|
+| `success` | boolean | 操作是否成功 |
+| `message` | string | 响应消息 |
+| `data` | NfsShareInfo | 更新后的共享信息 |
+
+## 错误代码
+
+| 代码 | HTTP 状态码 | 描述 |
+|------|-----------|------|
+| `UNAUTHORIZED` | 401 | 未提供或无效的认证令牌 |
+| `FORBIDDEN` | 403 | 非 admin 用户尝试更新 |
+| `NOT_FOUND` | 404 | 共享不存在或非 NFS 协议 |
+| `INVALID_NAME` | 400 | 共享名称格式无效 |
+| `INVALID_PATH` | 400 | 共享路径格式无效 |
+| `INVALID_CLIENTS` | 400 | 客户端配置无效 |
+| `INVALID_NETWORK` | 400 | 客户端网络格式无效 |
+| `INVALID_ACCESS` | 400 | 客户端访问权限无效 |
+| `NAME_CONFLICT` | 409 | 共享名称已存在 |
+| `DATABASE_ERROR` | 500 | 数据库操作失败 |
 
 ## 示例
 
-### 更新 NFS 共享名称
+### 请求
 
 ```bash
 curl -X PUT "http://localhost:8080/api/v1/shares/nfs/1" \
-  -H "Authorization: Bearer <jwt_token>" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "NewData"
-  }'
-```
-
-### 更新多个字段
-
-```bash
-curl -X PUT "http://localhost:8080/api/v1/shares/nfs/1" \
-  -H "Authorization: Bearer <jwt_token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "NewData",
-    "comment": "Updated data folder",
-    "read_only": true,
-    "sync": false
-  }'
-```
-
-### 更新客户端配置
-
-```bash
-curl -X PUT "http://localhost:8080/api/v1/shares/nfs/1" \
-  -H "Authorization: Bearer <jwt_token>" \
-  -H "Content-Type: application/json" \
-  -d '{
+    "name": "Home",
+    "comment": "更新后的用户主目录共享",
+    "read_only": false,
     "clients": [
       {
         "network": "192.168.1.0/24",
         "access": "rw"
-      },
-      {
-        "network": "10.0.0.0/8",
-        "access": "ro"
       }
     ]
   }'
 ```
 
-### 尝试更新不存在的共享
+### 响应
 
-```bash
-curl -X PUT "http://localhost:8080/api/v1/shares/nfs/999" \
-  -H "Authorization: Bearer <jwt_token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "NewName"
-  }'
-```
-
-响应（404 Not Found）：
 ```json
 {
-  "success": false,
-  "error": "NFS share 999 not found",
-  "code": "NOT_FOUND"
+  "success": true,
+  "message": "NFS share updated successfully",
+  "data": {
+    "id": 1,
+    "name": "Home",
+    "path": "/srv/nfs/home",
+    "comment": "更新后的用户主目录共享",
+    "read_only": false,
+    "no_subtree_check": true,
+    "sync": true,
+    "clients": [
+      {
+        "network": "192.168.1.0/24",
+        "access": "rw"
+      }
+    ],
+    "enabled": true,
+    "status": "active",
+    "created_at": 1711500000,
+    "updated_at": 1711600000
+  }
 }
 ```
 
-### 尝试使用已存在的名称
+## 权限说明
+
+- **Admin 用户**: 可更新任意 NFS 共享
+- **普通用户**: 无权访问（返回 403 Forbidden）
+
+## 验证规则
+
+### 名称验证
+- 长度：1-64 字符
+- 允许字符：字母、数字、`-`、`_`、`.`
+- 必须唯一（排除自身）
+
+### 路径验证
+- 必须以 `/` 开头
+- 最大长度：256 字符
+
+### 客户端配置验证
+- 至少一个客户端配置
+- `network`: CIDR 格式（如 192.168.1.0/24）
+- `access`: 必须为 `ro` 或 `rw`
+
+## 实现细节
+
+- **部分更新**: 仅更新提供的字段
+- **协议验证**: 仅允许更新 `protocol = 'nfs'` 的共享
+- **名称唯一性**: 排除自身检查
+- **数据库**: SQLite
+- **框架**: Actix-web
+- **仓库**: SqliteShareRepository
+
+## 相关接口
+
+- `GET /api/v1/shares/nfs` - 获取 NFS 共享列表
+- `GET /api/v1/shares/nfs/{id}` - 获取 NFS 共享详情
+- `POST /api/v1/shares/nfs` - 创建 NFS 共享
+- `DELETE /api/v1/shares/nfs/{id}` - 删除 NFS 共享
+
+## 测试验证
 
 ```bash
-curl -X PUT "http://localhost:8080/api/v1/shares/nfs/1" \
-  -H "Authorization: Bearer <jwt_token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Backup"
-  }'
+# 编译检查
+cargo check
+
+# 运行测试（如果有）
+cargo test
 ```
-
-响应（409 Conflict）：
-```json
-{
-  "success": false,
-  "error": "NFS share name 'Backup' already exists",
-  "code": "NAME_CONFLICT"
-}
-```
-
-## 权限要求
-
-- 需要 JWT 认证
-- 仅限 admin 角色访问
-
-## 响应字段说明
-
-### 更新结果字段
-
-| 字段 | 类型 | 说明 |
-| ---- | ---- | ---- |
-| success | boolean | 是否成功 |
-| message | string | 响应消息 |
-| data | object | 更新后的共享信息 |
-
-### 共享信息字段
-
-| 字段 | 类型 | 说明 |
-| ---- | ---- | ---- |
-| id | u64 | 共享 ID |
-| name | string | 共享名称 |
-| path | string | 共享路径 |
-| comment | string | 备注描述 |
-| read_only | boolean | 是否只读 |
-| no_subtree_check | boolean | 是否禁用子树检查 |
-| sync | boolean | 是否同步写入 |
-| clients | ClientConfig[] | 客户端配置列表 |
-| enabled | boolean | 是否启用 |
-| status | string | 状态（active/inactive） |
-| created_at | string | 创建时间（ISO 8601 格式） |
-| updated_at | string | 更新时间（ISO 8601 格式） |
-
-### 客户端配置字段
-
-| 字段 | 类型 | 说明 |
-| ---- | ---- | ---- |
-| network | string | 客户端网络（CIDR 格式） |
-| access | string | 访问权限（ro/rw） |
-
-## 业务逻辑
-
-1. 验证 JWT Token 有效性
-2. 检查用户角色是否为 admin
-3. 验证共享 ID 存在性（404 Not Found）
-4. 验证名称格式（如果提供）
-5. 验证路径格式（如果提供）
-6. 验证客户端配置（如果提供）
-7. 验证名称唯一性（排除自身）
-8. 部分更新共享配置
-9. 更新时间戳
-10. 返回 200 OK + 更新后的共享详情
 
 ## 版本历史
 
-- **Phase 158** (2026-03-27): 初始版本
+- **Phase 205** (2026-03-28): 初始实现，从 mock 数据升级为 SQLite 持久化

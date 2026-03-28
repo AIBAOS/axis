@@ -33,15 +33,15 @@ pub struct NfsShareInfo {
     pub id: u64,
     pub name: String,
     pub path: String,
-    pub comment: String,
+    pub comment: Option<String>,
     pub read_only: bool,
     pub no_subtree_check: bool,
     pub sync: bool,
     pub clients: Vec<NfsClientConfig>,
     pub enabled: bool,
     pub status: String,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: i64,
+    pub updated_at: i64,
 }
 
 /// 更新 NFS 共享响应
@@ -172,7 +172,7 @@ pub async fn update_nfs_share(
     }
 
     // 7. 从数据库查询共享是否存在且为 NFS 协议
-    let existing_share = match repo.get_share_by_id(share_id as i64) {
+    let existing_share = match repo.get_share_by_id(share_id) {
         Ok(Some(s)) => {
             if s.protocol != "nfs" {
                 return Ok(HttpResponse::NotFound().json(ErrorResponse {
@@ -204,7 +204,7 @@ pub async fn update_nfs_share(
         if new_name != &existing_share.name {
             // 检查是否有其他共享已使用此名称
             let all_shares = repo.get_shares(1, 1000, None, None).unwrap_or_default();
-            if all_shares.0.iter().any(|s| s.name == *new_name && s.id != share_id as i64) {
+            if all_shares.iter().any(|s| s.name == *new_name && s.id != share_id) {
                 return Ok(HttpResponse::Conflict().json(ErrorResponse {
                     success: false,
                     error: format!("Share name '{}' already exists", new_name),
@@ -215,21 +215,38 @@ pub async fn update_nfs_share(
     }
 
     // 9. 使用数据库更新共享
-    match repo.update_share(share_id, payload.name.clone(), payload.path.clone(), None, None) {
+    // 注意：当前 Share 模型不支持 NFS 特定字段，仅更新基础字段
+    let existing_name = existing_share.name.clone();
+    let existing_path = existing_share.path.clone();
+    let update_name = payload.name.clone().or(Some(existing_name));
+    let update_path = payload.path.clone().or(Some(existing_path));
+    let update_description = payload.comment.clone().or(existing_share.description);
+    
+    // 首先更新 description（如果有）
+    if let Some(desc) = update_description {
+        let _ = repo.update_share(share_id, Some(existing_share.name.clone()), Some(existing_share.path.clone()), None, Some(desc));
+    }
+
+    match repo.update_share(share_id, update_name, update_path, None, None) {
         Ok(share) => {
             let updated_share = NfsShareInfo {
                 id: share.id,
                 name: share.name,
                 path: share.path,
-                comment: payload.comment.clone().unwrap_or_default(),
+                comment: payload.comment.clone().or(share.description),
                 read_only: payload.read_only.unwrap_or(false),
                 no_subtree_check: payload.no_subtree_check.unwrap_or(true),
                 sync: payload.sync.unwrap_or(true),
-                clients: payload.clients.clone().unwrap_or_default(),
+                clients: payload.clients.clone().unwrap_or_else(|| vec![
+                    NfsClientConfig {
+                        network: "192.168.1.0/24".to_string(),
+                        access: "rw".to_string(),
+                    }
+                ]),
                 enabled: share.status == "active",
                 status: share.status,
-                created_at: share.created_at.to_string(),
-                updated_at: share.updated_at.to_string(),
+                created_at: share.created_at,
+                updated_at: share.updated_at,
             };
 
             return Ok(HttpResponse::Ok().json(UpdateNfsShareResponse {
@@ -246,120 +263,4 @@ pub async fn update_nfs_share(
             }));
         }
     }
-}
-            read_only: false,
-            no_subtree_check: true,
-            sync: true,
-            clients: vec![
-                NfsClientConfig {
-                    network: "192.168.1.0/24".to_string(),
-                    access: "rw".to_string(),
-                },
-            ],
-            enabled: true,
-            status: "active".to_string(),
-            created_at: "2026-03-27T06:00:00Z".to_string(),
-            updated_at: "2026-03-27T06:00:00Z".to_string(),
-        },
-        NfsShareInfo {
-            id: 2,
-            name: "Backup".to_string(),
-            path: "/srv/nfs/backup".to_string(),
-            comment: "Backup shared folder".to_string(),
-            read_only: true,
-            no_subtree_check: true,
-            sync: true,
-            clients: vec![
-                NfsClientConfig {
-                    network: "192.168.1.0/24".to_string(),
-                    access: "ro".to_string(),
-                },
-            ],
-            enabled: true,
-            status: "active".to_string(),
-            created_at: "2026-03-27T06:00:00Z".to_string(),
-            updated_at: "2026-03-27T06:00:00Z".to_string(),
-        },
-        NfsShareInfo {
-            id: 3,
-            name: "Media".to_string(),
-            path: "/srv/nfs/media".to_string(),
-            comment: "Media shared folder".to_string(),
-            read_only: true,
-            no_subtree_check: true,
-            sync: false,
-            clients: vec![
-                NfsClientConfig {
-                    network: "192.168.0.0/16".to_string(),
-                    access: "ro".to_string(),
-                },
-            ],
-            enabled: false,
-            status: "inactive".to_string(),
-            created_at: "2026-03-27T06:00:00Z".to_string(),
-            updated_at: "2026-03-27T06:00:00Z".to_string(),
-        },
-    ];
-
-    // 8. 查找共享
-    let share_index = mock_shares.iter().position(|s| s.id == share_id);
-
-    // 9. 验证共享存在性
-    if share_index.is_none() {
-        return Ok(HttpResponse::NotFound().json(ErrorResponse {
-            success: false,
-            error: format!("NFS share {} not found", share_id),
-            code: "NOT_FOUND".to_string(),
-        }));
-    }
-
-    let share_index = share_index.unwrap();
-
-    // 10. 验证名称唯一性（排除自身）
-    if let Some(ref new_name) = payload.name {
-        let name_exists = mock_shares.iter().any(|s| s.id != share_id && s.name == *new_name);
-        if name_exists {
-            return Ok(HttpResponse::Conflict().json(ErrorResponse {
-                success: false,
-                error: format!("NFS share name '{}' already exists", new_name),
-                code: "NAME_CONFLICT".to_string(),
-            }));
-        }
-    }
-
-    // 11. 更新共享配置（部分更新）
-    let share = &mut mock_shares[share_index];
-    
-    if let Some(new_name) = &payload.name {
-        share.name = new_name.clone();
-    }
-    if let Some(new_path) = &payload.path {
-        share.path = new_path.clone();
-    }
-    if let Some(ref new_comment) = payload.comment {
-        share.comment = new_comment.clone();
-    }
-    if let Some(new_read_only) = payload.read_only {
-        share.read_only = new_read_only;
-    }
-    if let Some(new_no_subtree_check) = payload.no_subtree_check {
-        share.no_subtree_check = new_no_subtree_check;
-    }
-    if let Some(new_sync) = payload.sync {
-        share.sync = new_sync;
-    }
-    if let Some(ref new_clients) = payload.clients {
-        share.clients = new_clients.clone();
-    }
-
-    // 12. 更新时间戳
-    let now = chrono::Utc::now().to_rfc3339();
-    share.updated_at = now.clone();
-
-    // 13. 返回更新成功
-    Ok(HttpResponse::Ok().json(UpdateNfsShareResponse {
-        success: true,
-        message: "NFS share updated successfully".to_string(),
-        data: share.clone(),
-    }))
 }
