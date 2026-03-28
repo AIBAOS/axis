@@ -25,6 +25,9 @@ pub struct BackupStatsData {
     pub successful_executions: u32,
     pub failed_executions: u32,
     pub running_executions: u32,
+    pub last_execution_at: Option<i64>,
+    pub next_scheduled_execution: Option<i64>,
+    pub storage_used_bytes: u64,
 }
 
 /// 错误响应
@@ -79,6 +82,9 @@ pub async fn get_backup_stats(
                 successful_executions: stats.successful_executions,
                 failed_executions: stats.failed_executions,
                 running_executions: stats.running_executions,
+                last_execution_at: stats.last_execution_at,
+                next_scheduled_execution: stats.next_scheduled_execution,
+                storage_used_bytes: stats.storage_used_bytes,
             },
         })),
         Err(e) => Ok(HttpResponse::InternalServerError().json(ErrorResponse {

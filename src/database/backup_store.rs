@@ -468,6 +468,27 @@ impl SqliteBackupRepository {
             |row| row.get(0),
         ).map_err(|e| format!("Count running executions failed: {}", e))?;
 
+        // 查询最近执行时间
+        let last_execution_at: Option<i64> = conn.query_row(
+            "SELECT MAX(started_at) FROM backup_executions",
+            [],
+            |row| row.get(0),
+        ).unwrap_or(None);
+
+        // 查询下次计划执行时间（从 active 备份的 schedule 计算）
+        let next_scheduled_execution: Option<i64> = conn.query_row(
+            "SELECT MIN(last_run_at) FROM backups WHERE status = 'active' AND last_run_at IS NOT NULL",
+            [],
+            |row| row.get(0),
+        ).unwrap_or(None);
+
+        // 查询存储占用（bytes_processed 总和）
+        let storage_used_bytes: i64 = conn.query_row(
+            "SELECT COALESCE(SUM(bytes_processed), 0) FROM backup_executions WHERE status = 'completed'",
+            [],
+            |row| row.get(0),
+        ).map_err(|e| format!("Sum storage failed: {}", e))?;
+
         Ok(BackupStats {
             total_backups: total_backups as u32,
             active_backups: active_backups as u32,
@@ -476,6 +497,9 @@ impl SqliteBackupRepository {
             successful_executions: successful_executions as u32,
             failed_executions: failed_executions as u32,
             running_executions: running_executions as u32,
+            last_execution_at,
+            next_scheduled_execution,
+            storage_used_bytes: storage_used_bytes as u64,
         })
     }
 }
@@ -490,4 +514,7 @@ pub struct BackupStats {
     pub successful_executions: u32,
     pub failed_executions: u32,
     pub running_executions: u32,
+    pub last_execution_at: Option<i64>,
+    pub next_scheduled_execution: Option<i64>,
+    pub storage_used_bytes: u64,
 }

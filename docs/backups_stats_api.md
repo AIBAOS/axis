@@ -34,7 +34,10 @@
     "total_executions": 128,
     "successful_executions": 120,
     "failed_executions": 6,
-    "running_executions": 2
+    "running_executions": 2,
+    "last_execution_at": 1711584000,
+    "next_scheduled_execution": 1711670400,
+    "storage_used_bytes": 10737418240
   }
 }
 ```
@@ -44,12 +47,15 @@
 | 字段 | 类型 | 说明 |
 | ---- | ---- | ---- |
 | total_backups | integer | 备份任务总数 |
-| active_backups | integer | 活跃备份数（status = 'active'） |
+| active_backups | integer | 活跃备份数（status = 'active'/'running'/'idle'/'completed'） |
 | archived_backups | integer | 已归档备份数（status = 'archived'） |
 | total_executions | integer | 总执行次数 |
 | successful_executions | integer | 成功执行次数（status = 'completed'） |
 | failed_executions | integer | 失败执行次数（status = 'failed'） |
 | running_executions | integer | 正在执行的次数（status = 'running'） |
+| last_execution_at | integer | 最近执行时间（Unix 时间戳，null 表示无执行记录） |
+| next_scheduled_execution | integer | 下次计划执行时间（Unix 时间戳，null 表示无计划任务） |
+| storage_used_bytes | integer | 备份占用存储空间（字节） |
 
 ### 错误响应
 
