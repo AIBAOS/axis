@@ -69,14 +69,15 @@
 
 - [ ] Phase 239 待安排
 
-- [x] Phase 238 媒体照片详情 API - 2026-03-28 11:00
+- [x] Phase 238 媒体照片详情 API - 2026-03-28 11:00 (增强版)
   - GET /api/v1/media/photos/{id} — 获取照片详情
   - JWT 认证，任意登录用户可访问
   - 验证照片 ID 存在性（404 Not Found）
-  - 返回字段：id/name/path/size_bytes/width/height/taken_at/created_at/updated_at/thumbnail_path/album/camera/location
+  - 返回字段：id/name/path/size_bytes/width/height/taken_at/created_at/updated_at/thumbnail_path/album/exif
   - 错误处理：401/404/500
   - 单元测试：已编写
-  - Commit: cc49aeb
+  - 文档：docs/media_photos_detail_api.md
+  - Commit: cc49aeb + 文档补充
 
 - [x] Phase 237 媒体音频详情 API - 2026-03-28 10:50
   - GET /api/v1/media/audios/{id} — 获取音频详情
