@@ -46,6 +46,7 @@ pub mod shares_ftp_list;
 pub mod shares_ftp_get;
 pub mod shares_ftp_create;
 pub mod shares_ftp_update;
+pub mod shares_ftp_delete;
 pub mod shared_folder_create;
 pub mod shared_folder_list;
 pub mod shared_folder_detail;
