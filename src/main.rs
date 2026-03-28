@@ -146,6 +146,7 @@ use handlers::system_cron_jobs_list::get_system_cron_jobs;
 use handlers::system_cron_jobs_create::create_cron_job;
 use handlers::system_cron_jobs_detail::get_system_cron_job_detail;
 use handlers::system_cron_jobs_update::update_system_cron_job;
+use handlers::system_cron_jobs_delete::delete_system_cron_job;
 use handlers::system_process_terminate::terminate_process;
 use handlers::storage_volume_snapshot_create::create_volume_snapshot as create_volume_snapshot;
 use handlers::storage_volume_snapshots_list::list_volume_snapshots as list_volume_snapshots;
@@ -800,6 +801,8 @@ async fn main() -> std::io::Result<()> {
             // 系统定时任务详情 API routes (Phase 256)
             .route("/api/v1/system/cron-jobs/{id}", web::get().to(get_system_cron_job_detail))
             .route("/api/v1/system/cron-jobs/{id}", web::put().to(update_system_cron_job))
+            // 系统定时任务删除 API routes (Phase 259)
+            .route("/api/v1/system/cron-jobs/{id}", web::delete().to(delete_system_cron_job))
             .route("/api/v1/system/logs", web::get().to(get_system_logs))
             .route("/api/v1/system/logs/{id}", web::get().to(get_system_log_detail))
             .route("/api/v1/system/logs/export", web::post().to(export_system_logs))
