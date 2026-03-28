@@ -101,19 +101,50 @@ class ApiClient {
   }
 
   // Backup methods
-  async getBackups(params?: { page?: number; page_size?: number; status?: string }) {
+  async getBackups(params?: { page?: number; per_page?: number; status?: string }) {
     return this.get('/backups', { params });
+  }
+
+  async getBackupDetail(id: number) {
+    return this.get(`/backups/${id}`);
   }
 
   async createBackup(data: {
     name: string;
     description?: string;
     source_path: string;
-    destination: string;
+    destination_path: string;
     backup_type: string;
     schedule?: string;
   }) {
     return this.post('/backups', data);
+  }
+
+  async updateBackup(id: number, data: {
+    name?: string;
+    description?: string;
+    source_path?: string;
+    destination_path?: string;
+    backup_type?: string;
+    schedule?: string;
+  }) {
+    return this.put(`/backups/${id}`, data);
+  }
+
+  async deleteBackup(id: number) {
+    return this.delete(`/backups/${id}`);
+  }
+
+  async executeBackup(id: number) {
+    return this.post(`/backups/${id}/execute`);
+  }
+
+  async getBackupExecutionHistory(params?: { page?: number; per_page?: number }) {
+    return this.get('/backups/execution-history', { params });
+  }
+
+  async getBackupStats() {
+    return this.get('/backups/stats');
   }
 
   // File methods
