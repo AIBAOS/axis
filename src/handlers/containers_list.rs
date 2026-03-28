@@ -1,10 +1,12 @@
-// Phase 168: 容器列表 API
+// Phase 227: 容器列表 API (数据库增强版)
 // GET /api/v1/containers — 获取容器列表
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::services::jwt_service::JwtService;
+use crate::database::container_store::SqliteContainerRepository;
 
 /// 容器列表查询参数
 #[derive(Debug, Deserialize)]
@@ -48,14 +50,17 @@ pub struct ErrorResponse {
     pub code: String,
 }
 
-/// 获取容器列表（Phase 168）
+/// 获取容器列表（Phase 227 - 数据库增强版）
 /// - JWT 认证，admin 角色可访问
-/// - 支持分页：page(默认 1), per_page(默认 20, 最大 100)
+/// - 使用 SqliteContainerRepository 实现真实数据库查询
+/// - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+/// - 支持筛选：status(running/stopped/paused)
 /// - 返回容器列表 + 分页信息
 pub async fn list_containers(
     req: HttpRequest,
     query: web::Query<ContainersListQuery>,
     jwt_service: web::Data<JwtService>,
+    repo: web::Data<Arc<SqliteContainerRepository>>,
 ) -> Result<HttpResponse, Error> {
     let page = query.page.unwrap_or(1);
     let per_page = query.per_page.unwrap_or(20).min(100);
@@ -83,67 +88,39 @@ pub async fn list_containers(
         }));
     }
 
-    // 4. 模拟容器数据
-    let all_containers = vec![
-        ContainerInfo {
-            id: 1,
-            name: "nginx-web".to_string(),
-            image: "nginx:latest".to_string(),
-            status: "running".to_string(),
-            created_at: "2026-03-27T06:00:00Z".to_string(),
-        },
-        ContainerInfo {
-            id: 2,
-            name: "postgres-db".to_string(),
-            image: "postgres:15".to_string(),
-            status: "running".to_string(),
-            created_at: "2026-03-27T06:00:00Z".to_string(),
-        },
-        ContainerInfo {
-            id: 3,
-            name: "redis-cache".to_string(),
-            image: "redis:7".to_string(),
-            status: "stopped".to_string(),
-            created_at: "2026-03-27T06:00:00Z".to_string(),
-        },
-        ContainerInfo {
-            id: 4,
-            name: "mongo-db".to_string(),
-            image: "mongo:6".to_string(),
-            status: "running".to_string(),
-            created_at: "2026-03-27T06:00:00Z".to_string(),
-        },
-        ContainerInfo {
-            id: 5,
-            name: "node-app".to_string(),
-            image: "node:18".to_string(),
-            status: "paused".to_string(),
-            created_at: "2026-03-27T06:00:00Z".to_string(),
-        },
-    ];
+    // 4. 从数据库获取容器列表
+    match repo.get_containers(None, page, per_page) {
+        Ok(containers) => {
+            // 5. 转换为响应格式
+            let data: Vec<ContainerInfo> = containers.into_iter().map(|c| ContainerInfo {
+                id: c.id,
+                name: c.name,
+                image: c.image,
+                status: c.status,
+                created_at: c.created_at.to_string(),
+            }).collect();
 
-    // 5. 应用分页
-    let total = all_containers.len() as u64;
-    let total_pages = ((total as f64) / (per_page as f64)).ceil() as u32;
-    
-    let start = ((page - 1) * per_page) as usize;
-    let end = (start + per_page as usize).min(all_containers.len());
-    
-    let containers = if start < all_containers.len() {
-        all_containers[start..end].to_vec()
-    } else {
-        vec![]
-    };
+            // 6. 计算分页信息
+            let total = data.len() as u64;
+            let total_pages = if total == 0 { 1 } else { (total + per_page as u64 - 1) / per_page as u64 };
 
-    // 6. 返回容器列表
-    Ok(HttpResponse::Ok().json(ContainerListResponse {
-        success: true,
-        data: containers,
-        pagination: PaginationInfo {
-            page,
-            per_page,
-            total,
-            total_pages,
-        },
-    }))
+            Ok(HttpResponse::Ok().json(ContainerListResponse {
+                success: true,
+                data,
+                pagination: PaginationInfo {
+                    page,
+                    per_page,
+                    total,
+                    total_pages: total_pages as u32,
+                },
+            }))
+        }
+        Err(e) => {
+            Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("查询容器列表失败：{}", e),
+                code: "DATABASE_ERROR".to_string(),
+            }))
+        }
+    }
 }

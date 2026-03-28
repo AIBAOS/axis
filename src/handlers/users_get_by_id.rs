@@ -8,6 +8,8 @@ use std::sync::Arc;
 use crate::services::jwt_service::JwtService;
 use crate::database::user_store::SqliteUserRepository;
 use crate::database::rbac_store::SqliteRbacRepository;
+use crate::models::user::UserRepository;
+use crate::models::rbac::RbacRepository;
 
 /// 用户详情（Phase 226）
 #[derive(Serialize, Clone)]
@@ -76,19 +78,11 @@ pub async fn get_user_by_id(
         .validate_token(token)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))?;
 
-    // 3. 提取当前用户 ID（从 token 的 sub 字段）
-    let current_user_id = claims
-        .get("sub")
-        .and_then(|s| s.as_str())
-        .and_then(|s| s.parse::<u64>().ok())
-        .unwrap_or(0);
+    // 3. 提取当前用户 ID
+    let current_user_id = claims.user_id;
 
     // 4. 检查是否为 admin
-    let admin_claims = jwt_service.verify_token(token).ok();
-    let is_admin_user = admin_claims
-        .as_ref()
-        .map(|c| c.roles.iter().any(|r| r == "admin"))
-        .unwrap_or(false);
+    let is_admin_user = claims.roles.iter().any(|r| r == "admin");
 
     // 5. 权限控制
     // - admin 可以查看任意用户
@@ -102,10 +96,10 @@ pub async fn get_user_by_id(
     }
 
     // 6. 从数据库查询用户
-    match user_repo.find_by_id(target_user_id) {
+    match user_repo.get_ref().find_by_id(target_user_id) {
         Ok(Some(user)) => {
             // 7. 获取用户角色
-            let roles = rbac_repo
+            let roles = rbac_repo.get_ref()
                 .get_roles_by_user(user.id)
                 .iter()
                 .map(|r| r.name.clone())
