@@ -6,7 +6,7 @@
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | [待提交] |
+| 最新 commit | 20cf60d |
 | 提交时间 | 2026-03-28 13:10 UTC |
 | 当前阶段 | Phase 247 系统设置更新 API |
 | 状态 | ✅ 已完成 |
@@ -78,7 +78,7 @@
   - 错误处理：401/403/400/500
   - 单元测试：已编写
   - 文档：docs/system_settings_update_api.md
-  - Commit: [待提交]
+  - Commit: 20cf60d
 
 - [x] Phase 246 系统设置获取 API - 2026-03-28 13:00
   - GET /api/v1/system/settings — 获取系统设置
