@@ -117,8 +117,37 @@ class ApiClient {
   }
 
   // File methods
-  async getFiles(path?: string) {
-    return this.get('/files', { params: { path } });
+  async getFilesBrowse(path?: string, page?: number, limit?: number) {
+    return this.get('/files/browse', { 
+      params: { 
+        path: path || '/',
+        page: page || 1,
+        limit: limit || 20,
+      } 
+    });
+  }
+
+  async uploadFile(formData: FormData) {
+    return this.client.post<ApiResponse>('/files/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data);
+  }
+
+  async deleteFile(path: string) {
+    return this.delete('/files/delete', { params: { path } });
+  }
+
+  async renameFile(oldPath: string, newName: string) {
+    return this.put('/files/rename', { old_path: oldPath, new_name: newName });
+  }
+
+  async createFolder(path: string, name: string) {
+    return this.post('/files/mkdir', { path, name });
+  }
+
+  async downloadFile(path: string) {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+    return `${API_BASE_URL}${API_VERSION}/files/download?path=${encodeURIComponent(path)}`;
   }
 
   // User methods
