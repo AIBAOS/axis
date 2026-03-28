@@ -74,7 +74,7 @@ pub async fn get_ftp_share(
     }
 
     // 4. 从数据库查询共享详情
-    match repo.get_share_by_id(share_id as i64) {
+    match repo.get_share_by_id(share_id) {
         Ok(Some(share)) => {
             // 5. 验证协议类型为 FTP
             if share.protocol != "ftp" {
