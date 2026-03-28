@@ -21,6 +21,7 @@ pub struct ErrorResponse {
 /// - 使用 SqliteShareRepository 实现真实数据库删除
 /// - 验证共享 ID 存在性（404 Not Found）
 /// - 验证协议类型（非 NFS 返回 404）
+/// - 检查共享是否正在使用（409 Conflict）
 /// - 删除成功返回 204 No Content
 pub async fn delete_nfs_share(
     req: HttpRequest,
@@ -53,41 +54,44 @@ pub async fn delete_nfs_share(
         }));
     }
 
-    // 4. 从数据库查询共享是否存在且为 NFS 协议
-    let share = match repo.get_share_by_id(share_id as i64) {
-        Ok(Some(s)) => {
-            if s.protocol != "nfs" {
+    // 4. 从数据库查询共享
+    match repo.get_share_by_id(share_id) {
+        Ok(Some(share)) => {
+            // 5. 验证是 NFS 协议
+            if share.protocol != "nfs" {
                 return Ok(HttpResponse::NotFound().json(ErrorResponse {
                     success: false,
                     error: format!("NFS share {} not found", share_id),
                     code: "NOT_FOUND".to_string(),
                 }));
             }
-            s
+
+            // 6. 检查共享是否正在使用（简化实现：active 状态视为使用中）
+            // 实际实现可检查 /proc/mounts 或系统挂载点
+            if share.status == "active" {
+                return Ok(HttpResponse::Conflict().json(ErrorResponse {
+                    success: false,
+                    error: format!("NFS share '{}' is currently in use and cannot be deleted", share.name),
+                    code: "CONFLICT".to_string(),
+                }));
+            }
+
+            // 7. 执行删除
+            match repo.delete_share(share_id) {
+                Ok(true) => Ok(HttpResponse::NoContent().finish()),
+                Ok(false) => Ok(HttpResponse::NotFound().json(ErrorResponse {
+                    success: false,
+                    error: format!("NFS share {} not found", share_id),
+                    code: "NOT_FOUND".to_string(),
+                })),
+                Err(e) => Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                    success: false,
+                    error: format!("删除共享失败：{}", e),
+                    code: "DATABASE_ERROR".to_string(),
+                })),
+            }
         }
         Ok(None) => {
-            return Ok(HttpResponse::NotFound().json(ErrorResponse {
-                success: false,
-                error: format!("NFS share {} not found", share_id),
-                code: "NOT_FOUND".to_string(),
-            }));
-        }
-        Err(e) => {
-            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
-                success: false,
-                error: format!("查询共享失败：{}", e),
-                code: "DATABASE_ERROR".to_string(),
-            }));
-        }
-    };
-
-    // 5. 使用数据库删除共享
-    match repo.delete_share(share_id as i64) {
-        Ok(true) => {
-            // 6. 返回删除成功（204 No Content）
-            Ok(HttpResponse::NoContent().finish())
-        }
-        Ok(false) => {
             Ok(HttpResponse::NotFound().json(ErrorResponse {
                 success: false,
                 error: format!("NFS share {} not found", share_id),
@@ -97,7 +101,7 @@ pub async fn delete_nfs_share(
         Err(e) => {
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("删除共享失败：{}", e),
+                error: format!("查询共享失败：{}", e),
                 code: "DATABASE_ERROR".to_string(),
             }))
         }
