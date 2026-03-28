@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 08:15 UTC
+> 最后更新：2026-03-28 08:25 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 56e1730 |
-| 提交时间 | 2026-03-28 08:15 UTC |
-| 当前阶段 | Phase 227 容器列表 API |
+| 最新 commit | 5d8c8c3 |
+| 提交时间 | 2026-03-28 08:25 UTC |
+| 当前阶段 | Phase 228 容器详情 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,15 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 228 待安排
+- [ ] Phase 229 待安排
+
+- [x] Phase 228 容器详情 API - 2026-03-28 08:25
+  - GET /api/v1/containers/{id} — 获取容器详情（数据库增强版）
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteContainerRepository 实现真实数据库查询
+  - 验证容器 ID 存在性（404 Not Found）
+  - 返回字段：id/name/image/status/ports/networks/created_at/started_at/cpu_usage/memory_usage
+  - Commit: 5d8c8c3
 
 - [x] Phase 227 容器列表 API - 2026-03-28 08:15
   - GET /api/v1/containers — 获取容器列表（数据库增强版）
