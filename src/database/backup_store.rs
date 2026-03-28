@@ -274,7 +274,7 @@ impl SqliteBackupRepository {
         self.get_backup_by_id(id)
     }
 
-    /// 归档备份任务（状态从 active → archived）
+    /// 归档备份任务（状态从 active/completed → archived）
     pub fn archive_backup(&self, id: i64) -> Result<Option<BackupRow>, String> {
         let conn = self.get_connection()?;
         let now = std::time::SystemTime::now()
@@ -282,12 +282,16 @@ impl SqliteBackupRepository {
             .map_err(|e| format!("Time error: {}", e))?
             .as_secs() as i64;
 
-        // 先检查备份是否存在且状态为 active
+        // 先检查备份是否存在
         let backup = self.get_backup_by_id(id)?;
         match &backup {
             Some(b) => {
-                if b.status != "active" {
-                    return Err(format!("备份状态为 '{}'，仅 active 状态的备份可归档", b.status));
+                // 允许归档 active 或 completed 状态的备份
+                if b.status != "active" && b.status != "completed" {
+                    if b.status == "archived" {
+                        return Err("Backup is already archived".to_string());
+                    }
+                    return Err(format!("Backup status is '{}'. Only active or completed backups can be archived", b.status));
                 }
             }
             None => return Ok(None),
@@ -295,7 +299,7 @@ impl SqliteBackupRepository {
 
         // 更新状态为 archived
         let affected = conn.execute(
-            "UPDATE backups SET status = 'archived', updated_at = ?1 WHERE id = ?2 AND status = 'active'",
+            "UPDATE backups SET status = 'archived', updated_at = ?1 WHERE id = ?2 AND (status = 'active' OR status = 'completed')",
             params![now, id],
         ).map_err(|e| format!("Update failed: {}", e))?;
 

@@ -3,7 +3,7 @@
 ## 概述
 
 - **接口**: `POST /api/v1/backups/{id}/archive`
-- **功能**: 归档备份任务（将状态从 `active` 更新为 `archived`）
+- **功能**: 归档备份任务（将状态从 `active` 或 `completed` 更新为 `archived`）
 - **权限**: 仅 admin 用户可访问
 - **Phase**: 194
 
@@ -78,21 +78,35 @@ curl -X POST http://localhost:8080/api/v1/backups/1/archive \
 }
 ```
 
+#### 409 Conflict
+
+```json
+{
+  "success": false,
+  "error": "Backup is already archived",
+  "code": "ALREADY_ARCHIVED"
+}
+```
+
 #### 400 Bad Request
 
 ```json
 {
   "success": false,
-  "error": "Backup status is 'completed'. Only active backups can be archived",
+  "error": "Backup status is 'running'. Only active or completed backups can be archived",
   "code": "INVALID_STATUS"
 }
 ```
 
 ## 业务规则
 
-1. **仅可归档活跃备份**：只有状态为 `active` 的备份可以归档
-2. **admin 权限**：仅 admin 用户可执行归档操作
-3. **状态更新**：成功归档后，备份状态从 `active` 变更为 `archived`
+1. **允许归档的状态**：`active` 或 `completed` 状态的备份可以归档
+2. **禁止归档的状态**：
+   - `running`：正在运行中，返回 400 Bad Request
+   - `archived`：已归档，返回 409 Conflict
+   - `pending`、`failed` 等其他状态，返回 400 Bad Request
+3. **admin 权限**：仅 admin 用户可执行归档操作
+4. **状态更新**：成功归档后，备份状态从 `active` 或 `completed` 变更为 `archived`
 
 ## 数据库变更
 

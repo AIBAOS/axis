@@ -1,5 +1,5 @@
 // Phase 194: 备份归档 API
-// POST /api/v1/backups/{id}/archive — 归档备份任务（状态从 active → archived）
+// POST /api/v1/backups/{id}/archive — 归档备份任务（状态从 active/completed → archived）
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::{Deserialize, Serialize};
@@ -44,7 +44,8 @@ pub struct ErrorResponse {
 /// 归档备份任务（Phase 194）
 /// - JWT 认证，admin 角色可访问
 /// - 验证备份 ID 存在性（404 Not Found）
-/// - 验证备份状态（仅 active 状态可归档，400 Bad Request）
+/// - 验证备份状态（仅 active/completed 状态可归档，400 Bad Request）
+/// - 检查是否已归档（409 Conflict）
 /// - 归档成功返回 200 OK + 备份详情
 pub async fn archive_backup(
     req: HttpRequest,
@@ -86,11 +87,18 @@ pub async fn archive_backup(
         actix_web::error::ErrorNotFound("Backup not found")
     })?;
 
-    // 5. 验证备份状态（仅 active 状态可归档）
-    if backup.status != "active" {
+    // 5. 验证备份状态（仅 active/completed 状态可归档）
+    if backup.status != "active" && backup.status != "completed" {
+        if backup.status == "archived" {
+            return Ok(HttpResponse::Conflict().json(ErrorResponse {
+                success: false,
+                error: "Backup is already archived".to_string(),
+                code: "ALREADY_ARCHIVED".to_string(),
+            }));
+        }
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
             success: false,
-            error: format!("Backup status is '{}'. Only active backups can be archived", backup.status),
+            error: format!("Backup status is '{}'. Only active or completed backups can be archived", backup.status),
             code: "INVALID_STATUS".to_string(),
         }));
     }
