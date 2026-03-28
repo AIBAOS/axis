@@ -72,7 +72,7 @@
   - [ ] JWT 认证，任意登录用户可访问
   - [ ] 返回完整共享信息
 
-- [x] Phase 202 SMB 共享列表 API (P1, 已完成)
+- [x] Phase 202 SMB 共享列表 API - 2026-03-28 01:50
   - [x] GET /api/v1/shares/smb — 获取 SMB 共享列表
   - [x] JWT 认证，任意登录用户可访问
   - [x] 支持分页：page, limit（最大 100）
