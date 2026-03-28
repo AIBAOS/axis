@@ -94,6 +94,7 @@ pub async fn list_ftp_shares(
     }
 
     // 4. 从数据库查询 FTP 共享列表
+    let status_filter_clone = status_filter.clone();
     match repo.get_shares(page, per_page, Some("ftp".to_string()), status_filter) {
         Ok(shares) => {
             // 5. 转换为响应格式
@@ -102,14 +103,14 @@ pub async fn list_ftp_shares(
                 name: s.name,
                 path: s.path,
                 description: s.description,
-                public: s.status == "active",
+                public: s.guest_ok,
                 status: s.status,
                 created_at: s.created_at,
                 updated_at: s.updated_at,
             }).collect();
 
             // 6. 计算分页信息
-            let total = repo.count_shares(Some("ftp".to_string()), status_filter).unwrap_or(data.len() as u64);
+            let total = repo.count_shares(Some("ftp".to_string()), status_filter_clone).unwrap_or(data.len() as u64);
             let total_pages = if total == 0 { 1 } else { (total + per_page as u64 - 1) / per_page as u64 };
 
             Ok(HttpResponse::Ok().json(FtpShareListResponse {
