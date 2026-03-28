@@ -177,7 +177,6 @@ use handlers::backups_update::update_backup;
 use handlers::backups_delete::delete_backup;
 use handlers::backups_restore::restore_backup;
 use handlers::backups_archive::archive_backup;
-use handlers::backups_restore::restore_backup;
 use handlers::backups::run_backup;
 use handlers::users::{
     get_users,
