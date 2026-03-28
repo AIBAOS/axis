@@ -6,7 +6,7 @@
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | [待提交] |
+| 最新 commit | 6ebd282 |
 | 提交时间 | 2026-03-28 13:20 UTC |
 | 当前阶段 | Phase 248 系统电源管理 API |
 | 状态 | ✅ 已完成 |
@@ -77,7 +77,7 @@
   - 错误处理：401/403/500
   - 单元测试：已编写
   - 文档：docs/system_power_api.md
-  - Commit: [待提交]
+  - Commit: 6ebd282
 
 - [x] Phase 247 系统设置更新 API - 2026-03-28 13:10
   - PUT /api/v1/system/settings — 更新系统设置
