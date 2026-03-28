@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 02:20 UTC
+> 最后更新：2026-03-28 02:35 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | d33010b |
-| 提交时间 | 2026-03-28 02:20 UTC |
-| 当前阶段 | Phase 204 NFS 共享详情 API |
+| 最新 commit | 6746351 |
+| 提交时间 | 2026-03-28 02:35 UTC |
+| 当前阶段 | Phase 205 NFS 共享更新 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,7 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 205 待安排
+- [ ] Phase 206 待安排
 
 - [x] Phase 203 SMB 共享详情 API - 2026-03-28 02:05
   - [x] GET /api/v1/shares/smb — 获取 SMB 共享列表
@@ -86,6 +86,19 @@
 ---
 
 ## ✅ 已完成事项
+
+- [x] NFS 共享更新 API (Phase 205) - 2026-03-28 02:35
+  - PUT /api/v1/shares/nfs/{id} — 更新 NFS 共享（SQLite 持久化版）
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteShareRepository 实现真实数据库更新
+  - 支持部分更新：name/path/comment/read_only/no_subtree_check/sync/clients
+  - 验证共享 ID 存在性（404 Not Found）
+  - 验证名称格式（400 Bad Request）
+  - 验证路径格式（400 Bad Request）
+  - 验证名称唯一性（409 Conflict）
+  - 更新成功返回 200 OK + 共享详情
+  - 文档：docs/shares_nfs_update_api.md
+  - Commit: 6746351
 
 - [x] NFS 共享详情 API (Phase 204) - 2026-03-28 02:20
   - GET /api/v1/shares/nfs/{id} — 获取 NFS 共享详情
