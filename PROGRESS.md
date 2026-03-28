@@ -1,6 +1,6 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 02:45 UTC
+> 最后更新：2026-03-28 03:15 UTC
 
 ## 📌 当前状态
 
@@ -8,7 +8,7 @@
 |------|------|
 | 最新 commit | 161f742 |
 | 提交时间 | 2026-03-28 02:45 UTC |
-| 当前阶段 | Phase 206 NFS 共享删除 API |
+| 当前阶段 | Phase 207 系统通知列表 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,17 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 207 待安排
+- [ ] Phase 208 待安排
+
+- [x] Phase 207 系统通知列表 API - 2026-03-28 03:10
+  - [x] GET /api/v1/system/notifications — 获取系统通知列表
+  - [x] JWT 认证，登录用户可访问
+  - [x] 支持分页：page(默认 1), per_page(默认 20, 最大 100)
+  - [x] 支持筛选：type(info/warning/error/critical), status(unread/read), source
+  - [x] 按 created_at 降序排序（最新的在前）
+  - [x] 返回字段：id/type/title/message/source/status/created_at/read_at
+  - [x] 响应格式：`{ data: [...], pagination: { page, per_page, total, total_pages } }`
+  - [x] 文档：docs/system_notifications_list_api.md
 
 - [x] Phase 203 SMB 共享详情 API - 2026-03-28 02:05
   - [x] GET /api/v1/shares/smb — 获取 SMB 共享列表
@@ -86,6 +96,17 @@
 ---
 
 ## ✅ 已完成事项
+
+- [x] 系统通知列表 API (Phase 207) - 2026-03-28 03:10
+  - GET /api/v1/system/notifications — 获取系统通知列表
+  - JWT 认证，登录用户可访问
+  - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - 支持筛选：type(info/warning/error/critical)/status(unread/read)/source
+  - 按 created_at 降序排序（最新的在前）
+  - 返回字段：id/type/title/message/source/status/created_at/read_at
+  - 响应格式：{ data: [...], pagination: { page, per_page, total, total_pages } }
+  - 文档：docs/system_notifications_list_api.md
+  - Commit: (待提交)
 
 - [x] NFS 共享删除 API (Phase 206) - 2026-03-28 02:45
   - DELETE /api/v1/shares/nfs/{id} — 删除 NFS 共享（SQLite 持久化版）
@@ -1628,10 +1649,20 @@
 | Phase 136 防火墙规则详情 API | 100% ✅ |
 | Phase 137 防火墙规则更新 API | 100% ✅ |
 | Phase 138 防火墙规则删除 API | 100% ✅ |
+| Phase 197 系统通知列表 API | 100% ✅ |
+| Phase 198 SMB 共享列表 API | 100% ✅ |
+| Phase 199 系统通知标记已读 API | 100% ✅ |
+| Phase 200 系统通知标记已读 API (POST) | 100% ✅ |
+| Phase 201 SMB 共享创建 API | 100% ✅ |
+| Phase 203 SMB 共享详情 API | 100% ✅ |
+| Phase 204 NFS 共享详情 API | 100% ✅ |
+| Phase 205 NFS 共享更新 API | 100% ✅ |
+| Phase 206 NFS 共享删除 API | 100% ✅ |
+| Phase 207 系统通知列表 API | 100% ✅ |
 
-**总体进度**：**Phase 138 防火墙规则删除 API 已完成**
+**总体进度**：**Phase 207 系统通知列表 API 已完成**
 
 ---
 
 **兵部尚书 签发**
-2026-03-27 02:35 UTC
+2026-03-28 03:15 UTC

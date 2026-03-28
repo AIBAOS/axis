@@ -1,10 +1,10 @@
 # 系统通知列表 API
 
-## Phase 197
+## Phase 207
 
 ## 接口说明
 
-获取系统级别的通知列表，支持分页和优先级筛选。系统通知是指 `target_user_id` 为 NULL 的全局通知。
+获取系统通知列表，支持分页和多种筛选条件。系统通知是指 `target_user_id` 为 NULL 的全局通知。
 
 ## 请求
 
@@ -21,8 +21,10 @@
 | 字段 | 类型 | 必填 | 默认值 | 说明 |
 | ---- | ---- | ---- | ------- | ---- |
 | page | integer | 否 | 1 | 页码（从 1 开始） |
-| page_size | integer | 否 | 20 | 每页数量（最大 100） |
-| priority | string | 否 | - | 优先级筛选（low/normal/high/critical） |
+| per_page | integer | 否 | 20 | 每页数量（最大 100） |
+| type | string | 否 | - | 通知类型筛选（info/warning/error/critical） |
+| status | string | 否 | - | 状态筛选（unread/read） |
+| source | string | 否 | - | 来源筛选（如：nfs、share、system等） |
 
 ### 请求体
 
@@ -34,54 +36,60 @@
 
 ```json
 {
-  "success": true,
-  "data": {
-    "notifications": [
-      {
-        "id": 15,
-        "title": "系统维护通知",
-        "message": "系统将于今晚 23:00 进行例行维护",
-        "type": "system",
-        "priority": "high",
-        "is_read": false,
-        "created_at": 1711584000,
-        "action_url": "/admin/maintenance"
-      },
-      {
-        "id": 14,
-        "title": "存储空间警告",
-        "message": "存储池使用率已超过 80%",
-        "type": "alert",
-        "priority": "normal",
-        "is_read": true,
-        "created_at": 1711497600,
-        "action_url": "/storage/pools"
-      }
-    ],
-    "total": 15,
+  "data": [
+    {
+      "id": 15,
+      "type": "info",
+      "title": "系统维护通知",
+      "message": "系统将于今晚 23:00 进行例行维护",
+      "source": "system",
+      "status": "unread",
+      "created_at": 1711584000,
+      "read_at": null
+    },
+    {
+      "id": 14,
+      "type": "warning",
+      "title": "存储空间警告",
+      "message": "存储池使用率已超过 80%",
+      "source": "nfs",
+      "status": "read",
+      "created_at": 1711497600,
+      "read_at": 1711500000
+    }
+  ],
+  "pagination": {
     "page": 1,
-    "page_size": 20,
-    "has_more": false
+    "per_page": 20,
+    "total": 15,
+    "total_pages": 1
   }
 }
 ```
 
 ### 返回字段说明
 
+#### data 数组字段
+
 | 字段 | 类型 | 说明 |
-| ---- | ---- | ---- |
+| ---- | ---- |
 | id | integer | 通知 ID |
+| type | string | 通知类型（info/warning/error/critical） |
 | title | string | 通知标题 |
 | message | string | 通知内容 |
-| type | string | 通知类型（system/alert/info/warning/error） |
-| priority | string | 优先级（low/normal/high/critical） |
-| is_read | boolean | 是否已读 |
+| source | string | 通知来源（可选） |
+| status | string | 状态（unread/read） |
 | created_at | integer | 创建时间（Unix 时间戳） |
-| action_url | string | 操作链接（可选） |
-| total | integer | 总记录数 |
+| read_at | integer | 已读时间（未读时为 null） |
+
+#### pagination 对象字段
+
+| 字段 | 类型 | 说明 |
+| ---- | ---- |
 | page | integer | 当前页码 |
-| page_size | integer | 每页数量 |
-| has_more | boolean | 是否有更多数据 |
+| per_page | integer | 每页数量 |
+| total | integer | 总记录数 |
+| total_pages | integer | 总页数 |
 
 ### 错误响应
 
@@ -100,7 +108,7 @@
 ```json
 {
   "success": false,
-  "error": "查询系统通知失败：database is locked",
+  "error": "查询通知列表失败：database is locked",
   "code": "DATABASE_ERROR"
 }
 ```
@@ -110,21 +118,28 @@
 ### 获取系统通知列表（第一页）
 
 ```bash
-curl -X GET "http://localhost:8080/api/v1/system/notifications?page=1&page_size=20" \
+curl -X GET "http://localhost:8080/api/v1/system/notifications?page=1&per_page=20" \
   -H "Authorization: Bearer <jwt_token>"
 ```
 
-### 获取高优先级系统通知
+### 按类型筛选
 
 ```bash
-curl -X GET "http://localhost:8080/api/v1/system/notifications?priority=high" \
+curl -X GET "http://localhost:8080/api/v1/system/notifications?type=warning" \
   -H "Authorization: Bearer <jwt_token>"
 ```
 
-### 获取第二页（每页 10 条）
+### 按状态筛选
 
 ```bash
-curl -X GET "http://localhost:8080/api/v1/system/notifications?page=2&page_size=10" \
+curl -X GET "http://localhost:8080/api/v1/system/notifications?status=unread" \
+  -H "Authorization: Bearer <jwt_token>"
+```
+
+### 组合筛选
+
+```bash
+curl -X GET "http://localhost:8080/api/v1/system/notifications?type=info&source=nfs&page=1&per_page=10" \
   -H "Authorization: Bearer <jwt_token>"
 ```
 
@@ -137,7 +152,7 @@ curl -X GET "http://localhost:8080/api/v1/system/notifications?page=2&page_size=
 
 1. 验证 JWT Token 有效性
 2. 查询系统通知（target_user_id IS NULL）
-3. 可选按优先级筛选
+3. 支持按 type/status/source 筛选
 4. 按 created_at 降序排列（最新的在前）
 5. 应用分页
 6. 返回通知列表和分页信息
@@ -146,21 +161,19 @@ curl -X GET "http://localhost:8080/api/v1/system/notifications?page=2&page_size=
 
 | 类型 | 说明 |
 | ---- | ---- |
-| system | 系统通知 |
-| alert | 告警通知 |
 | info | 信息通知 |
 | warning | 警告通知 |
 | error | 错误通知 |
+| critical | 严重通知 |
 
-## 优先级
+## 状态
 
-| 优先级 | 说明 |
+| 状态 | 说明 |
 | ---- | ---- |
-| low | 低优先级 |
-| normal | 普通优先级 |
-| high | 高优先级 |
-| critical | 紧急优先级 |
+| unread | 未读 |
+| read | 已读 |
 
 ## 版本历史
 
-- **Phase 197** (2026-03-28): 通知管理模块 - 系统通知列表 API
+- **Phase 207** (2026-03-28): 系统通知列表 API - 重写实现，支持 type/status/source 筛选
+- **Phase 197** (2026-03-28 00:50): 通知管理模块 - 系统通知列表 API 初始实现
