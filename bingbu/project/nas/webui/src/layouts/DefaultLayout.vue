@@ -19,6 +19,9 @@
             <router-link to="/storage" class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">
               存储管理
             </router-link>
+            <router-link to="/users" class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">
+              用户管理
+            </router-link>
             <button @click="logout" class="text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400">
               退出
             </button>
@@ -47,6 +50,9 @@
         <router-link to="/storage" class="block text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400" @click="showMobileMenu = false">
           存储管理
         </router-link>
+        <router-link to="/users" class="block text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400" @click="showMobileMenu = false">
+          用户管理
+        </router-link>
         <button @click="logout; showMobileMenu = false" class="block text-left text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400">
           退出
         </button>
@@ -69,7 +75,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
