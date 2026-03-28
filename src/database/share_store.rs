@@ -390,6 +390,77 @@ impl SqliteShareRepository {
         })
     }
 
+    /// 更新 SMB 共享（支持 SMB 字段）
+    pub fn update_share_smb(
+        &self,
+        id: u64,
+        name: Option<&str>,
+        path: Option<&str>,
+        description: Option<&str>,
+        allowed_users: Option<&str>,
+        allowed_groups: Option<&str>,
+        guest_ok: Option<bool>,
+        read_only: Option<bool>,
+    ) -> Result<Share, String> {
+        let share = self.get_share_by_id(id)?
+            .ok_or_else(|| format!("Share {} not found", id))?;
+
+        let conn = self.get_connection()?;
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|_| "Invalid time")?
+            .as_secs() as i64;
+
+        // 动态构建 UPDATE 语句
+        let mut sets = vec![];
+        let mut params: Vec<Box<dyn rusqlite::ToSql>> = vec![];
+
+        if let Some(n) = name {
+            sets.push("name = ?1");
+            params.push(Box::new(n));
+        }
+        if let Some(p) = path {
+            sets.push("path = ?2");
+            params.push(Box::new(p));
+        }
+        if let Some(d) = description {
+            sets.push("description = ?3");
+            params.push(Box::new(d));
+        }
+        if let Some(u) = allowed_users {
+            sets.push("allowed_users = ?4");
+            params.push(Box::new(u));
+        }
+        if let Some(g) = allowed_groups {
+            sets.push("allowed_groups = ?5");
+            params.push(Box::new(g));
+        }
+        if let Some(go) = guest_ok {
+            sets.push("guest_ok = ?6");
+            params.push(Box::new(if go { 1 } else { 0 }));
+        }
+        if let Some(ro) = read_only {
+            sets.push("read_only = ?7");
+            params.push(Box::new(if ro { 1 } else { 0 }));
+        }
+
+        sets.push("updated_at = ?8");
+        params.push(Box::new(now));
+
+        let set_clause = sets.join(", ");
+        let query = format!("UPDATE shares SET {} WHERE id = ?{}", set_clause, sets.len());
+
+        let mut stmt = conn.prepare(&query)
+            .map_err(|e| format!("Prepare failed: {}", e))?;
+
+        stmt.execute(rusqlite::params_from_iter(params.iter()))
+            .map_err(|e| format!("Update failed: {}", e))?;
+
+        let updated = self.get_share_by_id(id)?;
+
+        Ok(updated.ok_or_else(|| "Update failed, share not found".to_string())?)
+    }
+
     /// 删除共享
     pub fn delete_share(&self, id: u64) -> Result<bool, String> {
         let share = self.get_share_by_id(id)?

@@ -6,10 +6,10 @@
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 6e894c2 |
-| 提交时间 | 2026-03-28 03:46 UTC |
-| 当前阶段 | Phase 211 待安排 |
-| 状态 | ✅ Phase 210 已完成 |
+| 最新 commit | 075f57d |
+| 提交时间 | 2026-03-28 03:51 UTC |
+| 当前阶段 | Phase 212 待安排 |
+| 状态 | ✅ Phase 211 已完成 |
 | 阻塞项 | 无 |
 
 ---
@@ -67,9 +67,9 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 211 待安排
+- [ ] Phase 212 待安排
 
-- [x] Phase 210 SMB 共享创建 API - 2026-03-28 03:50
+- [x] Phase 211 SMB 共享更新 API - 2026-03-28 04:00
   - [x] GET /api/v1/system/notifications/{id} — 获取通知详情
   - [x] JWT 认证，登录用户可访问
   - [x] 验证通知 ID 存在性（404 Not Found）
@@ -101,6 +101,15 @@
 ---
 
 ## ✅ 已完成事项
+
+- [x] SMB 共享更新 API (Phase 211) - 2026-03-28 04:00
+  - PUT /api/v1/shares/smb/{id} — 更新 SMB 共享配置
+  - JWT 认证，仅 admin 用户可访问
+  - 支持部分更新：name/path/description/allowed_users/allowed_groups/guest_ok/read_only
+  - 验证路径存在性、权限检查、名称唯一性（排除自身）
+  - 更新成功返回 200 OK + 共享详情
+  - 文档：docs/shares_smb_update_api.md
+  - Commit: (待提交)
 
 - [x] SMB 共享创建 API (Phase 210) - 2026-03-28 03:50
   - POST /api/v1/shares/smb — 创建 SMB 共享配置
