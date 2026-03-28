@@ -18,6 +18,7 @@
 
 | 模块 | 状态 | Commit | 完成时间 |
 |------|:----:|--------|----------|
+| **WebUI 基础框架** | ✅ | Phase 301 | 2026-03-28 17:30 |
 | 核心框架 | ✅ | - | 03-14 |
 | JWT 认证 | ✅ | 0b34819 | 03-17 05:52 |
 | 共享链接 | ✅ | 33936d9 | 03-17 08:15 |
@@ -640,6 +641,14 @@
 
 ## ✅ 已完成事项
 
+<<<<<<< HEAD
+- [x] **Phase 301 WebUI 基础框架** - 2026-03-28 17:30
+  - 技术栈：Vue 3 + TypeScript + Vite + TailwindCSS + Pinia
+  - 目录：`axis/webui/`
+  - 功能：项目脚手架、路由配置、API 客户端、认证 store、首页、关于页、登录页
+  - 构建：`npm run dev` (开发) / `npm run build` (生产)
+  - 文档：webui/README.md
+=======
 - [x] WebDAV 共享列表 API (Phase 215) - 2026-03-28 05:05
   - GET /api/v1/shares/webdav — 获取 WebDAV 共享列表
   - JWT 认证，仅 admin 用户可访问
@@ -882,6 +891,7 @@
   - 完善错误处理（404 Not Found / 409 Conflict / 500 Database Error）
   - 删除成功返回 200 OK + 确认消息
   - Commit: eeefbe3
+>>>>>>> 4c9cf127741819c070e89e08e5e2fe8e2ae36269
 
 - [x] 备份任务更新 API (Phase 191) - 2026-03-27 19:58
   - PUT /api/v1/backups/{id} — 更新备份任务配置
