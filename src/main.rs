@@ -214,7 +214,7 @@ use handlers::shares_list::list_shares;
 use handlers::shares_detail::get_share;
 use handlers::shares_update::update_share;
 use handlers::shares_delete::delete_share;
-use handlers::shares_smb_list::list_smb_shares;
+use handlers::shares_smb_list_v2::list_smb_shares_v2 as list_smb_shares;
 use handlers::shares_smb_create::create_smb_share;
 use handlers::shares_smb_get::get_smb_share;
 use handlers::shares_smb_update::update_smb_share;

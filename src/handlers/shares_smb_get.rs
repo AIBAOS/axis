@@ -14,7 +14,7 @@ pub struct SmbShareDetail {
     pub id: u64,
     pub name: String,
     pub path: String,
-    pub description: String,
+    pub description: Option<String>,
     pub public: bool,
     pub created_at: i64,
     pub updated_at: i64,
@@ -98,7 +98,7 @@ pub async fn get_smb_share(
         name: share.name,
         path: share.path,
         description: share.description,
-        public: share.guest_access,
+        public: false,
         created_at: share.created_at,
         updated_at: share.updated_at,
     };
