@@ -1,45 +1,27 @@
-// Phase 163: 备份创建 API
+// 备份创建 API — SQLite 持久化版
 // POST /api/v1/backups — 创建备份任务
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::services::jwt_service::JwtService;
+use crate::database::backup_store::SqliteBackupRepository;
 
 /// 创建备份请求
 #[derive(Debug, Deserialize)]
 pub struct CreateBackupRequest {
     pub name: String,
-    pub r#type: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default = "default_backup_type")]
+    pub backup_type: String,
     pub source_path: String,
-    pub destination_path: String,
-    pub compression: Option<bool>,
-    pub encryption: Option<bool>,
+    pub destination: String,
+    pub schedule: Option<String>,
 }
 
-/// 备份信息
-#[derive(Serialize, Clone)]
-pub struct BackupInfo {
-    pub id: u64,
-    pub name: String,
-    pub r#type: String,
-    pub size: u64,
-    pub status: String,
-    pub source_path: String,
-    pub destination_path: String,
-    pub compression: bool,
-    pub encryption: bool,
-    pub created_at: String,
-    pub completed_at: Option<String>,
-}
-
-/// 创建备份响应
-#[derive(Serialize)]
-pub struct CreateBackupResponse {
-    pub success: bool,
-    pub message: String,
-    pub data: BackupInfo,
-}
+fn default_backup_type() -> String { "full".to_string() }
 
 /// 错误响应
 #[derive(Serialize)]
@@ -56,7 +38,7 @@ fn validate_backup_name(name: &str) -> bool {
 
 /// 验证备份类型
 fn validate_backup_type(backup_type: &str) -> bool {
-    matches!(backup_type, "daily" | "weekly" | "monthly" | "manual")
+    matches!(backup_type, "full" | "incremental")
 }
 
 /// 验证路径格式
@@ -64,17 +46,19 @@ fn validate_path(path: &str) -> bool {
     path.starts_with('/') && path.len() <= 512
 }
 
-/// 创建备份任务（Phase 163）
+/// 创建备份任务
 /// - JWT 认证，admin 角色可访问
-/// - 请求体包含：name/type/source_path/destination_path/compression/encryption
+/// - 请求体包含：name, description, backup_type (full/incremental), source_path, destination, schedule (可选)
 /// - 验证名称格式（400 Bad Request）
 /// - 验证备份类型（400 Bad Request）
 /// - 验证路径格式（400 Bad Request）
+/// - 使用 SqliteBackupRepository 持久化
 /// - 创建成功返回 201 Created + 备份详情
 pub async fn create_backup(
     req: HttpRequest,
     payload: web::Json<CreateBackupRequest>,
     jwt_service: web::Data<JwtService>,
+    repo: web::Data<Arc<SqliteBackupRepository>>,
 ) -> Result<HttpResponse, Error> {
     // 1. JWT 认证 - 提取并验证 token
     let token = req
@@ -109,10 +93,10 @@ pub async fn create_backup(
     }
 
     // 5. 验证备份类型
-    if !validate_backup_type(&payload.r#type) {
+    if !validate_backup_type(&payload.backup_type) {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
             success: false,
-            error: "Invalid backup type. Valid types: daily, weekly, monthly, manual".to_string(),
+            error: "Invalid backup type. Valid types: full, incremental".to_string(),
             code: "INVALID_TYPE".to_string(),
         }));
     }
@@ -127,7 +111,7 @@ pub async fn create_backup(
     }
 
     // 7. 验证目标路径格式
-    if !validate_path(&payload.destination_path) {
+    if !validate_path(&payload.destination) {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
             success: false,
             error: "Invalid destination path. Must start with / and be <= 512 chars".to_string(),
@@ -135,26 +119,20 @@ pub async fn create_backup(
         }));
     }
 
-    // 8. 模拟创建备份任务
-    let now = chrono::Utc::now().to_rfc3339();
-    let new_backup = BackupInfo {
-        id: 6, // 模拟自增 ID
-        name: payload.name.clone(),
-        r#type: payload.r#type.clone(),
-        size: 0, // 初始为 0，完成后更新
-        status: "pending".to_string(),
-        source_path: payload.source_path.clone(),
-        destination_path: payload.destination_path.clone(),
-        compression: payload.compression.unwrap_or(true),
-        encryption: payload.encryption.unwrap_or(false),
-        created_at: now.clone(),
-        completed_at: None,
-    };
+    // 8. 使用 SQLite 持久化创建备份任务
+    let backup = repo.create_backup(
+        &payload.name,
+        &payload.description,
+        &payload.backup_type,
+        &payload.source_path,
+        &payload.destination,
+        payload.schedule.as_deref(),
+    ).map_err(|e| actix_web::error::ErrorInternalServerError(format!("Failed to create backup: {}", e)))?;
 
     // 9. 返回创建成功
-    Ok(HttpResponse::Created().json(CreateBackupResponse {
-        success: true,
-        message: "Backup task created successfully".to_string(),
-        data: new_backup,
-    }))
+    Ok(HttpResponse::Created().json(serde_json::json!({
+        "success": true,
+        "message": "Backup task created successfully",
+        "data": backup
+    })))
 }
