@@ -1,15 +1,15 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 04:05 UTC
+> 最后更新：2026-03-28 04:15 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 48100b5 |
-| 提交时间 | 2026-03-28 04:05 UTC |
-| 当前阶段 | Phase 212 待安排 |
-| 状态 | ✅ Phase 211 已完成 |
+| 最新 commit | 54ddd37 |
+| 提交时间 | 2026-03-28 04:15 UTC |
+| 当前阶段 | Phase 212 SMB 共享删除 API |
+| 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
 ---
@@ -67,9 +67,9 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 212 待安排
+- [ ] Phase 213 待安排
 
-- [x] Phase 211 SMB 共享更新 API - 2026-03-28 04:00
+- [x] Phase 212 SMB 共享删除 API - 2026-03-28 04:15
   - [x] GET /api/v1/system/notifications/{id} — 获取通知详情
   - [x] JWT 认证，登录用户可访问
   - [x] 验证通知 ID 存在性（404 Not Found）
@@ -101,6 +101,16 @@
 ---
 
 ## ✅ 已完成事项
+
+- [x] SMB 共享删除 API (Phase 212) - 2026-03-28 04:15
+  - DELETE /api/v1/shares/smb/{id} — 删除 SMB 共享
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteShareRepository 实现真实数据库删除
+  - 验证共享 ID 存在性（404 Not Found）
+  - 验证协议类型（非 SMB 返回 404）
+  - 删除成功返回 204 No Content
+  - 文档：docs/shares_smb_delete_api.md
+  - Commit: 54ddd37
 
 - [x] SMB 共享更新 API (Phase 211) - 2026-03-28 04:00
   - PUT /api/v1/shares/smb/{id} — 更新 SMB 共享配置
@@ -1708,4 +1718,4 @@
 ---
 
 **兵部尚书 签发**
-2026-03-28 04:00 UTC
+2026-03-28 04:15 UTC
