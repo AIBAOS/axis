@@ -1,27 +1,33 @@
-// Phase 101 - 用户详情 API
+// Phase 226: 用户详情 API
 // GET /api/v1/users/{id} — 获取用户详情
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::Serialize;
+use std::sync::Arc;
 
-use crate::models::jwt::JwtClaims;
-
-/// 用户详情信息
-#[derive(Serialize, Clone)]
-pub struct UserDetail {
-    pub id: u64,
-    pub username: String,
-    pub email: String,
-    pub role: String,
-    pub created_at: u64,
-    pub updated_at: u64,
-}
+use crate::services::jwt_service::JwtService;
+use crate::database::user_store::SqliteUserRepository;
 
 /// 用户详情响应
 #[derive(Serialize)]
 pub struct UserDetailResponse {
     pub success: bool,
-    pub data: UserDetail,
+    pub data: UserInfo,
+}
+
+/// 用户信息（响应用，不包含敏感信息）
+#[derive(Serialize, Clone)]
+pub struct UserInfo {
+    pub id: u64,
+    pub username: String,
+    pub email: String,
+    pub roles: Vec<String>,
+    pub permissions: Vec<String>,
+    pub is_active: bool,
+    pub created_at: u64,
+    pub updated_at: u64,
+    pub last_login: Option<u64>,
+    pub storage_quota: Option<u64>,
 }
 
 /// 错误响应
@@ -32,20 +38,19 @@ pub struct ErrorResponse {
     pub code: String,
 }
 
-/// 检查当前用户是否已认证
-fn is_authenticated(_claims: &JwtClaims) -> bool {
-    true // 已登录用户可访问
-}
-
-/// 用户详情（Phase 101）
-/// - JWT 认证，登录用户可访问
-/// - 验证用户 ID 存在
-/// - 返回用户详细信息
-pub async fn get_user(
+/// 获取用户详情（Phase 226）
+/// - JWT 认证，admin 角色可访问
+/// - 验证用户 ID 存在性（404 Not Found）
+/// - 返回用户详情（不含密码）
+pub async fn get_user_detail(
     req: HttpRequest,
     path: web::Path<u64>,
+    jwt_service: web::Data<JwtService>,
+    user_repo: web::Data<Arc<SqliteUserRepository>>,
 ) -> Result<HttpResponse, Error> {
-    // 1. JWT 认证 - 提取并验证 token（登录用户可访问）
+    let user_id = path.into_inner();
+
+    // 1. JWT 认证 - 提取并验证 token
     let token = req
         .headers()
         .get("Authorization")
@@ -53,65 +58,56 @@ pub async fn get_user(
         .and_then(|s| s.strip_prefix("Bearer "))
         .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing or invalid Authorization header"))?;
 
-    // 简化验证：仅检查 token 是否存在
-    if token.is_empty() {
-        return Ok(HttpResponse::Unauthorized().json(serde_json::json!({
-            "success": false,
-            "error": "Invalid token"
-        })));
+    // 2. 验证 token 有效性
+    let claims = jwt_service
+        .validate_token(token)
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))?;
+
+    // 3. 验证 admin 权限
+    let is_admin = claims.roles.iter().any(|r| r == "admin");
+    if !is_admin {
+        return Ok(HttpResponse::Forbidden().json(ErrorResponse {
+            success: false,
+            error: "Only admin users can view user details".to_string(),
+            code: "FORBIDDEN".to_string(),
+        }));
     }
 
-    let user_id = path.into_inner();
+    // 4. 从数据库查询用户详情
+    match user_repo.find_by_id(user_id) {
+        Ok(Some(user)) => {
+            // 5. 返回用户详情（不含密码）
+            let user_info = UserInfo {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                roles: user.roles,
+                permissions: user.permissions,
+                is_active: user.is_active,
+                created_at: user.created_at,
+                updated_at: user.updated_at,
+                last_login: user.last_login,
+                storage_quota: user.storage_quota,
+            };
 
-    // 2. 模拟用户数据
-    let mock_users = vec![
-        UserDetail {
-            id: 1,
-            username: "admin".to_string(),
-            email: "admin@example.com".to_string(),
-            role: "admin".to_string(),
-            created_at: 1774259200,
-            updated_at: 1774259200,
-        },
-        UserDetail {
-            id: 2,
-            username: "user1".to_string(),
-            email: "user1@example.com".to_string(),
-            role: "user".to_string(),
-            created_at: 1774345600,
-            updated_at: 1774345600,
-        },
-        UserDetail {
-            id: 3,
-            username: "user2".to_string(),
-            email: "user2@example.com".to_string(),
-            role: "user".to_string(),
-            created_at: 1774432000,
-            updated_at: 1774432000,
-        },
-        UserDetail {
-            id: 4,
-            username: "guest".to_string(),
-            email: "guest@example.com".to_string(),
-            role: "guest".to_string(),
-            created_at: 1774518400,
-            updated_at: 1774518400,
-        },
-    ];
-
-    // 3. 查找指定 ID 的用户
-    let user = mock_users.into_iter().find(|u| u.id == user_id);
-
-    // 4. 返回响应
-    match user {
-        Some(u) => Ok(HttpResponse::Ok().json(UserDetailResponse {
-            success: true,
-            data: u,
-        })),
-        None => Ok(HttpResponse::NotFound().json(ErrorResponse {
-            success: false,
-            error: format!("User {} not found", user_id),
-            code: "NOT_FOUND".to_string(),
-        })),
+            Ok(HttpResponse::Ok().json(UserDetailResponse {
+                success: true,
+                data: user_info,
+            }))
+        }
+        Ok(None) => {
+            Ok(HttpResponse::NotFound().json(ErrorResponse {
+                success: false,
+                error: format!("User {} not found", user_id),
+                code: "NOT_FOUND".to_string(),
+            }))
+        }
+        Err(e) => {
+            Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("查询用户详情失败：{}", e),
+                code: "DATABASE_ERROR".to_string(),
+            }))
+        }
     }
 }

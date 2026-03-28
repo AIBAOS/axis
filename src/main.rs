@@ -57,6 +57,7 @@ mod database {
     pub mod update_store;
     pub mod usb_device_store;
     pub mod share_store;
+    pub mod cron_job_store;
 }
 mod config;
 
@@ -124,6 +125,29 @@ use handlers::printers_update::update_printer;
 use handlers::printers_get::get_printer_detail as get_printer_2;
 use handlers::printers_delete::delete_printer;
 use handlers::system_health::get_system_health;
+use handlers::system_restart::restart_system;
+use handlers::system_shutdown::shutdown_system;
+use handlers::media_info::get_media_info;
+use handlers::media_videos::get_videos;
+use handlers::media_audios::get_audios;
+use handlers::media_photos::get_photos;
+use handlers::media_video_detail::get_video_detail;
+use handlers::media_audio_detail::get_audio_detail;
+use handlers::media_photo_detail::get_photo_detail;
+use handlers::media_photo_upload::upload_photo;
+use handlers::media_photo_delete::delete_photo;
+use handlers::system_settings_get::get_system_settings;
+use handlers::system_settings_update::update_system_settings;
+use handlers::system_power::get_power_status;
+use handlers::system_resources::get_system_resources;
+use handlers::system_processes::get_system_processes;
+use handlers::system_process_signal::send_signal_to_process;
+use handlers::system_cron_jobs_list::get_system_cron_jobs;
+use handlers::system_cron_jobs_create::create_cron_job;
+use handlers::system_cron_jobs_detail::get_system_cron_job_detail;
+use handlers::system_cron_jobs_update::update_system_cron_job;
+use handlers::system_cron_jobs_delete::delete_system_cron_job;
+use handlers::system_process_terminate::terminate_process;
 use handlers::storage_volume_snapshot_create::create_volume_snapshot as create_volume_snapshot;
 use handlers::storage_volume_snapshots_list::list_volume_snapshots as list_volume_snapshots;
 use handlers::storage_volume_snapshot_detail::get_volume_snapshot as get_volume_snapshot;
@@ -640,7 +664,6 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/users", web::get().to(list_users))
             .route("/api/v1/users", web::post().to(create_user))
             // 用户详情 API (Phase 226 - 增强版)
-            .route("/api/v1/users/{id}", web::get().to(handlers::users_get_by_id_v2::get_user_detail_v2))
             .route("/api/v1/storage/volumes/{id}/snapshots", web::get().to(list_volume_snapshots))
             .route("/api/v1/storage/volumes/{id}/snapshots", web::post().to(create_volume_snapshot))
             .route("/api/v1/storage/volumes/{volume_id}/snapshots/{snapshot_id}", web::get().to(get_volume_snapshot))
@@ -738,6 +761,48 @@ async fn main() -> std::io::Result<()> {
             // 系统信息 API routes
             .route("/api/v1/system/info", web::get().to(handlers::system_info::get_system_info))
             .route("/api/v1/system/health", web::get().to(get_system_health))
+            .route("/api/v1/system/restart", web::post().to(restart_system))
+            .route("/api/v1/system/shutdown", web::post().to(shutdown_system))
+            // 媒体信息 API routes (Phase 231)
+            .route("/api/v1/media/info", web::get().to(get_media_info))
+            // 媒体视频 API routes (Phase 232)
+            .route("/api/v1/media/videos", web::get().to(get_videos))
+            // 媒体音频 API routes (Phase 233)
+            .route("/api/v1/media/audios", web::get().to(get_audios))
+            // 媒体照片 API routes (Phase 234)
+            .route("/api/v1/media/photos", web::get().to(get_photos))
+            // 媒体视频详情 API routes (Phase 236)
+            .route("/api/v1/media/videos/{id}", web::get().to(get_video_detail))
+            // 媒体音频详情 API routes (Phase 237)
+            .route("/api/v1/media/audios/{id}", web::get().to(get_audio_detail))
+            // 媒体照片详情 API routes (Phase 238)
+            .route("/api/v1/media/photos/{id}", web::get().to(get_photo_detail))
+            // 媒体照片上传 API routes (Phase 239)
+            .route("/api/v1/media/photos", web::post().to(upload_photo))
+            // 媒体照片删除 API routes (Phase 240)
+            .route("/api/v1/media/photos/{id}", web::delete().to(delete_photo))
+            // 系统设置获取 API routes (Phase 246)
+            .route("/api/v1/system/settings", web::get().to(get_system_settings))
+            // 系统设置更新 API routes (Phase 247)
+            .route("/api/v1/system/settings", web::put().to(update_system_settings))
+            // 系统电源管理 API routes (Phase 248)
+            .route("/api/v1/system/power", web::get().to(get_power_status))
+            // 系统资源监控 API routes (Phase 250)
+            .route("/api/v1/system/resources", web::get().to(get_system_resources))
+            // 系统进程列表 API routes (Phase 251)
+            .route("/api/v1/system/processes", web::get().to(get_system_processes))
+            .route("/api/v1/system/processes/{pid}/terminate", web::post().to(terminate_process))
+            // 进程信号发送 API routes (Phase 253)
+            .route("/api/v1/system/processes/{pid}/signal", web::post().to(send_signal_to_process))
+            // 系统定时任务列表 API routes (Phase 254)
+            .route("/api/v1/system/cron-jobs", web::get().to(get_system_cron_jobs))
+            // 系统定时任务创建 API routes (Phase 255)
+            .route("/api/v1/system/cron-jobs", web::post().to(create_cron_job))
+            // 系统定时任务详情 API routes (Phase 256)
+            .route("/api/v1/system/cron-jobs/{id}", web::get().to(get_system_cron_job_detail))
+            .route("/api/v1/system/cron-jobs/{id}", web::put().to(update_system_cron_job))
+            // 系统定时任务删除 API routes (Phase 259)
+            .route("/api/v1/system/cron-jobs/{id}", web::delete().to(delete_system_cron_job))
             .route("/api/v1/system/logs", web::get().to(get_system_logs))
             .route("/api/v1/system/logs/{id}", web::get().to(get_system_log_detail))
             .route("/api/v1/system/logs/export", web::post().to(export_system_logs))
@@ -834,6 +899,7 @@ async fn main() -> std::io::Result<()> {
             // 用户管理 API routes (Phase 34 & 55 & 226 & 102 & 103)
             .route("/api/v1/users", web::get().to(handlers::users_list::list_users))
             .route("/api/v1/users", web::post().to(create_user))
+            .route("/api/v1/users/{id}", web::get().to(get_user_by_id))
             .route("/api/v1/users/{id}", web::put().to(update_user))
             .route("/api/v1/users/{id}", web::delete().to(handlers::users_delete::delete_user))
             .route("/api/v1/users/{id}/password", web::put().to(handlers::users::change_password))

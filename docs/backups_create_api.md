@@ -1,10 +1,10 @@
-# 备份创建 API
+# 备份任务创建 API
 
-## Phase 163
+## Phase 261
 
 ## 接口说明
 
-创建新的备份任务。
+创建新的备份任务，支持全量备份 (full) 和增量备份 (incremental)。
 
 ## 请求
 
@@ -21,23 +21,23 @@
 
 ```json
 {
-  "name": "Manual Backup 2026-03-27",
-  "type": "manual",
+  "name": "Daily Full Backup",
+  "description": "每日全量备份系统数据",
   "source_path": "/srv/data",
-  "destination_path": "/srv/backups",
-  "compression": true,
-  "encryption": false
+  "destination": "/srv/backups",
+  "backup_type": "full",
+  "schedule": "0 2 * * *"
 }
 ```
 
 | 字段 | 类型 | 必填 | 说明 |
 | ---- | ---- | ---- | ---- |
-| name | string | 是 | 备份名称（1-128 字符） |
-| type | string | 是 | 备份类型（daily/weekly/monthly/manual） |
+| name | string | 是 | 备份任务名称（1-128 字符，允许字母数字 -_ ） |
+| description | string | 否 | 备份任务描述 |
 | source_path | string | 是 | 源路径（必须以/开头，最大 512 字符） |
-| destination_path | string | 是 | 目标路径（必须以/开头，最大 512 字符） |
-| compression | boolean | 否 | 是否压缩（默认 true） |
-| encryption | boolean | 否 | 是否加密（默认 false） |
+| destination | string | 是 | 目标路径（必须以/开头，最大 512 字符） |
+| backup_type | string | 是 | 备份类型：full（全量）或 incremental（增量） |
+| schedule | string | 否 | Cron 表达式，可选，用于计划任务 |
 
 ## 响应
 
@@ -48,17 +48,16 @@
   "success": true,
   "message": "Backup task created successfully",
   "data": {
-    "id": 6,
-    "name": "Manual Backup 2026-03-27",
-    "type": "manual",
-    "size": 0,
-    "status": "pending",
+    "id": 1,
+    "name": "Daily Full Backup",
+    "description": "每日全量备份系统数据",
+    "backup_type": "full",
     "source_path": "/srv/data",
     "destination_path": "/srv/backups",
-    "compression": true,
-    "encryption": false,
-    "created_at": "2026-03-27T09:00:00Z",
-    "completed_at": null
+    "schedule": "0 2 * * *",
+    "status": "idle",
+    "created_at": 1711641600,
+    "updated_at": 1711641600
   }
 }
 ```
@@ -70,7 +69,7 @@
 ```json
 {
   "success": false,
-  "error": "Invalid backup name. Must be 1-128 chars",
+  "error": "Invalid backup name. Must be 1-128 chars, alphanumeric with -_  allowed",
   "code": "INVALID_NAME"
 }
 ```
@@ -78,8 +77,8 @@
 ```json
 {
   "success": false,
-  "error": "Invalid backup type. Valid types: daily, weekly, monthly, manual",
-  "code": "INVALID_TYPE"
+  "error": "Invalid backup type. Valid types: full, incremental",
+  "code": "INVALID_BACKUP_TYPE"
 }
 ```
 
@@ -95,11 +94,19 @@
 {
   "success": false,
   "error": "Invalid destination path. Must start with / and be <= 512 chars",
-  "code": "INVALID_DESTINATION_PATH"
+  "code": "INVALID_DESTINATION"
 }
 ```
 
 #### 401 Unauthorized - 未认证或 Token 无效
+
+```json
+{
+  "success": false,
+  "error": "Missing or invalid Authorization header",
+  "code": "UNAUTHORIZED"
+}
+```
 
 ```json
 {
@@ -114,42 +121,50 @@
 ```json
 {
   "success": false,
-  "error": "Only admin users can create backups",
+  "error": "Only admin users can create backup tasks",
   "code": "FORBIDDEN"
+}
+```
+
+#### 500 Internal Server Error - 数据库错误
+
+```json
+{
+  "success": false,
+  "error": "创建备份任务失败：数据库操作失败",
+  "code": "DATABASE_ERROR"
 }
 ```
 
 ## 示例
 
-### 创建手动备份
+### 创建全量备份任务
 
 ```bash
 curl -X POST "http://localhost:8080/api/v1/backups" \
   -H "Authorization: Bearer <jwt_token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Manual Backup 2026-03-27",
-    "type": "manual",
+    "name": "Daily Full Backup",
+    "description": "每日全量备份系统数据",
     "source_path": "/srv/data",
-    "destination_path": "/srv/backups",
-    "compression": true,
-    "encryption": false
+    "destination": "/srv/backups",
+    "backup_type": "full",
+    "schedule": "0 2 * * *"
   }'
 ```
 
-### 创建加密备份
+### 创建增量备份任务
 
 ```bash
 curl -X POST "http://localhost:8080/api/v1/backups" \
   -H "Authorization: Bearer <jwt_token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Encrypted Backup",
-    "type": "manual",
-    "source_path": "/srv/sensitive",
-    "destination_path": "/srv/backups/secure",
-    "compression": true,
-    "encryption": true
+    "name": "Hourly Incremental Backup",
+    "source_path": "/srv/data",
+    "destination": "/srv/backups/incremental",
+    "backup_type": "incremental"
   }'
 ```
 
@@ -161,9 +176,9 @@ curl -X POST "http://localhost:8080/api/v1/backups" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Test Backup",
-    "type": "invalid",
     "source_path": "/srv/data",
-    "destination_path": "/srv/backups"
+    "destination": "/srv/backups",
+    "backup_type": "daily"
   }'
 ```
 
@@ -171,8 +186,31 @@ curl -X POST "http://localhost:8080/api/v1/backups" \
 ```json
 {
   "success": false,
-  "error": "Invalid backup type. Valid types: daily, weekly, monthly, manual",
-  "code": "INVALID_TYPE"
+  "error": "Invalid backup type. Valid types: full, incremental",
+  "code": "INVALID_BACKUP_TYPE"
+}
+```
+
+### 非 admin 用户尝试创建
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/backups" \
+  -H "Authorization: Bearer <user_jwt_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test Backup",
+    "source_path": "/srv/data",
+    "destination": "/srv/backups",
+    "backup_type": "full"
+  }'
+```
+
+响应（403 Forbidden）：
+```json
+{
+  "success": false,
+  "error": "Only admin users can create backup tasks",
+  "code": "FORBIDDEN"
 }
 ```
 
@@ -189,35 +227,36 @@ curl -X POST "http://localhost:8080/api/v1/backups" \
 | ---- | ---- | ---- |
 | success | boolean | 是否成功 |
 | message | string | 响应消息 |
-| data | object | 创建的备份信息 |
+| data | object | 创建的备份任务信息 |
 
-### 备份信息字段
+### 备份任务信息字段
 
 | 字段 | 类型 | 说明 |
 | ---- | ---- | ---- |
-| id | u64 | 备份 ID |
-| name | string | 备份名称 |
-| type | string | 备份类型（daily/weekly/monthly/manual） |
-| size | u64 | 备份大小（字节，初始为 0） |
-| status | string | 状态（pending/running/completed/failed） |
+| id | i64 | 备份任务 ID（自增） |
+| name | string | 备份任务名称 |
+| description | string | 备份任务描述 |
+| backup_type | string | 备份类型（full/incremental） |
 | source_path | string | 源路径 |
 | destination_path | string | 目标路径 |
-| compression | boolean | 是否压缩 |
-| encryption | boolean | 是否加密 |
-| created_at | string | 创建时间（ISO 8601 格式） |
-| completed_at | string\|null | 完成时间（ISO 8601 格式） |
+| schedule | string\|null | Cron 表达式（计划任务） |
+| status | string | 状态（idle/running/completed/failed/archived） |
+| created_at | i64 | 创建时间（Unix 时间戳） |
+| updated_at | i64 | 更新时间（Unix 时间戳） |
 
 ## 业务逻辑
 
-1. 验证 JWT Token 有效性
-2. 检查用户角色是否为 admin
-3. 验证备份名称格式（1-128 字符）
-4. 验证备份类型（daily/weekly/monthly/manual）
-5. 验证源路径格式（以/开头，最大 512 字符）
-6. 验证目标路径格式（以/开头，最大 512 字符）
-7. 创建备份任务
-8. 返回 201 Created + 备份详情
+1. 从 Authorization 头提取 JWT Token
+2. 验证 JWT Token 有效性
+3. 检查用户角色是否包含 admin
+4. 验证备份任务名称格式（1-128 字符，允许字母数字 -_ ）
+5. 验证备份类型（full 或 incremental）
+6. 验证源路径格式（以/开头，最大 512 字符）
+7. 验证目标路径格式（以/开头，最大 512 字符）
+8. 使用 SqliteBackupRepository 创建备份任务并持久化
+9. 返回 201 Created + 备份任务详情
 
 ## 版本历史
 
-- **Phase 163** (2026-03-27): 备份管理模块 - 备份创建 API
+- **Phase 261** (2026-03-28): 备份任务创建 API - 使用 SqliteBackupRepository 持久化，支持 full/incremental 类型
+- **Phase 163** (2026-03-27): 备份管理模块 - 备份创建 API（旧版，已废弃）

@@ -1,48 +1,45 @@
 # 删除用户 API
 
-**Phase 51** - 用户管理 API 之删除用户接口
+## Phase 104
 
----
+## 接口说明
 
-## 接口信息
-
-- **端点:** `DELETE /api/v1/users/{id}`
-- **认证:** 需要 JWT Bearer Token
-- **权限:** 仅 `admin` 角色可访问
-- **响应:** 204 No Content
-
----
+删除指定用户，仅限 admin 角色访问。
 
 ## 请求
 
+`DELETE /api/v1/users/{id}`
+
 ### 请求头
 
-|  Header  | 必需 | 说明 |
-|----------|------|------|
-| `Authorization` | 是 | `Bearer <JWT_TOKEN>` |
+| 字段 | 类型 | 必填 | 说明 |
+| ---- | ---- | ---- | ---- |
+| Authorization | string | 是 | JWT Token，格式：`Bearer <token>` |
 
 ### 路径参数
 
-| 参数 | 类型 | 必需 | 说明 |
-|------|------|------|------|
-| `id` | integer | 是 | 用户 ID |
+| 字段 | 类型 | 必填 | 说明 |
+| ---- | ---- | ---- | ---- |
+| id | integer | 是 | 用户 ID |
 
-### 请求示例
+### 请求体
 
-```bash
-curl -X DELETE "http://localhost:8080/api/v1/users/123" \
-  -H "Authorization: Bearer <ADMIN_JWT_TOKEN>"
-```
-
----
+无
 
 ## 响应
 
-### 204 No Content - 删除成功
+### 成功响应（200 OK）
 
-无响应体。
+```json
+{
+  "success": true,
+  "message": "User deleted"
+}
+```
 
-### 400 Bad Request - 不能删除自己
+### 错误响应
+
+#### 400 Bad Request - 尝试删除自己
 
 ```json
 {
@@ -52,17 +49,7 @@ curl -X DELETE "http://localhost:8080/api/v1/users/123" \
 }
 ```
 
-### 401 Unauthorized - 未认证
-
-```json
-{
-  "success": false,
-  "error": "Missing or invalid Authorization header",
-  "code": "UNAUTHORIZED"
-}
-```
-
-或
+#### 401 Unauthorized - 未认证或 Token 无效
 
 ```json
 {
@@ -72,7 +59,7 @@ curl -X DELETE "http://localhost:8080/api/v1/users/123" \
 }
 ```
 
-### 403 Forbidden - 无权限
+#### 403 Forbidden - 权限不足（非 admin）
 
 ```json
 {
@@ -82,60 +69,115 @@ curl -X DELETE "http://localhost:8080/api/v1/users/123" \
 }
 ```
 
-### 404 Not Found - 用户不存在
+#### 404 Not Found - 用户不存在
 
 ```json
 {
   "success": false,
-  "error": "User 123 not found",
+  "error": "User 999 not found",
   "code": "NOT_FOUND"
 }
 ```
 
-### 500 Internal Server Error - 服务器错误
+#### 500 Internal Server Error - 服务器错误
 
 ```json
 {
   "success": false,
-  "error": "Failed to delete user: <error message>",
-  "code": "INTERNAL_ERROR"
+  "error": "Failed to delete user: database error",
+  "code": "DATABASE_ERROR"
 }
 ```
 
----
+## 示例
+
+### 删除用户
+
+```bash
+curl -X DELETE "http://localhost:8080/api/v1/users/1" \
+  -H "Authorization: Bearer <admin_jwt_token>"
+```
+
+响应（200 OK）：
+```json
+{
+  "success": true,
+  "message": "User deleted"
+}
+```
+
+### 删除不存在的用户
+
+```bash
+curl -X DELETE "http://localhost:8080/api/v1/users/999" \
+  -H "Authorization: Bearer <admin_jwt_token>"
+```
+
+响应（404 Not Found）：
+```json
+{
+  "success": false,
+  "error": "User 999 not found",
+  "code": "NOT_FOUND"
+}
+```
+
+### 非 admin 用户尝试删除
+
+```bash
+curl -X DELETE "http://localhost:8080/api/v1/users/1" \
+  -H "Authorization: Bearer <user_jwt_token>"
+```
+
+响应（403 Forbidden）：
+```json
+{
+  "success": false,
+  "error": "Only admin users can delete users",
+  "code": "FORBIDDEN"
+}
+```
+
+### 尝试删除自己
+
+```bash
+curl -X DELETE "http://localhost:8080/api/v1/users/1" \
+  -H "Authorization: Bearer <admin_jwt_token>"
+```
+
+响应（400 Bad Request）：
+```json
+{
+  "success": false,
+  "error": "Cannot delete yourself",
+  "code": "CANNOT_DELETE_SELF"
+}
+```
+
+## 权限要求
+
+- 需要 JWT 认证
+- 仅限 admin 角色访问
+- 不能删除自己
+
+## 业务逻辑
+
+1. 验证 JWT Token 有效性
+2. 检查用户角色是否为 admin
+3. 检查是否尝试删除自己（400 Bad Request）
+4. 查询用户是否存在（404 Not Found）
+5. 使用 SqliteUserRepository 删除用户
+6. 返回删除成功消息
 
 ## 安全说明
 
-1. **JWT 认证**: 必须提供有效的 JWT Bearer Token
-2. **权限控制**: 仅 admin 角色用户可以删除用户
-3. **自我保护**: 不能删除当前登录用户自己
-4. **操作审计**: 删除操作会记录日志（包含被删除用户 ID 和用户名）
+- 此接口仅限 admin 用户调用
+- 防止 admin 删除自己导致系统无管理员
+- 删除操作不可逆，建议添加二次确认机制
+- 建议添加操作审计日志
 
----
+## 版本历史
 
-## 实现细节
-
-- **文件位置:** `src/handlers/users_delete.rs`
-- **路由注册:** `src/main.rs` - `DELETE /api/v1/users/{id}`
-- **依赖:**
-  - `jsonwebtoken` - JWT 验证
-  - `SqliteUserRepository` - 用户数据存储
-  - `SqliteRbacRepository` - 角色权限验证
-
----
-
-## 相关接口
-
-- `GET /api/v1/users` - 用户列表（Phase 48）
-- `GET /api/v1/users/{id}` - 用户详情（Phase 49）
-- `POST /api/v1/users` - 创建用户（Phase 47）
-- `PUT /api/v1/users/{id}` - 更新用户（Phase 50）
-
----
-
-## 变更日志
-
-| 日期 | 版本 | 说明 |
-|------|------|------|
-| 2026-03-26 | 1.0 | Phase 51 初始实现 |
-| 2026-03-26 | 1.1 | 增强 JWT 认证和 admin 权限校验 |
+- **Phase 104** (2026-03-28): 用户管理模块 - 删除用户 API
+- **Phase 51** (2026-03-26): 初始实现（返回 204 No Content）
+- **Phase 104 增强** (2026-03-28): 返回 200 OK + JSON 响应
