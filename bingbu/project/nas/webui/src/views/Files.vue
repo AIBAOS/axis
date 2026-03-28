@@ -1,0 +1,453 @@
+<template>
+  <div class="space-y-6">
+    <!-- 页面标题和操作栏 -->
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+        文件管理
+      </h1>
+      <div class="flex items-center space-x-3">
+        <button
+          @click="showUploadModal = true"
+          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+          </svg>
+          上传文件
+        </button>
+        <button
+          @click="createFolder"
+          class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+          </svg>
+          新建文件夹
+        </button>
+      </div>
+    </div>
+
+    <!-- 面包屑导航 -->
+    <nav class="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+      <button
+        @click="navigateTo('/')"
+        class="hover:text-indigo-600 dark:hover:text-indigo-400"
+      >
+        📁 根目录
+      </button>
+      <template v-for="(segment, index) in breadcrumbSegments" :key="index">
+        <span class="text-gray-400">/</span>
+        <button
+          @click="navigateToBreadcrumb(index)"
+          class="hover:text-indigo-600 dark:hover:text-indigo-400"
+        >
+          {{ segment }}
+        </button>
+      </template>
+    </nav>
+
+    <!-- 文件列表 -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <!-- 列表头部 -->
+      <div class="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-500 dark:text-gray-400">
+        <div class="col-span-6">名称</div>
+        <div class="col-span-2">大小</div>
+        <div class="col-span-3">修改时间</div>
+        <div class="col-span-1 text-right">操作</div>
+      </div>
+
+      <!-- 加载状态 -->
+      <div v-if="loading" class="px-6 py-12 text-center">
+        <svg class="animate-spin h-8 w-8 text-indigo-600 mx-auto" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">加载中...</p>
+      </div>
+
+      <!-- 空目录 -->
+      <div v-else-if="files.length === 0" class="px-6 py-12 text-center">
+        <svg class="w-12 h-12 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+        </svg>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">此目录为空</p>
+      </div>
+
+      <!-- 文件列表 -->
+      <div v-else>
+        <div
+          v-for="file in files"
+          :key="file.name"
+          class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 items-center"
+          :class="{ 'cursor-pointer': file.type === 'dir' }"
+          @dblclick="file.type === 'dir' && navigateTo(file.path)"
+        >
+          <!-- 文件名 -->
+          <div class="col-span-6 flex items-center">
+            <span class="text-xl mr-3">
+              {{ file.type === 'dir' ? '📁' : getFileIcon(file.name) }}
+            </span>
+            <span class="text-sm font-medium text-gray-900 dark:text-white" :class="{ 'cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400': file.type === 'dir' }">
+              {{ file.name }}
+            </span>
+          </div>
+
+          <!-- 大小 -->
+          <div class="col-span-2 text-sm text-gray-500 dark:text-gray-400">
+            {{ file.type === 'dir' ? '-' : formatFileSize(file.size) }}
+          </div>
+
+          <!-- 修改时间 -->
+          <div class="col-span-3 text-sm text-gray-500 dark:text-gray-400">
+            {{ formatDateTime(file.modified) }}
+          </div>
+
+          <!-- 操作 -->
+          <div class="col-span-1 flex justify-end space-x-2">
+            <button
+              v-if="file.type === 'file'"
+              @click="downloadFile(file)"
+              class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+              title="下载"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+              </svg>
+            </button>
+            <button
+              @click="showRenameModal(file)"
+              class="text-gray-400 hover:text-yellow-600 dark:hover:text-yellow-400"
+              title="重命名"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              </svg>
+            </button>
+            <button
+              @click="deleteFile(file)"
+              class="text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+              title="删除"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 上传文件模态框 -->
+    <div v-if="showUploadModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white">上传文件</h3>
+          <button @click="showUploadModal = false" class="text-gray-400 hover:text-gray-500">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="px-6 py-4">
+          <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
+            <svg class="w-12 h-12 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">拖拽文件到此处，或点击选择文件</p>
+            <input
+              type="file"
+              ref="fileInput"
+              @change="handleFileSelect"
+              class="hidden"
+              multiple
+            />
+            <button
+              @click="$refs.fileInput.click()"
+              class="mt-4 px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              选择文件
+            </button>
+          </div>
+          <div v-if="selectedFiles.length > 0" class="mt-4">
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">已选择文件：</p>
+            <ul class="text-sm text-gray-500 dark:text-gray-400 space-y-1">
+              <li v-for="file in selectedFiles" :key="file.name">{{ file.name }} ({{ formatFileSize(file.size) }})</li>
+            </ul>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+          <button
+            @click="showUploadModal = false"
+            class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            取消
+          </button>
+          <button
+            @click="uploadFiles"
+            :disabled="selectedFiles.length === 0 || uploading"
+            class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {{ uploading ? '上传中...' : '上传' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 重命名模态框 -->
+    <div v-if="showRenameModalFlag && fileToRename" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white">重命名</h3>
+        </div>
+        <div class="px-6 py-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            新名称
+          </label>
+          <input
+            v-model="newFileName"
+            type="text"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            :placeholder="fileToRename.name"
+          />
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+          <button
+            @click="closeRenameModal"
+            class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            取消
+          </button>
+          <button
+            @click="confirmRename"
+            class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+          >
+            确认
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import apiClient from '../api/client'
+
+const router = useRouter()
+
+const loading = ref(false)
+const files = ref([])
+const currentPath = ref('/')
+const showUploadModal = ref(false)
+const showRenameModalFlag = ref(false)
+const fileToRename = ref(null)
+const newFileName = ref('')
+const selectedFiles = ref([])
+const uploading = ref(false)
+
+// 面包屑导航片段
+const breadcrumbSegments = computed(() => {
+  if (currentPath.value === '/') return []
+  return currentPath.value.split('/').filter(Boolean)
+})
+
+// 导航到指定路径
+const navigateTo = (path) => {
+  currentPath.value = path
+  loadFiles()
+}
+
+// 导航到面包屑位置
+const navigateToBreadcrumb = (index) => {
+  const path = '/' + breadcrumbSegments.value.slice(0, index + 1).join('/')
+  navigateTo(path)
+}
+
+// 加载文件列表
+const loadFiles = async () => {
+  loading.value = true
+  try {
+    const response = await apiClient.get('/files/list', {
+      params: { path: currentPath.value === '/' ? '' : currentPath.value }
+    })
+    
+    if (response.data.success) {
+      files.value = response.data.data.map(file => ({
+        ...file,
+        path: currentPath.value === '/' ? `/${file.name}` : `${currentPath.value}/${file.name}`
+      }))
+    }
+  } catch (error) {
+    console.error('Failed to load files:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 获取文件图标
+const getFileIcon = (filename) => {
+  const ext = filename.split('.').pop().toLowerCase()
+  const icons = {
+    pdf: '📄',
+    doc: '📄',
+    docx: '📄',
+    xls: '📊',
+    xlsx: '📊',
+    jpg: '🖼️',
+    jpeg: '🖼️',
+    png: '🖼️',
+    gif: '🖼️',
+    mp3: '🎵',
+    mp4: '🎬',
+    zip: '📦',
+    rar: '📦',
+    txt: '📝'
+  }
+  return icons[ext] || '📄'
+}
+
+// 格式化文件大小
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+// 格式化日期时间
+const formatDateTime = (timestamp) => {
+  const date = new Date(timestamp * 1000)
+  return date.toLocaleString('zh-CN')
+}
+
+// 下载文件
+const downloadFile = async (file) => {
+  try {
+    const response = await apiClient.get('/files/download', {
+      params: { path: file.path },
+      responseType: 'blob'
+    })
+    
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', file.name)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+  } catch (error) {
+    console.error('Download failed:', error)
+    alert('下载失败')
+  }
+}
+
+// 删除文件
+const deleteFile = async (file) => {
+  if (!confirm(`确定要删除 "${file.name}" 吗？`)) return
+  
+  try {
+    await apiClient.delete('/files/delete', {
+      params: { path: file.path }
+    })
+    loadFiles()
+  } catch (error) {
+    console.error('Delete failed:', error)
+    alert('删除失败')
+  }
+}
+
+// 显示重命名模态框
+const showRenameModal = (file) => {
+  fileToRename.value = file
+  newFileName.value = file.name
+  showRenameModalFlag.value = true
+}
+
+// 关闭重命名模态框
+const closeRenameModal = () => {
+  showRenameModalFlag.value = false
+  fileToRename.value = null
+  newFileName.value = ''
+}
+
+// 确认重命名
+const confirmRename = async () => {
+  if (!newFileName.value || newFileName.value === fileToRename.value.name) {
+    closeRenameModal()
+    return
+  }
+  
+  try {
+    await apiClient.put('/files/rename', {
+      path: fileToRename.value.path,
+      new_name: newFileName.value
+    })
+    loadFiles()
+    closeRenameModal()
+  } catch (error) {
+    console.error('Rename failed:', error)
+    alert('重命名失败')
+  }
+}
+
+// 创建文件夹
+const createFolder = async () => {
+  const name = prompt('请输入文件夹名称：')
+  if (!name) return
+  
+  try {
+    await apiClient.post('/files/create_folder', {
+      path: currentPath.value === '/' ? `/${name}` : `${currentPath.value}/${name}`
+    })
+    loadFiles()
+  } catch (error) {
+    console.error('Create folder failed:', error)
+    alert('创建文件夹失败')
+  }
+}
+
+// 处理文件选择
+const handleFileSelect = (event) => {
+  selectedFiles.value = Array.from(event.target.files)
+}
+
+// 上传文件
+const uploadFiles = async () => {
+  if (selectedFiles.value.length === 0) return
+  
+  uploading.value = true
+  try {
+    for (const file of selectedFiles.value) {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('path', currentPath.value)
+      
+      await apiClient.post('/files/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+    }
+    
+    showUploadModal.value = false
+    selectedFiles.value = []
+    loadFiles()
+  } catch (error) {
+    console.error('Upload failed:', error)
+    alert('上传失败')
+  } finally {
+    uploading.value = false
+  }
+}
+
+// 页面加载时检查登录状态并加载文件
+onMounted(() => {
+  const token = localStorage.getItem('jwt_token')
+  if (!token) {
+    router.push('/login')
+    return
+  }
+  
+  loadFiles()
+})
+</script>
