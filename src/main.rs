@@ -132,6 +132,7 @@ use handlers::media_audios::get_audios;
 use handlers::media_photos::get_photos;
 use handlers::media_video_detail::get_video_detail;
 use handlers::media_audio_detail::get_audio_detail;
+use handlers::media_photo_detail::get_photo_detail;
 use handlers::storage_volume_snapshot_create::create_volume_snapshot as create_volume_snapshot;
 use handlers::storage_volume_snapshots_list::list_volume_snapshots as list_volume_snapshots;
 use handlers::storage_volume_snapshot_detail::get_volume_snapshot as get_volume_snapshot;
@@ -759,6 +760,8 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/media/videos/{id}", web::get().to(get_video_detail))
             // 媒体音频详情 API routes (Phase 237)
             .route("/api/v1/media/audios/{id}", web::get().to(get_audio_detail))
+            // 媒体照片详情 API routes (Phase 238)
+            .route("/api/v1/media/photos/{id}", web::get().to(get_photo_detail))
             .route("/api/v1/system/logs", web::get().to(get_system_logs))
             .route("/api/v1/system/logs/{id}", web::get().to(get_system_log_detail))
             .route("/api/v1/system/logs/export", web::post().to(export_system_logs))
