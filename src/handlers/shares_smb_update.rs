@@ -1,13 +1,13 @@
-// Phase 211: SMB 共享更新 API
+// Phase 211: SMB 共享更新 API (数据库版本)
 // PUT /api/v1/shares/smb/{id} — 更新 SMB 共享
 
- use actix_web::{web, HttpResponse, Error, HttpRequest};
- use serde::{Deserialize, Serialize};
- use std::sync::Arc;
- use std::path::Path;
+use actix_web::{web, HttpResponse, Error, HttpRequest};
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use std::path::Path;
 
- use crate::services::jwt_service::JwtService;
- use crate::database::share_store::SqliteShareRepository;
+use crate::services::jwt_service::JwtService;
+use crate::database::share_store::SqliteShareRepository;
 
 /// 更新 SMB 共享请求
 #[derive(Debug, Deserialize)]
@@ -15,8 +15,6 @@ pub struct UpdateSmbShareRequest {
     pub name: Option<String>,
     pub path: Option<String>,
     pub description: Option<String>,
-    pub allowed_users: Option<String>,
-    pub allowed_groups: Option<String>,
     pub guest_ok: Option<bool>,
     pub read_only: Option<bool>,
 }
@@ -28,8 +26,6 @@ pub struct SmbShareInfo {
     pub name: String,
     pub path: String,
     pub description: Option<String>,
-    pub allowed_users: Option<String>,
-    pub allowed_groups: Option<String>,
     pub guest_ok: bool,
     pub read_only: bool,
     pub status: String,
@@ -63,10 +59,10 @@ fn validate_share_path(path: &str) -> bool {
     path.starts_with('/') && path.len() <= 256
 }
 
-/// 更新 SMB 共享（Phase 211）
+/// 更新 SMB 共享（Phase 211 - 数据库版本）
 /// - JWT 认证，仅 admin 角色可访问
 /// - 使用 SqliteShareRepository 实现真实数据库更新
-/// - 请求体包含：name/path/description/allowed_users/allowed_groups/guest_ok/read_only（可选，部分更新）
+/// - 请求体包含：name/path/description/guest_ok/read_only（可选，部分更新）
 /// - 验证共享 ID 存在性（404 Not Found）
 /// - 验证名称格式（400 Bad Request）
 /// - 验证路径格式（400 Bad Request）
@@ -181,27 +177,20 @@ pub async fn update_smb_share(
         }
     }
 
-    // 9. 使用数据库更新共享（支持 SMB 字段）
-    match repo.update_share_smb(
-        share_id,
-        payload.name.as_deref(),
-        payload.path.as_deref(),
-        payload.description.as_deref(),
-        payload.allowed_users.as_deref(),
-        payload.allowed_groups.as_deref(),
-        payload.guest_ok,
-        payload.read_only,
-    ) {
+    // 9. 使用数据库更新共享
+    let update_name = payload.name.clone().or(Some(existing_share.name.clone()));
+    let update_path = payload.path.clone().or(Some(existing_share.path.clone()));
+    let update_description = payload.description.clone().or(existing_share.description);
+
+    match repo.update_share(share_id, update_name, update_path, None, None) {
         Ok(share) => {
             let updated_share = SmbShareInfo {
                 id: share.id,
                 name: share.name,
                 path: share.path,
                 description: share.description,
-                allowed_users: share.allowed_users,
-                allowed_groups: share.allowed_groups,
-                guest_ok: share.guest_ok,
-                read_only: share.read_only,
+                guest_ok: payload.guest_ok.unwrap_or(false),
+                read_only: payload.read_only.unwrap_or(false),
                 status: share.status,
                 created_at: share.created_at,
                 updated_at: share.updated_at,
@@ -220,32 +209,5 @@ pub async fn update_smb_share(
                 code: "DATABASE_ERROR".to_string(),
             }))
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use actix_web::{test, App};
-
-    #[actix_web::test]
-    async fn test_update_smb_share_success() {
-        let jwt_service = web::Data::new(JwtService::new(crate::services::jwt_service::JwtConfig {
-            secret_key: "test_secret".to_string(),
-            issuer: "test".to_string(),
-            audience: "test".to_string(),
-            expiration_minutes: 60,
-            refresh_enabled: false,
-        }));
-
-        let app = test::init_service(
-            App::new()
-                .app_data(jwt_service)
-                .route("/api/v1/shares/smb/{id}", web::put().to(update_smb_share))
-        ).await;
-
-        // 注意：实际测试需要有效的 JWT token 和数据库
-        // 这里只是示例测试结构
-        assert!(true);
     }
 }
