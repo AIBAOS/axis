@@ -1,15 +1,15 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 10:40 UTC
+> 最后更新：2026-03-28 10:50 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 3fde7ea |
-| 提交时间 | 2026-03-28 10:40 UTC |
-| 当前阶段 | Phase 236 媒体视频详情 API |
-| 状态 | ✅ 已完成 (含文档) |
+| 最新 commit | [待提交] |
+| 提交时间 | 2026-03-28 10:50 UTC |
+| 当前阶段 | Phase 237 媒体音频详情 API |
+| 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
 ---
@@ -67,7 +67,17 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 237 待安排
+- [ ] Phase 238 待安排
+
+- [x] Phase 237 媒体音频详情 API - 2026-03-28 10:50
+  - GET /api/v1/media/audios/{id} — 获取音频详情
+  - JWT 认证，任意登录用户可访问
+  - 验证音频 ID 存在性（404 Not Found）
+  - 返回字段：id/name/path/size_bytes/duration_seconds/artist/album/track_number/genre/bitrate/sample_rate/created_at/updated_at/thumbnail_path
+  - 错误处理：401/404/500
+  - 单元测试：已编写
+  - 文档：docs/media_audio_detail_api.md
+  - Commit: [待提交]
 
 - [x] Phase 236 媒体视频详情 API - 2026-03-28 10:35 (增强版)
   - GET /api/v1/media/videos/{id} — 获取视频详情
