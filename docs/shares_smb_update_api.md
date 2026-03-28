@@ -1,53 +1,53 @@
-# SMB 共享更新 API
+# SMB 共享更新 API 文档
 
-## Phase 211
+## 概述
 
-## 接口说明
+本文档描述 Axis NAS 系统中更新 SMB 共享 API 的实现细节。
 
-更新 SMB 共享配置。支持部分更新，仅更新提供的字段。
+## API 端点
 
-## 请求
+- **路径**: `PUT /api/v1/shares/smb/{id}`
+- **版本**: v1
+- **Phase**: 211
 
-`PUT /api/v1/shares/smb/{id}`
+## 认证
 
-### 请求头
+- **类型**: JWT Bearer Token
+- **权限**: 仅 Admin 用户可访问
 
-| 字段 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| Authorization | string | 是 | JWT Token，格式：`Bearer <token>` |
-| Content-Type | string | 是 | `application/json` |
+## 请求参数
 
-### 路径参数
+### Path 参数
 
-| 字段 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| id | integer | 是 | SMB 共享 ID |
+| 参数 | 类型 | 必需 | 描述 |
+|------|------|------|------|
+| `id` | number | 是 | SMB 共享 ID |
 
-### 请求体
+### Request Body
 
 ```json
 {
-  "name": "new_shared_name",
-  "description": "更新后的描述",
-  "allowed_users": "user1,user2,user3",
-  "guest_ok": true,
-  "read_only": true
+  "name": "string (optional)",
+  "path": "string (optional)",
+  "description": "string (optional)",
+  "guest_ok": "boolean (optional)",
+  "read_only": "boolean (optional)"
 }
 ```
 
-| 字段 | 类型 | 必填 | 说明 |
-| ---- | ---- | ---- | ---- |
-| name | string | 否 | 共享名称（1-64 字符，字母数字及 -_.） |
-| path | string | 否 | 共享路径（必须以 / 开头，最长 256 字符） |
-| description | string | 否 | 共享描述 |
-| allowed_users | string | 否 | 允许访问的 SMB 用户名（逗号分隔） |
-| allowed_groups | string | 否 | 允许访问的 SMB 组名（逗号分隔） |
-| guest_ok | boolean | 否 | 是否允许访客访问 |
-| read_only | boolean | 否 | 是否只读 |
+### 字段说明
 
-## 响应
+| 字段 | 类型 | 必需 | 描述 |
+|------|------|------|------|
+| `name` | string | 否 | 共享名称（1-64 字符） |
+| `path` | string | 否 | 共享路径（必须以 / 开头） |
+| `description` | string | 否 | 共享描述 |
+| `guest_ok` | boolean | 否 | 是否允许访客访问 |
+| `read_only` | boolean | 否 | 是否只读 |
 
-### 成功响应（200 OK）
+## 响应格式
+
+### 成功响应 (200 OK)
 
 ```json
 {
@@ -55,23 +55,31 @@
   "message": "SMB share updated successfully",
   "data": {
     "id": 1,
-    "name": "new_shared_name",
-    "path": "/data/shared",
-    "description": "更新后的描述",
-    "allowed_users": "user1,user2,user3",
-    "allowed_groups": null,
+    "name": "Public",
+    "path": "/srv/samba/public",
+    "description": "公共共享文件夹",
     "guest_ok": true,
-    "read_only": true,
+    "read_only": false,
     "status": "active",
-    "created_at": 1711584000,
-    "updated_at": 1711587600
+    "created_at": 1711500000,
+    "updated_at": 1711600000
   }
 }
 ```
 
 ### 错误响应
 
-#### 400 Bad Request - 请求参数错误
+#### 404 Not Found - 共享不存在
+
+```json
+{
+  "success": false,
+  "error": "SMB share 999 not found",
+  "code": "NOT_FOUND"
+}
+```
+
+#### 400 Bad Request - 名称格式无效
 
 ```json
 {
@@ -81,6 +89,18 @@
 }
 ```
 
+#### 400 Bad Request - 路径格式无效
+
+```json
+{
+  "success": false,
+  "error": "Invalid share path. Must start with / and be <= 256 chars",
+  "code": "INVALID_PATH"
+}
+```
+
+#### 400 Bad Request - 路径不存在
+
 ```json
 {
   "success": false,
@@ -89,17 +109,17 @@
 }
 ```
 
-#### 401 Unauthorized - 未认证或 Token 无效
+#### 409 Conflict - 名称已存在
 
 ```json
 {
   "success": false,
-  "error": "Invalid or expired token",
-  "code": "UNAUTHORIZED"
+  "error": "Share name 'Public' already exists",
+  "code": "NAME_CONFLICT"
 }
 ```
 
-#### 403 Forbidden - 非 admin 用户
+#### 403 Forbidden - 权限不足
 
 ```json
 {
@@ -109,54 +129,80 @@
 }
 ```
 
-#### 404 Not Found - SMB 共享不存在
+#### 401 Unauthorized - 认证失败
 
 ```json
 {
   "success": false,
-  "error": "SMB share 1 not found",
-  "code": "NOT_FOUND"
+  "error": "Missing or invalid Authorization header",
+  "code": "UNAUTHORIZED"
 }
 ```
 
-#### 409 Conflict - 名称冲突
+## 数据模型
 
-```json
-{
-  "success": false,
-  "error": "Share name 'new_name' already exists",
-  "code": "NAME_CONFLICT"
-}
-```
+### UpdateSmbShareRequest
 
-#### 500 Internal Server Error - 数据库错误
+| 字段 | 类型 | 描述 |
+|------|------|------|
+| `name` | string? | 共享名称 |
+| `path` | string? | 共享路径 |
+| `description` | string? | 共享描述 |
+| `guest_ok` | boolean? | 是否允许访客 |
+| `read_only` | boolean? | 是否只读 |
 
-```json
-{
-  "success": false,
-  "error": "更新共享失败：database is locked",
-  "code": "DATABASE_ERROR"
-}
-```
+### SmbShareInfo
+
+| 字段 | 类型 | 描述 |
+|------|------|------|
+| `id` | number | 共享 ID |
+| `name` | string | 共享名称 |
+| `path` | string | 共享路径 |
+| `description` | string? | 共享描述 |
+| `guest_ok` | boolean | 是否允许访客 |
+| `read_only` | boolean | 是否只读 |
+| `status` | string | 状态：`active` / `inactive` |
+| `created_at` | number | 创建时间（Unix 时间戳） |
+| `updated_at` | number | 更新时间（Unix 时间戳） |
+
+### UpdateSmbShareResponse
+
+| 字段 | 类型 | 描述 |
+|------|------|------|
+| `success` | boolean | 操作是否成功 |
+| `message` | string | 响应消息 |
+| `data` | SmbShareInfo | 更新后的共享信息 |
+
+## 错误代码
+
+| 代码 | HTTP 状态码 | 描述 |
+|------|-----------|------|
+| `UNAUTHORIZED` | 401 | 未提供或无效的认证令牌 |
+| `FORBIDDEN` | 403 | 非 admin 用户尝试更新 |
+| `NOT_FOUND` | 404 | 共享不存在或非 SMB 协议 |
+| `INVALID_NAME` | 400 | 共享名称格式无效 |
+| `INVALID_PATH` | 400 | 共享路径格式无效 |
+| `PATH_NOT_FOUND` | 400 | 指定路径不存在 |
+| `NAME_CONFLICT` | 409 | 共享名称已存在 |
+| `DATABASE_ERROR` | 500 | 数据库操作失败 |
 
 ## 示例
 
-### 更新 SMB 共享（部分字段）
+### 请求
 
 ```bash
 curl -X PUT "http://localhost:8080/api/v1/shares/smb/1" \
-  -H "Authorization: Bearer <jwt_token>" \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "new_shared_name",
-    "description": "更新后的描述",
-    "allowed_users": "user1,user2,user3",
+    "name": "Public",
+    "description": "更新后的公共共享文件夹",
     "guest_ok": true,
-    "read_only": true
+    "read_only": false
   }'
 ```
 
-### 响应（成功）
+### 响应
 
 ```json
 {
@@ -164,47 +210,107 @@ curl -X PUT "http://localhost:8080/api/v1/shares/smb/1" \
   "message": "SMB share updated successfully",
   "data": {
     "id": 1,
-    "name": "new_shared_name",
-    "path": "/data/shared",
-    "description": "更新后的描述",
-    "allowed_users": "user1,user2,user3",
-    "allowed_groups": null,
+    "name": "Public",
+    "path": "/srv/samba/public",
+    "description": "更新后的公共共享文件夹",
     "guest_ok": true,
-    "read_only": true,
+    "read_only": false,
     "status": "active",
-    "created_at": 1711584000,
-    "updated_at": 1711587600
+    "created_at": 1711500000,
+    "updated_at": 1711600000
   }
 }
 ```
 
-## 权限要求
+## 权限说明
 
-- 需要 JWT 认证
-- **仅 admin 用户可更新 SMB 共享**
+- **Admin 用户**: 可更新任意 SMB 共享
+- **普通用户**: 无权访问（返回 403 Forbidden）
 
-## 业务逻辑
+## 验证规则
 
-1. 验证 JWT Token 有效性
-2. 验证用户角色是否为 admin
-3. 查询 SMB 共享是否存在（404 Not Found）
-4. 验证名称格式（如果提供）
-5. 验证路径格式（如果提供）
-6. 验证路径是否存在（如果提供）
-7. 验证名称唯一性（如果提供，排除自身）
-8. 更新 SMB 共享记录
-9. 返回更新后的共享详情
+### 名称验证
+- 长度：1-64 字符
+- 允许字符：字母、数字、`-`、`_`、`.`
+- 必须唯一（排除自身）
 
-## SMB 共享字段说明
+### 路径验证
+- 必须以 `/` 开头
+- 最大长度：256 字符
+- 路径必须存在（使用 `std::path::Path::exists()` 验证）
 
-| 字段 | 说明 |
-| ---- | ---- |
-| `allowed_users` | 允许访问的 SMB 用户名列表，逗号分隔，null 表示不限 |
-| `allowed_groups` | 允许访问的 SMB 组名列表，逗号分隔，null 表示不限 |
-| `guest_ok` | 是否允许访客（无密码）访问 |
-| `read_only` | 是否只读 |
+## 实现细节
+
+### 部分更新
+- 仅更新提供的字段
+- 未提供的字段保持原值
+
+### 协议验证
+- 仅允许更新 `protocol = 'smb'` 的共享
+- 非 SMB 协议返回 404 Not Found
+
+### 数据库操作
+- **查询**: `get_share_by_id(id)`
+- **更新**: `update_share(id, name, path, description, status)`
+- **数据库**: SQLite
+- **框架**: Actix-web
+- **仓库**: SqliteShareRepository
+
+## 数据库表结构
+
+```sql
+CREATE TABLE IF NOT EXISTS shares (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    path TEXT NOT NULL,
+    protocol TEXT NOT NULL CHECK(protocol IN ('smb', 'nfs')),
+    status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'inactive')),
+    description TEXT,
+    allowed_users TEXT,
+    allowed_groups TEXT,
+    guest_ok INTEGER NOT NULL DEFAULT 0,
+    read_only INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+```
+
+## 相关接口
+
+- `GET /api/v1/shares/smb` - 获取 SMB 共享列表
+- `GET /api/v1/shares/smb/{id}` - 获取 SMB 共享详情
+- `POST /api/v1/shares/smb` - 创建 SMB 共享
+- `DELETE /api/v1/shares/smb/{id}` - 删除 SMB 共享
+
+## 测试验证
+
+```bash
+# 编译检查
+cargo check
+
+# 运行测试（如果有）
+cargo test
+
+# 测试更新共享
+curl -X PUT "http://localhost:8080/api/v1/shares/smb/1" \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Public",
+    "description": "更新后的描述"
+  }'
+
+# 预期：200 OK + 更新后的共享信息
+
+# 测试更新不存在的共享
+curl -X PUT "http://localhost:8080/api/v1/shares/smb/999" \
+  -H "Authorization: Bearer ADMIN_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "NewName"}'
+
+# 预期：404 Not Found
+```
 
 ## 版本历史
 
-- **Phase 211** (2026-03-28): SMB 共享更新 API - 支持 allowed_users/allowed_groups/guest_ok/read_only
-- **Phase 211** (2026-03-28): SMB 共享更新 API 初始实现（仅 guest_ok/read_only）
+- **Phase 211** (2026-03-28): 初始实现，从 mock 数据升级为 SQLite 持久化

@@ -136,6 +136,10 @@ impl SqliteShareRepository {
                     description: row.get(5)?,
                     created_at: row.get(6)?,
                     updated_at: row.get(7)?,
+                    allowed_users: row.get(8)?,
+                    allowed_groups: row.get(9)?,
+                    guest_ok: row.get::<_, i32>(10)? != 0,
+                    read_only: row.get::<_, i32>(11)? != 0,
                 })
             })
             .map_err(|e| format!("Query failed: {}", e))?
@@ -192,6 +196,10 @@ impl SqliteShareRepository {
                     description: row.get(5)?,
                     created_at: row.get(6)?,
                     updated_at: row.get(7)?,
+                    allowed_users: row.get(8)?,
+                    allowed_groups: row.get(9)?,
+                    guest_ok: row.get::<_, i32>(10)? != 0,
+                    read_only: row.get::<_, i32>(11)? != 0,
                 })
             })
             .map_err(|e| format!("Query failed: {}", e))?
@@ -239,35 +247,6 @@ impl SqliteShareRepository {
             .map_err(|e| format!("Count query failed: {}", e))?;
         
         Ok(count as u64)
-    }
-
-    /// 根据 ID 获取单个共享
-    pub fn get_share_by_id(&self, id: u64) -> Result<Option<Share>, String> {
-        let conn = self.get_connection()?;
-        let mut stmt = conn.prepare(
-            r#"
-            SELECT id, name, path, protocol, status, description, created_at, updated_at
-            FROM shares WHERE id = ?1
-            "#
-        ).map_err(|e| format!("Prepare failed: {}", e))?;
-        
-        let result = stmt
-            .query_row(params![id], |row| {
-                Ok(Share {
-                    id: row.get(0)?,
-                    name: row.get(1)?,
-                    path: row.get(2)?,
-                    protocol: row.get(3)?,
-                    status: row.get(4)?,
-                    description: row.get(5)?,
-                    created_at: row.get(6)?,
-                    updated_at: row.get(7)?,
-                })
-            })
-            .optional()
-            .map_err(|e| format!("Query failed: {}", e))?;
-        
-        Ok(result)
     }
 
     /// 创建共享（支持 SMB 字段）
@@ -387,6 +366,10 @@ impl SqliteShareRepository {
             description: share.description,
             created_at: share.created_at,
             updated_at: now,
+            allowed_users: share.allowed_users,
+            allowed_groups: share.allowed_groups,
+            guest_ok: share.guest_ok,
+            read_only: share.read_only,
         })
     }
 
@@ -505,6 +488,10 @@ impl SqliteShareRepository {
             description: share.description,
             created_at: share.created_at,
             updated_at: now,
+            allowed_users: share.allowed_users,
+            allowed_groups: share.allowed_groups,
+            guest_ok: share.guest_ok,
+            read_only: share.read_only,
         })
     }
 }
