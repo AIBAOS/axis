@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 11:40 UTC
+> 最后更新：2026-03-28 11:50 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 26e90f2 |
-| 提交时间 | 2026-03-28 11:40 UTC |
-| 当前阶段 | Phase 241 容器启动 API |
+| 最新 commit | [待提交] |
+| 提交时间 | 2026-03-28 11:50 UTC |
+| 当前阶段 | Phase 242 容器停止 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,15 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 242 待安排
+- [ ] Phase 243 待安排
+
+- [x] Phase 242 容器停止 API - 2026-03-28 11:50
+  - POST /api/v1/containers/{id}/stop — 停止容器
+  - JWT 认证，admin 角色可访问
+  - 验证容器 ID 存在性（404 Not Found）
+  - 验证容器状态：已停止返回 409 Conflict
+  - 停止成功返回 200 OK + { success, message, container_id, status: "stopped" }
+  - 错误处理：401/403/404/409/500
 
 - [x] Phase 241 容器启动 API - 2026-03-28 11:40
   - POST /api/v1/containers/{id}/start — 启动容器
