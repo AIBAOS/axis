@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 13:10 UTC
+> 最后更新：2026-03-28 13:20 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 20cf60d |
-| 提交时间 | 2026-03-28 13:10 UTC |
-| 当前阶段 | Phase 247 系统设置更新 API |
+| 最新 commit | [待提交] |
+| 提交时间 | 2026-03-28 13:20 UTC |
+| 当前阶段 | Phase 248 系统电源管理 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,17 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 248 待安排
+- [ ] Phase 249 待安排
+
+- [x] Phase 248 系统电源管理 API - 2026-03-28 13:20
+  - GET /api/v1/system/power — 获取电源状态信息
+  - JWT 认证，admin 角色可访问
+  - 返回字段：ac_power_connected/power_consumption_watts/ups/wake_on_lan_enabled/auto_power_on
+  - UPS 信息：present/model/battery_level/runtime_remaining/status
+  - 错误处理：401/403/500
+  - 单元测试：已编写
+  - 文档：docs/system_power_api.md
+  - Commit: [待提交]
 
 - [x] Phase 247 系统设置更新 API - 2026-03-28 13:10
   - PUT /api/v1/system/settings — 更新系统设置
