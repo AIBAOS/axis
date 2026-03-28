@@ -3,6 +3,7 @@ import Home from '../views/Home.vue'
 import Login from '../views/Login.vue'
 import Dashboard from '../views/Dashboard.vue'
 import Files from '../views/Files.vue'
+import Storage from '../views/Storage.vue'
 
 const routes = [
   {
@@ -25,6 +26,12 @@ const routes = [
     path: '/files',
     name: 'Files',
     component: Files,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/storage',
+    name: 'Storage',
+    component: Storage,
     meta: { requiresAuth: true },
   },
 ]
