@@ -2,18 +2,11 @@
 // GET /api/v1/system/notifications/{id} — 获取通知详情
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::sync::Arc;
 
 use crate::services::jwt_service::JwtService;
 use crate::database::notification_store::SqliteNotificationRepository;
-
-/// 查询参数
-#[derive(Debug, Deserialize)]
-pub struct NotificationQuery {
-    #[serde(rename = "type")]
-    pub notification_type: Option<String>,
-}
 
 /// 通知详情响应
 #[derive(Serialize)]
@@ -57,7 +50,7 @@ pub struct ErrorResponse {
 /// - JWT 认证，登录用户可访问
 /// - 验证通知 ID 存在性（404 Not Found）
 /// - 验证通知归属：用户只能查看自己的通知，admin 可查看任意
-pub async fn get_notification_detail(
+pub async fn get_system_notification_detail(
     req: HttpRequest,
     path: web::Path<i64>,
     jwt_service: web::Data<JwtService>,
@@ -151,7 +144,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(jwt_service)
-                .route("/api/v1/system/notifications/{id}", web::get().to(get_notification_detail))
+                .route("/api/v1/system/notifications/{id}", web::get().to(get_system_notification_detail))
         ).await;
 
         // 注意：实际测试需要有效的 JWT token 和数据库

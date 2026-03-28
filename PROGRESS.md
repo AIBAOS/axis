@@ -6,10 +6,10 @@
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 78ab1d1 |
-| 提交时间 | 2026-03-28 03:45 UTC |
-| 当前阶段 | Phase 209 系统通知详情 API |
-| 状态 | ✅ 已完成 |
+| 最新 commit | 21f0e42 |
+| 提交时间 | 2026-03-28 03:33 UTC |
+| 当前阶段 | Phase 210 待安排 |
+| 状态 | ✅ Phase 209 已完成 |
 | 阻塞项 | 无 |
 
 ---
@@ -69,6 +69,14 @@
 
 - [ ] Phase 210 待安排
 
+- [x] Phase 209 系统通知详情 API - 2026-03-28 03:45
+  - [x] GET /api/v1/system/notifications/{id} — 获取通知详情
+  - [x] JWT 认证，登录用户可访问
+  - [x] 验证通知 ID 存在性（404 Not Found）
+  - [x] 验证通知归属（admin 可查看任意，普通用户只能查看自己的）
+  - [x] 返回字段：id/type/title/message/source/status/created_at/read_at/metadata
+  - [x] 文档：docs/system_notifications_detail_api.md
+
 - [x] Phase 208 通知删除 API - 2026-03-28 03:30
   - [x] DELETE /api/v1/system/notifications/{id} — 删除系统通知
   - [x] JWT 认证，仅 admin 用户可访问
@@ -93,6 +101,15 @@
 ---
 
 ## ✅ 已完成事项
+
+- [x] 系统通知详情 API (Phase 209) - 2026-03-28 03:45
+  - GET /api/v1/system/notifications/{id} — 获取通知详情
+  - JWT 认证，登录用户可访问
+  - 验证通知 ID 存在性（404 Not Found）
+  - 验证通知归属（admin 可查看任意，普通用户只能查看自己的）
+  - 返回字段：id/type/title/message/source/status/created_at/read_at/metadata
+  - 文档：docs/system_notifications_detail_api.md
+  - Commit: (待提交)
 
 - [x] 系统通知删除 API (Phase 208) - 2026-03-28 03:30
   - DELETE /api/v1/system/notifications/{id} — 删除系统通知
@@ -1665,10 +1682,11 @@
 | Phase 206 NFS 共享删除 API | 100% ✅ |
 | Phase 207 系统通知列表 API | 100% ✅ |
 | Phase 208 通知删除 API | 100% ✅ |
+| Phase 209 通知详情 API | 100% ✅ |
 
-**总体进度**：**Phase 208 通知删除 API 已完成**
+**总体进度**：**Phase 209 通知详情 API 已完成**
 
 ---
 
 **兵部尚书 签发**
-2026-03-28 03:35 UTC
+2026-03-28 03:45 UTC
