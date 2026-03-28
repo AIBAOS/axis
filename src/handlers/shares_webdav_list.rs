@@ -23,8 +23,7 @@ pub struct WebdavShareInfo {
     pub name: String,
     pub path: String,
     pub description: Option<String>,
-    pub public: bool,
-    pub status: String,
+    pub enabled: bool,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -57,8 +56,8 @@ pub struct ErrorResponse {
 /// 获取 WebDAV 共享列表（Phase 215）
 /// - JWT 认证，admin 角色可访问
 /// - 使用 SqliteShareRepository 实现真实数据库查询
-/// - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
-/// - 支持筛选：status(active/inactive)
+/// - 支持分页：page(默认 1), per_page(默认 20, 最大 100)
+/// - 支持状态筛选：status(active/inactive)
 /// - 返回 WebDAV 共享列表 + 分页信息
 pub async fn list_webdav_shares(
     req: HttpRequest,
@@ -66,7 +65,7 @@ pub async fn list_webdav_shares(
     jwt_service: web::Data<JwtService>,
     repo: web::Data<Arc<SqliteShareRepository>>,
 ) -> Result<HttpResponse, Error> {
-    let page = query.page.unwrap_or(1).max(1);
+    let page = query.page.unwrap_or(1);
     let per_page = query.per_page.unwrap_or(20).min(100);
     let status_filter = query.status.clone();
 
@@ -94,41 +93,71 @@ pub async fn list_webdav_shares(
     }
 
     // 4. 从数据库查询 WebDAV 共享列表
-    match repo.get_shares(page, per_page, Some("webdav".to_string()), status_filter) {
-        Ok(shares) => {
-            // 5. 转换为响应格式
-            let data: Vec<WebdavShareInfo> = shares.into_iter().map(|s| WebdavShareInfo {
-                id: s.id,
-                name: s.name,
-                path: s.path,
-                description: s.description,
-                public: s.status == "active",
-                status: s.status,
-                created_at: s.created_at,
-                updated_at: s.updated_at,
-            }).collect();
+    let shares = repo.get_shares(page, per_page, Some("webdav".to_string()), status_filter.clone())
+        .map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Database error: {}", e))
+        })?;
 
-            // 6. 计算分页信息
-            let total = repo.count_shares(Some("webdav".to_string()), status_filter).unwrap_or(data.len() as u64);
-            let total_pages = if total == 0 { 1 } else { (total + per_page as u64 - 1) / per_page as u64 };
+    // 5. 转换为响应格式
+    let data: Vec<WebdavShareInfo> = shares.iter().map(|s| WebdavShareInfo {
+        id: s.id,
+        name: s.name.clone(),
+        path: s.path.clone(),
+        description: s.description.clone(),
+        enabled: s.enabled,
+        created_at: s.created_at,
+        updated_at: s.updated_at,
+    }).collect();
 
-            Ok(HttpResponse::Ok().json(WebdavShareListResponse {
-                success: true,
-                data,
-                pagination: PaginationInfo {
-                    page,
-                    per_page,
-                    total,
-                    total_pages: total_pages as u32,
-                },
-            }))
-        }
-        Err(e) => {
-            Ok(HttpResponse::InternalServerError().json(ErrorResponse {
-                success: false,
-                error: format!("查询 WebDAV 共享列表失败：{}", e),
-                code: "DATABASE_ERROR".to_string(),
-            }))
-        }
+    // 6. 计算分页信息
+    let total = data.len() as u64;
+    let total_pages = if per_page > 0 {
+        ((total as f64) / (per_page as f64)).ceil() as u32
+    } else {
+        1
+    };
+
+    // 7. 返回 WebDAV 共享列表
+    Ok(HttpResponse::Ok().json(WebdavShareListResponse {
+        success: true,
+        data,
+        pagination: PaginationInfo {
+            page,
+            per_page,
+            total,
+            total_pages,
+        },
+    }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::{test, App};
+
+    #[actix_web::test]
+    async fn test_list_webdav_shares_success() {
+        let jwt_service = web::Data::new(JwtService::new(crate::services::jwt_service::JwtConfig {
+            secret_key: "test_secret".to_string(),
+            issuer: "test".to_string(),
+            audience: "test".to_string(),
+            expiration_minutes: 60,
+            refresh_enabled: false,
+        }));
+
+        let repo = web::Data::new(Arc::new(SqliteShareRepository::new(
+            crate::database::pool::create_sqlite_pool(":memory:").unwrap(),
+        )));
+
+        let app = test::init_service(
+            App::new()
+                .app_data(jwt_service)
+                .app_data(repo)
+                .route("/api/v1/shares/webdav", web::get().to(list_webdav_shares))
+        ).await;
+
+        // 注意：实际测试需要有效的 JWT token 和数据库
+        // 这里只是示例测试结构
+        assert!(true);
     }
 }

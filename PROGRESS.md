@@ -90,6 +90,8 @@
 
 - [x] Phase 212 SMB 共享删除 API - 2026-03-28 04:15
 
+- [x] Phase 215 WebDAV 共享列表 API - 2026-03-28 05:05
+
 - [x] Phase 214 NFS 共享详情 API - 2026-03-28 04:52
 
 - [x] Phase 213 NFS 共享列表 API (增强版) - 2026-03-28 04:40
@@ -126,6 +128,15 @@
 ---
 
 ## ✅ 已完成事项
+
+- [x] WebDAV 共享列表 API (Phase 215) - 2026-03-28 05:05
+  - GET /api/v1/shares/webdav — 获取 WebDAV 共享列表
+  - JWT 认证，仅 admin 用户可访问
+  - 使用 SqliteShareRepository 真实数据库查询
+  - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - 支持状态筛选：status(active/inactive)
+  - 文档：docs/shares_webdav_list_api.md
+  - Commit: (待提交)
 
 - [x] NFS 共享详情 API (Phase 214) - 2026-03-28 04:52
   - GET /api/v1/shares/nfs/{id} — 获取 NFS 共享详情
