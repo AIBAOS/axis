@@ -28,6 +28,7 @@ pub mod shares_detail;
 pub mod shares_update;
 pub mod shares_delete;
 pub mod shares_smb_list;
+pub mod shares_smb_list_v2;
 pub mod shares_smb_create;
 pub mod shares_smb_get;
 pub mod shares_smb_update;

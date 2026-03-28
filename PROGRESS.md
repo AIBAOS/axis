@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 01:40 UTC
+> 最后更新：2026-03-28 02:00 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 6832574 |
-| 提交时间 | 2026-03-28 01:40 UTC |
-| 当前阶段 | Phase 201 SMB 共享创建 API |
+| 最新 commit | [待提交] |
+| 提交时间 | 2026-03-28 02:00 UTC |
+| 当前阶段 | Phase 202 SMB 共享列表 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,18 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 202 待安排
+- [ ] Phase 203 SMB 共享详情 API (P1)
+  - [ ] GET /api/v1/shares/smb/{id} — 获取 SMB 共享详情
+  - [ ] JWT 认证，任意登录用户可访问
+  - [ ] 返回完整共享信息
+
+- [x] Phase 202 SMB 共享列表 API (P1, 已完成)
+  - [x] GET /api/v1/shares/smb — 获取 SMB 共享列表
+  - [x] JWT 认证，任意登录用户可访问
+  - [x] 支持分页：page, limit（最大 100）
+  - [x] 支持筛选：public 字段
+  - [x] 返回 7 个字段：id/name/path/description/public/created_at/updated_at
+  - [x] 文档：docs/shares_smb_list_api.md
 
 ---
 
