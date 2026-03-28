@@ -23,6 +23,7 @@ pub mod sessions;
 pub mod share;
 pub mod shares;
 pub mod shares_create;
+pub mod shares_smb_list;
 pub mod shares_list;
 pub mod shares_detail;
 pub mod shares_update;
