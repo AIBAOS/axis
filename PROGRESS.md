@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 00:50 UTC
+> 最后更新：2026-03-28 00:55 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 44df3a7 |
-| 提交时间 | 2026-03-28 00:50 UTC |
-| 当前阶段 | Phase 197 系统通知列表 API |
+| 最新 commit | d5c82f6 |
+| 提交时间 | 2026-03-28 00:55 UTC |
+| 当前阶段 | Phase 198 SMB 共享列表 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,7 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 198 待安排
+- [ ] Phase 199 待安排
 
 ---
 
@@ -78,6 +78,17 @@
 ---
 
 ## ✅ 已完成事项
+
+- [x] SMB 共享列表 API (Phase 198) - 2026-03-28 00:55
+  - GET /api/v1/shares/smb — 获取 SMB 共享列表（SQLite 持久化版）
+  - JWT 认证，admin 角色可访问
+  - 使用 SqliteShareRepository 实现真实数据库查询
+  - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - 支持状态筛选：status(active/inactive)
+  - 返回字段：id/name/path/status/read_only/guest_access/enabled/created_at/updated_at
+  - 响应格式：success + data + pagination(page/per_page/total/total_pages)
+  - 文档：docs/shares_smb_list_api.md
+  - Commit: d5c82f6
 
 - [x] 系统通知列表 API (Phase 197) - 2026-03-28 00:50
   - GET /api/v1/system/notifications — 获取系统级别的通知列表
