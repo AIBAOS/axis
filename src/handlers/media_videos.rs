@@ -12,6 +12,7 @@ use crate::services::jwt_service::JwtService;
 pub struct VideosQuery {
     pub page: Option<u32>,
     pub per_page: Option<u32>,
+    pub folder: Option<String>,
 }
 
 /// 视频信息
@@ -45,9 +46,10 @@ pub struct ErrorResponse {
     pub code: String,
 }
 
-/// 获取视频列表（Phase 232）
+/// 获取视频列表（Phase 235 增强版）
 /// - JWT 认证，任意登录用户可访问
-/// - 支持分页：page(默认 1)/per_page(默认 20)
+/// - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+/// - 支持筛选：folder（可选，按目录过滤）
 /// - 返回视频列表 + 总数
 /// - 错误处理：401/500
 pub async fn get_videos(
@@ -114,13 +116,18 @@ pub async fn get_videos(
         },
     ];
 
-    // 5. 应用分页
-    let total_count = all_videos.len() as u64;
+    // 5. 应用 folder 筛选
+    let filtered_videos: Vec<VideoInfo> = all_videos.into_iter().filter(|v| {
+        query.folder.as_ref().map_or(true, |folder| v.path.starts_with(folder))
+    }).collect();
+
+    // 6. 应用分页
+    let total_count = filtered_videos.len() as u64;
     let start = ((page - 1) * per_page) as usize;
-    let end = (start + per_page as usize).min(all_videos.len());
+    let end = (start + per_page as usize).min(filtered_videos.len());
     
-    let videos = if start < all_videos.len() {
-        all_videos[start..end].to_vec()
+    let videos = if start < filtered_videos.len() {
+        filtered_videos[start..end].to_vec()
     } else {
         vec![]
     };

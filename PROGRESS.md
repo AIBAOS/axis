@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 10:10 UTC
+> 最后更新：2026-03-28 10:20 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 03eaf1a |
-| 提交时间 | 2026-03-28 10:10 UTC |
-| 当前阶段 | Phase 104 删除用户 API |
+| 最新 commit | [待提交] |
+| 提交时间 | 2026-03-28 10:20 UTC |
+| 当前阶段 | Phase 235 媒体视频列表 API |
 | 状态 | ✅ 已完成 (增强版) |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,19 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 235 待安排
+- [ ] Phase 236 待安排
+
+- [x] Phase 235 媒体视频列表 API - 2026-03-28 10:20 (增强版)
+  - GET /api/v1/media/videos — 获取视频列表
+  - JWT 认证，任意登录用户可访问
+  - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+  - 支持筛选：folder（可选，按目录过滤）
+  - 返回字段：videos/total_count/page/per_page
+  - 视频字段：id/name/path/size_bytes/duration_seconds/resolution/created_at/thumbnail_path
+  - 错误处理：401/500
+  - 单元测试：已编写
+  - 文档：docs/media_videos_list_api.md
+  - Commit: [待提交]
 
 - [x] Phase 104 删除用户 API - 2026-03-28 10:10 (增强版)
   - DELETE /api/v1/users/{id} — 删除用户
