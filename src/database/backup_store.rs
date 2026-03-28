@@ -1,5 +1,5 @@
 // 备份任务存储模块 — SQLite 持久化
-// 包含：建表、分页查询、创建、删除、执行状态更新
+// 包含：建表、分页查询、创建、删除、执行状态更新、执行历史记录
 
 use crate::database::pool::DbConnectionType;
 use rusqlite::{params, Connection};
@@ -21,6 +21,19 @@ pub struct BackupRow {
     pub last_run_size_bytes: Option<i64>,
     pub created_at: i64,
     pub updated_at: i64,
+}
+
+/// 备份执行历史记录
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct BackupExecutionRow {
+    pub id: i64,
+    pub backup_id: i64,
+    pub status: String,
+    pub started_at: i64,
+    pub completed_at: Option<i64>,
+    pub duration_seconds: Option<i64>,
+    pub error_message: Option<String>,
+    pub bytes_processed: Option<i64>,
 }
 
 /// SQLite 备份存储
@@ -65,9 +78,23 @@ impl SqliteBackupRepository {
                 updated_at INTEGER NOT NULL
             );
 
+            CREATE TABLE IF NOT EXISTS backup_executions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                backup_id INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT 'running',
+                started_at INTEGER NOT NULL,
+                completed_at INTEGER,
+                duration_seconds INTEGER,
+                error_message TEXT,
+                bytes_processed INTEGER,
+                FOREIGN KEY (backup_id) REFERENCES backups(id) ON DELETE CASCADE
+            );
+
             CREATE INDEX IF NOT EXISTS idx_backups_name ON backups(name);
             CREATE INDEX IF NOT EXISTS idx_backups_status ON backups(status);
             CREATE INDEX IF NOT EXISTS idx_backups_type ON backups(backup_type);
+            CREATE INDEX IF NOT EXISTS idx_executions_backup_id ON backup_executions(backup_id);
+            CREATE INDEX IF NOT EXISTS idx_executions_started_at ON backup_executions(started_at DESC);
         "#).map_err(|e| format!("Init backups table failed: {}", e))
     }
 
@@ -309,5 +336,87 @@ impl SqliteBackupRepository {
 
         // 返回归档后的备份信息
         self.get_backup_by_id(id)
+    }
+
+    /// 获取备份执行历史记录（分页）
+    pub fn get_execution_history(
+        &self,
+        backup_id: i64,
+        page: u32,
+        per_page: u32,
+    ) -> Result<(Vec<BackupExecutionRow>, u64), String> {
+        let conn = self.get_connection()?;
+        let offset = (page - 1) * per_page;
+
+        // 先检查备份是否存在
+        let backup_exists = self.get_backup_by_id(backup_id)?;
+        if backup_exists.is_none() {
+            return Err(format!("Backup {} not found", backup_id));
+        }
+
+        // 查询总数
+        let total: u64 = conn.query_row(
+            "SELECT COUNT(*) FROM backup_executions WHERE backup_id = ?1",
+            params![backup_id],
+            |row| row.get(0),
+        ).map_err(|e| format!("Count query failed: {}", e))?;
+
+        // 查询分页数据（按 started_at 降序）
+        let data_sql = r#"
+            SELECT id, backup_id, status, started_at, completed_at, duration_seconds, error_message, bytes_processed
+            FROM backup_executions
+            WHERE backup_id = ?1
+            ORDER BY started_at DESC
+            LIMIT ?2 OFFSET ?3
+        "#;
+
+        let mut stmt = conn.prepare(data_sql).map_err(|e| format!("Prepare failed: {}", e))?;
+        let rows = stmt.query_map(params![backup_id, per_page as i64, offset as i64], |row| {
+            Ok(BackupExecutionRow {
+                id: row.get(0)?,
+                backup_id: row.get(1)?,
+                status: row.get(2)?,
+                started_at: row.get(3)?,
+                completed_at: row.get(4)?,
+                duration_seconds: row.get(5)?,
+                error_message: row.get(6)?,
+                bytes_processed: row.get(7)?,
+            })
+        }).map_err(|e| format!("Query failed: {}", e))?;
+
+        let executions: Vec<BackupExecutionRow> = rows.filter_map(|r| r.ok()).collect();
+        Ok((executions, total))
+    }
+
+    /// 创建执行记录
+    pub fn create_execution(
+        &self,
+        backup_id: i64,
+        started_at: i64,
+    ) -> Result<i64, String> {
+        let conn = self.get_connection()?;
+        conn.execute(
+            "INSERT INTO backup_executions (backup_id, status, started_at) VALUES (?1, 'running', ?2)",
+            params![backup_id, started_at],
+        ).map_err(|e| format!("Insert execution failed: {}", e))?;
+        Ok(conn.last_insert_rowid())
+    }
+
+    /// 更新执行记录状态
+    pub fn update_execution(
+        &self,
+        execution_id: i64,
+        status: &str,
+        completed_at: i64,
+        duration_seconds: i64,
+        error_message: Option<&str>,
+        bytes_processed: Option<i64>,
+    ) -> Result<bool, String> {
+        let conn = self.get_connection()?;
+        let affected = conn.execute(
+            "UPDATE backup_executions SET status = ?1, completed_at = ?2, duration_seconds = ?3, error_message = ?4, bytes_processed = ?5 WHERE id = ?6",
+            params![status, completed_at, duration_seconds, error_message, bytes_processed, execution_id],
+        ).map_err(|e| format!("Update execution failed: {}", e))?;
+        Ok(affected > 0)
     }
 }

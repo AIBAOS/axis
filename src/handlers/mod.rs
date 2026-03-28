@@ -162,6 +162,7 @@ pub mod backups_update;
 pub mod backups_delete;
 pub mod backups_archive;
 pub mod backups_restore;
+pub mod backups_execution_history;
 pub mod scheduled_tasks;
 pub mod storage_pool_create;
 pub mod storage_pool_update;
