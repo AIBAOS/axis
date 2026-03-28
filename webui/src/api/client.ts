@@ -255,6 +255,29 @@ class ApiClient {
   async deleteUser(id: number) {
     return this.delete(`/users/${id}`);
   }
+
+  // Settings methods
+  async getSettings(category?: string) {
+    const endpoint = category ? `/settings/${category}` : '/settings';
+    return this.get(endpoint);
+  }
+
+  async updateSettings(category: string, data: Record<string, unknown>) {
+    return this.put(`/settings/${category}`, data);
+  }
+
+  async testEmailSettings(data: Record<string, unknown>) {
+    return this.post('/settings/email/test', data);
+  }
+
+  // Network methods
+  async getNetworkInfo() {
+    return this.get('/network/info');
+  }
+
+  async getNetworkInterfaces() {
+    return this.get('/network/interfaces');
+  }
 }
 
 export const apiClient = new ApiClient();
