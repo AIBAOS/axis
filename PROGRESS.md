@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 01:15 UTC
+> 最后更新：2026-03-28 01:25 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | c6c9b36 |
-| 提交时间 | 2026-03-28 01:15 UTC |
-| 当前阶段 | Phase 199 系统通知标记已读 API |
+| 最新 commit | e6ee338 |
+| 提交时间 | 2026-03-28 01:25 UTC |
+| 当前阶段 | Phase 200 系统通知标记已读 API (POST) |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,7 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 200 待安排
+- [ ] Phase 201 待安排
 
 ---
 
@@ -79,7 +79,17 @@
 
 ## ✅ 已完成事项
 
-- [x] 系统通知标记已读 API (Phase 199) - 2026-03-28 01:15
+- [x] 系统通知标记已读 API (POST) (Phase 200) - 2026-03-28 01:25
+  - POST /api/v1/system/notifications/{id}/mark-read — 标记通知为已读（POST 版本）
+  - JWT 认证，登录用户可访问
+  - 支持标记系统通知和个人通知
+  - 验证通知归属（403 Forbidden）
+  - 已读通知返回 409 Conflict
+  - 返回更新后的通知摘要
+  - 文档：docs/system_notifications_mark_read_post_api.md
+  - Commit: e6ee338
+
+- [x] 系统通知标记已读 API (PUT) (Phase 199) - 2026-03-28 01:15
   - PUT /api/v1/system/notifications/{id}/read — 标记系统通知为已读
   - JWT 认证，登录用户可访问
   - 验证通知存在性（404 Not Found）
