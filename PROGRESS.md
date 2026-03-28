@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 00:55 UTC
+> 最后更新：2026-03-28 01:15 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | d5c82f6 |
-| 提交时间 | 2026-03-28 00:55 UTC |
-| 当前阶段 | Phase 198 SMB 共享列表 API |
+| 最新 commit | c6c9b36 |
+| 提交时间 | 2026-03-28 01:15 UTC |
+| 当前阶段 | Phase 199 系统通知标记已读 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,7 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 199 待安排
+- [ ] Phase 200 待安排
 
 ---
 
@@ -78,6 +78,16 @@
 ---
 
 ## ✅ 已完成事项
+
+- [x] 系统通知标记已读 API (Phase 199) - 2026-03-28 01:15
+  - PUT /api/v1/system/notifications/{id}/read — 标记系统通知为已读
+  - JWT 认证，登录用户可访问
+  - 验证通知存在性（404 Not Found）
+  - 仅允许标记系统通知（target_user_id IS NULL）
+  - 更新 is_read = 1, read_at = 当前时间戳
+  - 返回更新后的通知摘要
+  - 文档：docs/system_notifications_mark_read_api.md
+  - Commit: c6c9b36
 
 - [x] SMB 共享列表 API (Phase 198) - 2026-03-28 00:55
   - GET /api/v1/shares/smb — 获取 SMB 共享列表（SQLite 持久化版）
