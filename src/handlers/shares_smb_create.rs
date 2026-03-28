@@ -1,10 +1,12 @@
-// Phase 153: SMB 共享创建 API
+// Phase 201: SMB 共享创建 API (数据库版本)
 // POST /api/v1/shares/smb — 创建 SMB 共享
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::services::jwt_service::JwtService;
+use crate::database::share_store::SqliteShareRepository;
 
 /// 创建 SMB 共享请求
 #[derive(Debug, Deserialize)]
@@ -63,8 +65,9 @@ fn validate_share_path(path: &str) -> bool {
     path.starts_with('/') && path.len() <= 256
 }
 
-/// 创建 SMB 共享（Phase 153）
+/// 创建 SMB 共享（Phase 201 - 数据库版本）
 /// - JWT 认证，仅 admin 角色可访问
+/// - 使用 SqliteShareRepository 实现真实数据库创建
 /// - 请求体包含：name/path/comment/read_only/guest_access/browseable/valid_users/invalid_users
 /// - 验证名称唯一性（409 Conflict）
 /// - 验证名称格式（400 Bad Request）
@@ -74,6 +77,7 @@ pub async fn create_smb_share(
     req: HttpRequest,
     payload: web::Json<CreateSmbShareRequest>,
     jwt_service: web::Data<JwtService>,
+    repo: web::Data<Arc<SqliteShareRepository>>,
 ) -> Result<HttpResponse, Error> {
     // 1. JWT 认证 - 提取并验证 token
     let token = req
@@ -116,40 +120,36 @@ pub async fn create_smb_share(
         }));
     }
 
-    // 6. 模拟现有共享数据（用于名称唯一性检查）
-    let existing_shares = vec!["Public", "Users", "Backup", "Media"];
+    // 6. 使用数据库创建 SMB 共享
+    match repo.create_share(&payload.name, &payload.path, "smb") {
+        Ok(share) => {
+            let new_share = CreatedSmbShare {
+                id: share.id as u64,
+                name: share.name,
+                path: share.path,
+                comment: payload.comment.clone().unwrap_or_default(),
+                read_only: payload.read_only.unwrap_or(false),
+                guest_access: payload.guest_access.unwrap_or(false),
+                browseable: payload.browseable.unwrap_or(true),
+                valid_users: payload.valid_users.clone().unwrap_or_default(),
+                invalid_users: payload.invalid_users.clone().unwrap_or_default(),
+                enabled: share.status == "active",
+                status: share.status,
+                created_at: share.created_at.to_string(),
+                updated_at: share.updated_at.to_string(),
+            };
 
-    // 7. 验证名称唯一性
-    if existing_shares.iter().any(|n| n == &payload.name) {
-        return Ok(HttpResponse::Conflict().json(ErrorResponse {
+            // 7. 返回创建成功
+            Ok(HttpResponse::Created().json(CreateSmbShareResponse {
+                success: true,
+                message: "SMB share created successfully".to_string(),
+                data: new_share,
+            }))
+        }
+        Err(e) => Ok(HttpResponse::InternalServerError().json(ErrorResponse {
             success: false,
-            error: format!("SMB share name '{}' already exists", payload.name),
-            code: "NAME_CONFLICT".to_string(),
-        }));
+            error: format!("创建 SMB 共享失败：{}", e),
+            code: "DATABASE_ERROR".to_string(),
+        })),
     }
-
-    // 8. 模拟创建 SMB 共享
-    let now = chrono::Utc::now().to_rfc3339();
-    let new_share = CreatedSmbShare {
-        id: 5, // 模拟自增 ID
-        name: payload.name.clone(),
-        path: payload.path.clone(),
-        comment: payload.comment.clone().unwrap_or_default(),
-        read_only: payload.read_only.unwrap_or(false),
-        guest_access: payload.guest_access.unwrap_or(false),
-        browseable: payload.browseable.unwrap_or(true),
-        valid_users: payload.valid_users.clone().unwrap_or_default(),
-        invalid_users: payload.invalid_users.clone().unwrap_or_default(),
-        enabled: true,
-        status: "active".to_string(),
-        created_at: now.clone(),
-        updated_at: now,
-    };
-
-    // 9. 返回创建成功
-    Ok(HttpResponse::Created().json(CreateSmbShareResponse {
-        success: true,
-        message: "SMB share created successfully".to_string(),
-        data: new_share,
-    }))
 }
