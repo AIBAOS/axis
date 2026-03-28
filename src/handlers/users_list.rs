@@ -1,40 +1,46 @@
-// Phase 161: 用户列表 API
+// Phase 225: 用户列表 API
 // GET /api/v1/users — 获取用户列表
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::services::jwt_service::JwtService;
+use crate::database::user_store::SqliteUserRepository;
 
-/// 用户列表查询参数
+/// 用户查询参数
 #[derive(Debug, Deserialize)]
-pub struct UserListQuery {
+pub struct UsersQuery {
     pub page: Option<u32>,
-    pub limit: Option<u32>,
+    pub per_page: Option<u32>,
+    pub role: Option<String>,
 }
 
-/// 用户信息
+/// 用户信息（响应用，不包含敏感信息）
 #[derive(Serialize, Clone)]
 pub struct UserInfo {
     pub id: u64,
     pub username: String,
     pub email: String,
-    pub role: String,
-    pub created_at: String,
+    pub roles: Vec<String>,
+    pub is_active: bool,
+    pub created_at: u64,
+    pub updated_at: u64,
+    pub last_login: Option<u64>,
 }
 
 /// 分页信息
 #[derive(Serialize, Debug)]
 pub struct PaginationInfo {
     pub page: u32,
-    pub limit: u32,
+    pub per_page: u32,
     pub total: u64,
     pub total_pages: u32,
 }
 
 /// 用户列表响应
 #[derive(Serialize)]
-pub struct UserListResponse {
+pub struct UsersListResponse {
     pub success: bool,
     pub data: Vec<UserInfo>,
     pub pagination: PaginationInfo,
@@ -48,17 +54,19 @@ pub struct ErrorResponse {
     pub code: String,
 }
 
-/// 获取用户列表（Phase 161）
+/// 获取用户列表（Phase 225）
 /// - JWT 认证，admin 角色可访问
-/// - 支持分页：page(默认 1), limit(默认 20)
+/// - 支持分页：page(默认 1)/per_page(默认 20, 最大 100)
+/// - 支持筛选：role
 /// - 返回用户列表 + 分页信息
 pub async fn list_users(
     req: HttpRequest,
-    query: web::Query<UserListQuery>,
+    query: web::Query<UsersQuery>,
     jwt_service: web::Data<JwtService>,
+    user_repo: web::Data<Arc<SqliteUserRepository>>,
 ) -> Result<HttpResponse, Error> {
-    let page = query.page.unwrap_or(1);
-    let limit = query.limit.unwrap_or(20).min(100);
+    let page = query.page.unwrap_or(1).max(1);
+    let per_page = query.per_page.unwrap_or(20).min(100);
 
     // 1. JWT 认证 - 提取并验证 token
     let token = req
@@ -83,60 +91,59 @@ pub async fn list_users(
         }));
     }
 
-    // 4. 模拟用户数据
-    let all_users = vec![
-        UserInfo {
-            id: 1,
-            username: "admin".to_string(),
-            email: "admin@axis.local".to_string(),
-            role: "admin".to_string(),
-            created_at: "2026-03-27T06:00:00Z".to_string(),
-        },
-        UserInfo {
-            id: 2,
-            username: "user1".to_string(),
-            email: "user1@axis.local".to_string(),
-            role: "user".to_string(),
-            created_at: "2026-03-27T06:00:00Z".to_string(),
-        },
-        UserInfo {
-            id: 3,
-            username: "user2".to_string(),
-            email: "user2@axis.local".to_string(),
-            role: "user".to_string(),
-            created_at: "2026-03-27T06:00:00Z".to_string(),
-        },
-        UserInfo {
-            id: 4,
-            username: "guest".to_string(),
-            email: "guest@axis.local".to_string(),
-            role: "guest".to_string(),
-            created_at: "2026-03-27T06:00:00Z".to_string(),
-        },
-    ];
+    // 4. 从数据库获取用户列表
+    match user_repo.list_all() {
+        Ok(users) => {
+            // 5. 应用角色筛选
+            let filtered_users: Vec<_> = if let Some(ref role) = query.role {
+                users.into_iter().filter(|u| u.roles.contains(role)).collect()
+            } else {
+                users
+            };
 
-    // 5. 应用分页
-    let total = all_users.len() as u64;
-    let total_pages = ((total as f64) / (limit as f64)).ceil() as u32;
-    
-    let start = ((page - 1) * limit) as usize;
-    let end = (start + limit as usize).min(all_users.len());
-    
-    let users = if start < all_users.len() {
-        all_users[start..end].to_vec()
-    } else {
-        vec![]
-    };
+            // 6. 应用分页
+            let total = filtered_users.len() as u64;
+            let start = ((page - 1) * per_page) as usize;
+            let end = (start + per_page as usize).min(filtered_users.len());
+            
+            let users_page = if start < filtered_users.len() {
+                filtered_users[start..end].to_vec()
+            } else {
+                vec![]
+            };
 
-    // 6. 返回用户列表
-    Ok(HttpResponse::Ok().json(UserListResponse {
-        success: true,
-        data: users,
-        pagination: PaginationInfo {
-            page,
-            limit,
-            total,
-            total_pages,
-        },
-    }))
+            // 7. 转换为响应格式
+            let data: Vec<UserInfo> = users_page.into_iter().map(|u| UserInfo {
+                id: u.id,
+                username: u.username,
+                email: u.email,
+                roles: u.roles,
+                is_active: u.is_active,
+                created_at: u.created_at,
+                updated_at: u.updated_at,
+                last_login: u.last_login,
+            }).collect();
+
+            // 8. 计算分页信息
+            let total_pages = if total == 0 { 1 } else { (total + per_page as u64 - 1) / per_page as u64 };
+
+            Ok(HttpResponse::Ok().json(UsersListResponse {
+                success: true,
+                data,
+                pagination: PaginationInfo {
+                    page,
+                    per_page,
+                    total,
+                    total_pages: total_pages as u32,
+                },
+            }))
+        }
+        Err(e) => {
+            Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: format!("查询用户列表失败：{}", e),
+                code: "DATABASE_ERROR".to_string(),
+            }))
+        }
+    }
 }
