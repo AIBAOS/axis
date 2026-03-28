@@ -6,7 +6,7 @@
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | [待提交] |
+| 最新 commit | a5db0d7 |
 | 提交时间 | 2026-03-28 12:30 UTC |
 | 当前阶段 | Phase 245 系统信息 API |
 | 状态 | ✅ 已完成 |
@@ -76,7 +76,7 @@
   - 错误处理：401/403/500
   - 单元测试：已编写
   - 文档：docs/system_info_api.md
-  - Commit: [待提交]
+  - Commit: a5db0d7
 
 - [x] Phase 244 容器日志 API - 2026-03-28 12:15
   - GET /api/v1/containers/{id}/logs — 获取容器日志
