@@ -69,12 +69,15 @@
 
 - [ ] Phase 230 待安排
 
-- [x] Phase 229 系统重启 API - 2026-03-28 08:35
+- [x] Phase 229 系统重启 API - 2026-03-28 08:40 (增强版)
   - POST /api/v1/system/restart — 重启系统
   - JWT 认证，admin 角色可访问
-  - 触发系统重启操作
-  - 返回重启计划信息
-  - Commit: 87a67ca
+  - 支持 delay_seconds 参数（0-300 秒）
+  - 验证延迟参数合法性（400 Bad Request）
+  - 返回字段：status/message/restart_at
+  - 错误处理：401/403/400/500
+  - 文档：docs/system_restart_api.md
+  - Commit: 87a67ca + 增强版
 
 - [x] Phase 228 容器详情 API - 2026-03-28 08:25
   - GET /api/v1/containers/{id} — 获取容器详情（数据库增强版）
