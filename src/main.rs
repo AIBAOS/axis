@@ -83,6 +83,7 @@ use handlers::notifications::{
 use handlers::system_notifications_list::list_notifications;
 use handlers::system_notifications_mark_read::mark_system_notification_as_read;
 use handlers::system_notifications_mark_read::mark_notification_as_read;
+use handlers::system_notifications_delete::delete_system_notification;
 
 use handlers::system_update::{
     check_update,
@@ -756,6 +757,7 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/system/notifications", web::get().to(list_notifications))
             .route("/api/v1/system/notifications/{id}/read", web::put().to(mark_system_notification_as_read))
             .route("/api/v1/system/notifications/{id}/mark-read", web::post().to(mark_notification_as_read))
+            .route("/api/v1/system/notifications/{id}", web::delete().to(delete_system_notification))
             // 应用/插件管理 API routes
             .route("/api/v1/apps", web::get().to(get_apps))
             .route("/api/v1/apps", web::post().to(install_app))
@@ -811,6 +813,11 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/logs", web::get().to(get_logs))
             .route("/api/v1/logs/export", web::get().to(export_logs))
             .route("/api/v1/logs", web::delete().to(delete_logs))
+            // 系统通知管理 API routes (Phase 208)
+            .route("/api/v1/system/notifications", web::get().to(list_notifications))
+            .route("/api/v1/system/notifications/{id}/read", web::put().to(mark_system_notification_as_read))
+            .route("/api/v1/system/notifications/{id}/mark-read", web::post().to(mark_notification_as_read))
+            .route("/api/v1/system/notifications/{id}", web::delete().to(delete_notification))
     })
     .bind("0.0.0.0:8080")?
     .run()
