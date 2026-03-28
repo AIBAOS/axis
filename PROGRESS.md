@@ -6,7 +6,7 @@
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | [待提交] |
+| 最新 commit | b2fa376 |
 | 提交时间 | 2026-03-28 14:40 UTC |
 | 当前阶段 | Phase 253 进程信号发送 API |
 | 状态 | ✅ 已完成 |
@@ -77,7 +77,7 @@
   - 错误处理：401/403/400/404/500
   - 单元测试：已编写（2 个测试用例）
   - 文档：docs/system_process_signal_api.md
-  - Commit: [待提交]
+  - Commit: b2fa376
 
 - [x] Phase 252 终止进程 API - 2026-03-28 14:15
   - POST /api/v1/system/processes/{pid}/terminate — 终止指定进程
