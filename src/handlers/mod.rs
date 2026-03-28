@@ -199,4 +199,5 @@ pub mod system_power;
 pub mod system_resources;
 pub mod system_processes;
 pub mod system_process_signal;
+pub mod system_cron_jobs_list;
 pub mod system_process_terminate;

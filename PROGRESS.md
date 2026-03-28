@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 14:40 UTC
+> 最后更新：2026-03-28 15:05 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | b2fa376 |
-| 提交时间 | 2026-03-28 14:40 UTC |
-| 当前阶段 | Phase 253 进程信号发送 API |
+| 最新 commit | [待提交] |
+| 提交时间 | 2026-03-28 15:05 UTC |
+| 当前阶段 | Phase 254 系统定时任务列表 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -66,6 +66,16 @@
 ---
 
 ## 📋 待办事项
+
+- [x] Phase 254 系统定时任务列表 API - 2026-03-28 15:05
+  - GET /api/v1/system/cron-jobs — 获取系统定时任务列表
+  - JWT 认证，admin 角色可访问
+  - 筛选：status(active/inactive/running)/enabled(true/false)
+  - 返回字段：id/name/schedule/command/status/last_run/next_run/enabled/description
+  - 错误处理：401/403/400/500
+  - 单元测试：已编写（3 个测试用例）
+  - 文档：docs/system_cron_jobs_list_api.md
+  - Commit: [待提交]
 
 - [x] Phase 253 进程信号发送 API - 2026-03-28 14:40
   - POST /api/v1/system/processes/{pid}/signal — 向进程发送信号

@@ -141,6 +141,7 @@ use handlers::system_power::get_power_status;
 use handlers::system_resources::get_system_resources;
 use handlers::system_processes::get_system_processes;
 use handlers::system_process_signal::send_signal_to_process;
+use handlers::system_cron_jobs_list::get_system_cron_jobs;
 use handlers::system_process_terminate::terminate_process;
 use handlers::storage_volume_snapshot_create::create_volume_snapshot as create_volume_snapshot;
 use handlers::storage_volume_snapshots_list::list_volume_snapshots as list_volume_snapshots;
@@ -788,6 +789,8 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/system/processes/{pid}/terminate", web::post().to(terminate_process))
             // 进程信号发送 API routes (Phase 253)
             .route("/api/v1/system/processes/{pid}/signal", web::post().to(send_signal_to_process))
+            // 系统定时任务列表 API routes (Phase 254)
+            .route("/api/v1/system/cron-jobs", web::get().to(get_system_cron_jobs))
             .route("/api/v1/system/logs", web::get().to(get_system_logs))
             .route("/api/v1/system/logs/{id}", web::get().to(get_system_log_detail))
             .route("/api/v1/system/logs/export", web::post().to(export_system_logs))
