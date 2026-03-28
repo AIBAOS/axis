@@ -79,13 +79,14 @@
 
 ## ✅ 已完成事项
 
-- [x] 备份统计 API (Phase 196) - 2026-03-28 00:35
+- [x] 备份统计 API (Phase 196) - 2026-03-28 00:35 (修正 00:38)
   - GET /api/v1/backups/stats — 获取备份任务和执行的统计信息
   - JWT 认证，admin 角色可访问
-  - 返回字段：total_backups/active_backups/archived_backups/total_executions/successful_executions/failed_executions/running_executions
+  - 返回字段：total_backups/active_backups/archived_backups/total_executions/successful_executions/failed_executions/running_executions/last_execution_at/next_scheduled_execution/storage_used_bytes
+  - 使用 SqliteBackupRepository 实现真实数据库聚合查询
   - 用于仪表板展示备份模块整体状态
   - 文档：docs/backups_stats_api.md
-  - Commit: e70b87b
+  - Commit: e70b87b + 3183a29 (修正)
 
 - [x] 备份执行历史 API (Phase 195) - 2026-03-28 00:25
   - GET /api/v1/backups/{id}/execution-history — 获取备份任务执行历史记录
