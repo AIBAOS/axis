@@ -1,14 +1,14 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-28 13:00 UTC
+> 最后更新：2026-03-28 13:10 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 2537065 |
-| 提交时间 | 2026-03-28 13:00 UTC |
-| 当前阶段 | Phase 246 系统设置获取 API |
+| 最新 commit | [待提交] |
+| 提交时间 | 2026-03-28 13:10 UTC |
+| 当前阶段 | Phase 247 系统设置更新 API |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -67,7 +67,18 @@
 
 ## 📋 待办事项
 
-- [ ] Phase 247 待安排
+- [ ] Phase 248 待安排
+
+- [x] Phase 247 系统设置更新 API - 2026-03-28 13:10
+  - PUT /api/v1/system/settings — 更新系统设置
+  - JWT 认证，admin 角色可访问
+  - 支持部分更新：timezone/language/update_channel/auto_update_enabled/notification_enabled/power_schedule
+  - 验证设置项合法性（400 Bad Request）
+  - 返回更新后的设置
+  - 错误处理：401/403/400/500
+  - 单元测试：已编写
+  - 文档：docs/system_settings_update_api.md
+  - Commit: [待提交]
 
 - [x] Phase 246 系统设置获取 API - 2026-03-28 13:00
   - GET /api/v1/system/settings — 获取系统设置

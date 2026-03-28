@@ -136,6 +136,7 @@ use handlers::media_photo_detail::get_photo_detail;
 use handlers::media_photo_upload::upload_photo;
 use handlers::media_photo_delete::delete_photo;
 use handlers::system_settings_get::get_system_settings;
+use handlers::system_settings_update::update_system_settings;
 use handlers::storage_volume_snapshot_create::create_volume_snapshot as create_volume_snapshot;
 use handlers::storage_volume_snapshots_list::list_volume_snapshots as list_volume_snapshots;
 use handlers::storage_volume_snapshot_detail::get_volume_snapshot as get_volume_snapshot;
@@ -771,6 +772,8 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/media/photos/{id}", web::delete().to(delete_photo))
             // 系统设置获取 API routes (Phase 246)
             .route("/api/v1/system/settings", web::get().to(get_system_settings))
+            // 系统设置更新 API routes (Phase 247)
+            .route("/api/v1/system/settings", web::put().to(update_system_settings))
             .route("/api/v1/system/logs", web::get().to(get_system_logs))
             .route("/api/v1/system/logs/{id}", web::get().to(get_system_log_detail))
             .route("/api/v1/system/logs/export", web::post().to(export_system_logs))

@@ -194,3 +194,4 @@ pub mod media_photo_detail;
 pub mod media_photo_upload;
 pub mod media_photo_delete;
 pub mod system_settings_get;
+pub mod system_settings_update;
