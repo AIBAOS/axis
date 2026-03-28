@@ -11,6 +11,7 @@ pub struct Share {
     pub path: String,
     pub protocol: String, // "smb" or "nfs"
     pub status: String,   // "active" or "inactive"
+    pub description: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -21,6 +22,7 @@ pub struct CreateShareRequest {
     pub name: String,
     pub path: String,
     pub protocol: String, // "smb" or "nfs"
+    pub description: Option<String>,
 }
 
 /// 共享更新请求

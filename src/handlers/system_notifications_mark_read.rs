@@ -74,20 +74,12 @@ pub async fn mark_system_notification_as_read(
                 }));
             }
 
-            // 5. 如果已经是已读状态，直接返回
+            // 5. 如果已经是已读状态，返回 409 Conflict
             if notification.is_read {
-                let summary = NotificationSummary {
-                    id: notification.id,
-                    title: notification.title,
-                    message: notification.message,
-                    notification_type: notification.notification_type,
-                    is_read: true,
-                    read_at: notification.read_at,
-                };
-                return Ok(HttpResponse::Ok().json(MarkAsReadResponse {
-                    success: true,
-                    message: "通知已是已读状态".to_string(),
-                    notification: Some(summary),
+                return Ok(HttpResponse::Conflict().json(ErrorResponse {
+                    success: false,
+                    error: "通知已是已读状态".to_string(),
+                    code: "CONFLICT".to_string(),
                 }));
             }
 

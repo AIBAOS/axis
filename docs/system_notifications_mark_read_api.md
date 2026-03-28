@@ -126,26 +126,13 @@ curl -X PUT "http://localhost:8080/api/v1/system/notifications/15/read" \
 }
 ```
 
-### 标记已读的通知
+#### 409 Conflict - 通知已是已读状态
 
-```bash
-curl -X PUT "http://localhost:8080/api/v1/system/notifications/14/read" \
-  -H "Authorization: Bearer <jwt_token>"
-```
-
-响应（200 OK）：
 ```json
 {
-  "success": true,
-  "message": "通知已是已读状态",
-  "notification": {
-    "id": 14,
-    "title": "存储空间警告",
-    "message": "存储池使用率已超过 80%",
-    "type": "alert",
-    "is_read": true,
-    "read_at": 1711584000
-  }
+  "success": false,
+  "error": "通知已是已读状态",
+  "code": "CONFLICT"
 }
 ```
 
