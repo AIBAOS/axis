@@ -5,276 +5,156 @@
       <div class="flex justify-between items-center">
         <div>
           <h1 class="text-2xl font-bold text-gray-900">存储管理</h1>
-          <p class="text-gray-600 mt-1">管理存储卷、存储池和物理磁盘</p>
+          <p class="text-gray-600 mt-1">管理磁盘、存储池和共享文件夹</p>
         </div>
-        <button
-          @click="refreshAll"
-          :disabled="loading"
-          class="btn-secondary flex items-center space-x-2"
-        >
-          <svg :class="{'animate-spin': loading}" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          <span>刷新</span>
-        </button>
+        <div class="flex space-x-2">
+          <button @click="refreshAll" :disabled="loading" class="btn-secondary flex items-center space-x-2">
+            <svg :class="{'animate-spin': loading}" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            <span>刷新</span>
+          </button>
+        </div>
       </div>
 
-      <!-- 存储空间概览 -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <!-- 总容量 -->
+      <!-- 存储概览 -->
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div class="bg-white rounded-lg shadow p-4">
-          <div class="flex items-center">
-            <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
-              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
-              </svg>
-            </div>
-            <div>
-              <p class="text-sm text-gray-500">总容量</p>
-              <p class="text-xl font-bold text-gray-900">{{ formatBytes(storageUsage.total_bytes) }}</p>
-            </div>
-          </div>
+          <div class="flex items-center"><div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center mr-3"><svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" /></svg></div><div><p class="text-sm text-gray-500">总容量</p><p class="text-xl font-bold">{{ formatBytes(storageUsage.total_bytes) }}</p></div></div>
         </div>
-
-        <!-- 已使用 -->
         <div class="bg-white rounded-lg shadow p-4">
-          <div class="flex items-center">
-            <div class="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center mr-3">
-              <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <div>
-              <p class="text-sm text-gray-500">已使用</p>
-              <p class="text-xl font-bold text-orange-600">{{ formatBytes(storageUsage.used_bytes) }}</p>
-            </div>
-          </div>
+          <div class="flex items-center"><div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center mr-3"><svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2V9a2 2 0 00-2-2h-2a2 2 0 00-2 2v10z" /></svg></div><div><p class="text-sm text-gray-500">已使用</p><p class="text-xl font-bold text-orange-600">{{ formatBytes(storageUsage.used_bytes) }}</p></div></div>
         </div>
-
-        <!-- 可用空间 -->
         <div class="bg-white rounded-lg shadow p-4">
-          <div class="flex items-center">
-            <div class="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center mr-3">
-              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <div>
-              <p class="text-sm text-gray-500">可用空间</p>
-              <p class="text-xl font-bold text-green-600">{{ formatBytes(storageUsage.available_bytes) }}</p>
-            </div>
-          </div>
+          <div class="flex items-center"><div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center mr-3"><svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg></div><div><p class="text-sm text-gray-500">可用空间</p><p class="text-xl font-bold text-green-600">{{ formatBytes(storageUsage.available_bytes) }}</p></div></div>
         </div>
-
-        <!-- 磁盘数量 -->
         <div class="bg-white rounded-lg shadow p-4">
-          <div class="flex items-center">
-            <div class="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center mr-3">
-              <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" />
-              </svg>
-            </div>
-            <div>
-              <p class="text-sm text-gray-500">磁盘数量</p>
-              <p class="text-xl font-bold text-gray-900">{{ disks.length }} 块</p>
-            </div>
-          </div>
+          <div class="flex items-center"><div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center mr-3"><svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" /></svg></div><div><p class="text-sm text-gray-500">磁盘数</p><p class="text-xl font-bold">{{ disks.length }}</p></div></div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <div class="flex items-center"><div class="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center mr-3"><svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg></div><div><p class="text-sm text-gray-500">存储池</p><p class="text-xl font-bold">{{ pools.length }}</p></div></div>
         </div>
       </div>
 
       <!-- 存储空间使用进度条 -->
       <div class="bg-white rounded-lg shadow p-4">
-        <div class="flex justify-between items-center mb-2">
-          <h3 class="font-semibold text-gray-900">存储空间使用</h3>
-          <span class="text-sm text-gray-600">{{ usagePercent }}% 已使用</span>
-        </div>
-        <div class="w-full bg-gray-200 rounded-full h-4">
-          <div
-            :class="[
-              'h-4 rounded-full transition-all',
-              usagePercent > 90 ? 'bg-red-500' : usagePercent > 70 ? 'bg-yellow-500' : 'bg-green-500'
-            ]"
-            :style="{ width: usagePercent + '%' }"
-          ></div>
-        </div>
-        <div class="flex justify-between mt-2 text-xs text-gray-500">
-          <span>0%</span>
-          <span>50%</span>
-          <span>100%</span>
-        </div>
+        <div class="flex justify-between items-center mb-2"><h3 class="font-semibold text-gray-900">存储空间使用</h3><span class="text-sm text-gray-600">{{ usagePercent }}% 已使用</span></div>
+        <div class="w-full bg-gray-200 rounded-full h-4"><div :class="usagePercent > 90 ? 'bg-red-500' : usagePercent > 70 ? 'bg-yellow-500' : 'bg-green-500'" class="h-4 rounded-full transition-all" :style="{ width: usagePercent + '%' }"></div></div>
+        <div class="flex justify-between mt-2 text-xs text-gray-400"><span>0%</span><span>50%</span><span>100%</span></div>
       </div>
 
       <!-- 选项卡 -->
       <div class="border-b border-gray-200">
         <nav class="-mb-px flex space-x-8">
-          <button
-            v-for="tab in tabs"
-            :key="tab.id"
-            @click="currentTab = tab.id"
-            :class="[
-              currentTab === tab.id
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-              'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2'
-            ]"
-          >
+          <button v-for="tab in tabs" :key="tab.id" @click="currentTab = tab.id" :class="[currentTab === tab.id ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2']">
             <span>{{ tab.name }}</span>
-            <span
-              v-if="getCount(tab.id) > 0"
-              class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600"
-            >
-              {{ getCount(tab.id) }}
-            </span>
+            <span v-if="getTabCount(tab.id) > 0" class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">{{ getTabCount(tab.id) }}</span>
           </button>
         </nav>
       </div>
 
-      <!-- 加载状态 -->
-      <div v-if="loading" class="flex justify-center items-center py-12">
-        <svg class="animate-spin h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-        </svg>
-        <span class="ml-3 text-gray-600">加载中...</span>
-      </div>
-
-      <!-- 物理磁盘 -->
-      <div v-else-if="currentTab === 'disks'" class="space-y-4">
-        <div v-if="disks.length === 0" class="text-center py-12 bg-white rounded-lg shadow">
-          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" />
-          </svg>
-          <p class="mt-4 text-gray-600">暂无磁盘信息</p>
-        </div>
-
+      <!-- 磁盘列表 -->
+      <template v-if="currentTab === 'disks'">
+        <div v-if="loading" class="flex justify-center py-12"><svg class="animate-spin h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg></div>
+        <div v-else-if="disks.length === 0" class="text-center py-12 bg-white rounded-lg shadow"><svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" /></svg><p class="mt-4 text-gray-600">暂无磁盘</p></div>
         <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <DiskCard
-            v-for="disk in disks"
-            :key="disk.id"
-            :disk="disk"
-            @smart="showSmartDetails"
-          />
+          <DiskCard v-for="disk in disks" :key="disk.id" :disk="disk" @smart="showSmartDetails" @detail="showDiskDetail" />
         </div>
-      </div>
-
-      <!-- 存储卷 -->
-      <div v-else-if="currentTab === 'volumes'" class="space-y-4">
-        <div v-if="volumes.length === 0" class="text-center py-12 bg-white rounded-lg shadow">
-          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-          </svg>
-          <p class="mt-4 text-gray-600">暂无存储卷</p>
-        </div>
-
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <StorageCard
-            v-for="volume in volumes"
-            :key="volume.id"
-            :volume="volume"
-          />
-        </div>
-      </div>
+      </template>
 
       <!-- 存储池 -->
-      <div v-else-if="currentTab === 'pools'" class="space-y-4">
-        <div v-if="pools.length === 0" class="text-center py-12 bg-white rounded-lg shadow">
-          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-          </svg>
-          <p class="mt-4 text-gray-600">暂无存储池</p>
+      <template v-else-if="currentTab === 'pools'">
+        <div class="flex justify-end mb-4">
+          <button @click="showPoolModal = true" class="btn-primary text-sm">新建存储池</button>
         </div>
-
+        <div v-if="pools.length === 0" class="text-center py-12 bg-white rounded-lg shadow"><svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg><p class="mt-4 text-gray-600">暂无存储池</p><p class="mt-2 text-sm text-gray-500">创建存储池以管理磁盘阵列</p></div>
         <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <StoragePoolCard
-            v-for="pool in pools"
-            :key="pool.id"
-            :pool="pool"
-          />
+          <StoragePoolCard v-for="pool in pools" :key="pool.id" :pool="pool" @edit="editPool" @delete="deletePool" />
         </div>
-      </div>
+      </template>
+
+      <!-- 共享文件夹 -->
+      <template v-else-if="currentTab === 'shares'">
+        <div class="flex justify-end mb-4">
+          <button @click="showShareModal = true" class="btn-primary text-sm">新建共享</button>
+        </div>
+        <div v-if="shares.length === 0" class="text-center py-12 bg-white rounded-lg shadow"><svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg><p class="mt-4 text-gray-600">暂无共享文件夹</p></div>
+        <div v-else class="bg-white rounded-lg shadow overflow-hidden">
+          <table class="w-full"><thead class="bg-gray-50 border-b"><tr><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">名称</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">路径</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">协议</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">权限</th><th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">操作</th></tr></thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr v-for="share in shares" :key="share.id" class="hover:bg-gray-50">
+                <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ share.name }}</td>
+                <td class="px-4 py-3 text-sm text-gray-600 font-mono">{{ share.path }}</td>
+                <td class="px-4 py-3"><span :class="getProtocolClass(share.protocol)" class="px-2 py-0.5 text-xs rounded">{{ share.protocol?.toUpperCase() }}</span></td>
+                <td class="px-4 py-3 text-sm text-gray-600">{{ share.permissions || 'rw' }}</td>
+                <td class="px-4 py-3 text-right">
+                  <button @click="editShare(share)" class="text-sm text-primary-600 hover:text-primary-700 mr-2">编辑</button>
+                  <button @click="deleteShare(share)" class="text-sm text-red-600 hover:text-red-700">删除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
 
       <!-- S.M.A.R.T. 详情模态框 -->
       <div v-if="selectedDisk" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
           <div class="flex justify-between items-center px-6 py-4 border-b sticky top-0 bg-white">
-            <h3 class="text-lg font-semibold text-gray-900">S.M.A.R.T. 详情</h3>
-            <button @click="selectedDisk = null" class="text-gray-400 hover:text-gray-600">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <h3 class="text-lg font-semibold text-gray-900">磁盘详情</h3>
+            <button @click="selectedDisk = null" class="text-gray-400 hover:text-gray-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
           </div>
           <div class="p-6 space-y-4">
             <div class="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p class="text-gray-500">磁盘名称</p>
-                <p class="font-medium text-gray-900">{{ selectedDisk.name }}</p>
-              </div>
-              <div>
-                <p class="text-gray-500">型号</p>
-                <p class="font-medium text-gray-900">{{ selectedDisk.model }}</p>
-              </div>
-              <div>
-                <p class="text-gray-500">序列号</p>
-                <p class="font-mono text-gray-900">{{ selectedDisk.serial_number || '-' }}</p>
-              </div>
-              <div>
-                <p class="text-gray-500">容量</p>
-                <p class="font-medium text-gray-900">{{ selectedDisk.size_human || formatBytes(selectedDisk.size_bytes) }}</p>
-              </div>
-              <div>
-                <p class="text-gray-500">温度</p>
-                <p :class="getTemperatureClass(selectedDisk.temperature)" class="font-medium">
-                  {{ selectedDisk.temperature || '-' }}°C
-                </p>
-              </div>
-              <div>
-                <p class="text-gray-500">健康状态</p>
-                <span :class="getSmartClass(selectedDisk.smart_status)" class="px-2 py-1 rounded text-xs font-medium">
-                  {{ getSmartLabel(selectedDisk.smart_status) }}
-                </span>
-              </div>
-              <div>
-                <p class="text-gray-500">通电时间</p>
-                <p class="font-medium text-gray-900">{{ formatPowerOnHours(selectedDisk.power_on_hours) }}</p>
-              </div>
-              <div v-if="selectedDisk.speed_rpm">
-                <p class="text-gray-500">转速</p>
-                <p class="font-medium text-gray-900">{{ selectedDisk.speed_rpm }} RPM</p>
+              <div><p class="text-gray-500">磁盘名称</p><p class="font-medium text-gray-900">{{ selectedDisk.name }}</p></div>
+              <div><p class="text-gray-500">型号</p><p class="font-medium text-gray-900">{{ selectedDisk.model || '-' }}</p></div>
+              <div><p class="text-gray-500">序列号</p><p class="font-mono text-gray-900">{{ selectedDisk.serial_number || '-' }}</p></div>
+              <div><p class="text-gray-500">容量</p><p class="font-medium text-gray-900">{{ formatBytes(selectedDisk.size_bytes) }}</p></div>
+              <div><p class="text-gray-500">温度</p><p :class="getTempClass(selectedDisk.temperature)" class="font-medium">{{ selectedDisk.temperature || '-' }}°C</p></div>
+              <div><p class="text-gray-500">健康状态</p><span :class="getSmartClass(selectedDisk.smart_status)" class="px-2 py-1 text-xs rounded-full font-medium">{{ getSmartLabel(selectedDisk.smart_status) }}</span></div>
+              <div><p class="text-gray-500">通电时间</p><p class="font-medium text-gray-900">{{ formatPowerOnHours(selectedDisk.power_on_hours) }}</p></div>
+              <div v-if="selectedDisk.speed_rpm"><p class="text-gray-500">转速</p><p class="font-medium text-gray-900">{{ selectedDisk.speed_rpm }} RPM</p></div>
+            </div>
+            <div v-if="selectedDisk.smart_attributes" class="border-t pt-4">
+              <h4 class="font-medium text-gray-900 mb-3">S.M.A.R.T. 属性</h4>
+              <div class="space-y-2 text-sm">
+                <div v-for="attr in selectedDisk.smart_attributes" :key="attr.id" class="flex justify-between"><span class="text-gray-600">{{ attr.name }}</span><span :class="attr.value < attr.threshold ? 'text-red-600' : 'text-gray-900'">{{ attr.value }} (阈值: {{ attr.threshold }})</span></div>
               </div>
             </div>
+          </div>
+          <div class="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end"><button @click="selectedDisk = null" class="btn-secondary">关闭</button></div>
+        </div>
+      </div>
 
-            <!-- 健康指标 -->
-            <div class="border-t pt-4">
-              <h4 class="font-medium text-gray-900 mb-3">健康指标</h4>
-              <div class="space-y-2">
-                <div class="flex justify-between text-sm">
-                  <span class="text-gray-600">Reallocated Sectors</span>
-                  <span class="text-green-600">0</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                  <span class="text-gray-600">Pending Sectors</span>
-                  <span class="text-green-600">0</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                  <span class="text-gray-600">CRC Errors</span>
-                  <span class="text-green-600">0</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end">
-            <button @click="selectedDisk = null" class="btn-secondary">关闭</button>
-          </div>
+      <!-- 存储池模态框 -->
+      <div v-if="showPoolModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
+          <div class="flex justify-between items-center px-6 py-4 border-b"><h3 class="text-lg font-semibold text-gray-900">{{ editingPool ? '编辑存储池' : '新建存储池' }}</h3><button @click="showPoolModal = false; editingPool = null" class="text-gray-400 hover:text-gray-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div>
+          <form @submit.prevent="savePool" class="p-6 space-y-4">
+            <div><label class="block text-sm font-medium text-gray-700 mb-1">存储池名称</label><input v-model="poolForm.name" type="text" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="data-pool" /></div>
+            <div><label class="block text-sm font-medium text-gray-700 mb-1">RAID 级别</label><select v-model="poolForm.raid_level" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"><option value="single">单盘 (无 RAID)</option><option value="raid0">RAID 0 (条带)</option><option value="raid1">RAID 1 (镜像)</option><option value="raid5">RAID 5 (分布式奇偶校验)</option><option value="raid10">RAID 10 (镜像+条带)</option></select></div>
+            <div><label class="block text-sm font-medium text-gray-700 mb-1">成员磁盘</label><div class="space-y-2 max-h-40 overflow-y-auto border rounded-lg p-2">
+              <label v-for="disk in availableDisks" :key="disk.id" class="flex items-center"><input type="checkbox" :value="disk.id" v-model="poolForm.disk_ids" class="h-4 w-4 text-primary-600 rounded" /><span class="ml-2 text-sm text-gray-700">{{ disk.name }} ({{ formatBytes(disk.size_bytes) }})</span></label>
+            </div></div>
+          </form>
+          <div class="flex justify-end space-x-3 px-6 py-4 bg-gray-50 rounded-b-lg"><button @click="showPoolModal = false; editingPool = null" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">取消</button><button @click="savePool" class="btn-primary">保存</button></div>
+        </div>
+      </div>
+
+      <!-- 共享模态框 -->
+      <div v-if="showShareModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
+          <div class="flex justify-between items-center px-6 py-4 border-b"><h3 class="text-lg font-semibold text-gray-900">{{ editingShare ? '编辑共享' : '新建共享' }}</h3><button @click="showShareModal = false; editingShare = null" class="text-gray-400 hover:text-gray-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div>
+          <form @submit.prevent="saveShare" class="p-6 space-y-4">
+            <div><label class="block text-sm font-medium text-gray-700 mb-1">共享名称</label><input v-model="shareForm.name" type="text" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Public" /></div>
+            <div><label class="block text-sm font-medium text-gray-700 mb-1">路径</label><input v-model="shareForm.path" type="text" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="/srv/shares/public" /></div>
+            <div><label class="block text-sm font-medium text-gray-700 mb-1">协议</label><select v-model="shareForm.protocol" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"><option value="smb">SMB/CIFS</option><option value="nfs">NFS</option><option value="webdav">WebDAV</option></select></div>
+            <div><label class="block text-sm font-medium text-gray-700 mb-1">权限</label><select v-model="shareForm.permissions" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"><option value="rw">读写</option><option value="ro">只读</option></select></div>
+          </form>
+          <div class="flex justify-end space-x-3 px-6 py-4 bg-gray-50 rounded-b-lg"><button @click="showShareModal = false; editingShare = null" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">取消</button><button @click="saveShare" class="btn-primary">保存</button></div>
         </div>
       </div>
 
       <!-- Toast -->
-      <div v-if="toast.show" class="fixed bottom-4 right-4 z-50">
-        <div :class="toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'" class="text-white px-4 py-2 rounded-lg shadow-lg">
-          {{ toast.message }}
-        </div>
-      </div>
+      <div v-if="toast.show" class="fixed bottom-4 right-4 z-50"><div :class="toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'" class="text-white px-4 py-2 rounded-lg shadow-lg">{{ toast.message }}</div></div>
     </div>
   </DefaultLayout>
 </template>
@@ -282,180 +162,60 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
-import StorageCard from '@/components/storage/StorageCard.vue'
-import StoragePoolCard from '@/components/storage/StoragePoolCard.vue'
 import DiskCard from '@/components/storage/DiskCard.vue'
+import StoragePoolCard from '@/components/storage/StoragePoolCard.vue'
 import { api } from '@/utils/api'
 
-// 选项卡
-const tabs = [
-  { id: 'disks', name: '物理磁盘' },
-  { id: 'volumes', name: '存储卷' },
-  { id: 'pools', name: '存储池' }
-]
-
+const tabs = [{ id: 'disks', name: '物理磁盘' }, { id: 'pools', name: '存储池' }, { id: 'shares', name: '共享文件夹' }]
 const currentTab = ref('disks')
 const loading = ref(true)
 
-// 数据
-const volumes = ref<any[]>([])
-const pools = ref<any[]>([])
 const disks = ref<any[]>([])
+const pools = ref<any[]>([])
+const shares = ref<any[]>([])
 const storageUsage = ref({ total_bytes: 0, used_bytes: 0, available_bytes: 0 })
 
-// 选中的磁盘
 const selectedDisk = ref<any>(null)
 
-// Toast
+const showPoolModal = ref(false)
+const editingPool = ref<any>(null)
+const poolForm = ref({ name: '', raid_level: 'single', disk_ids: [] as number[] })
+
+const showShareModal = ref(false)
+const editingShare = ref<any>(null)
+const shareForm = ref({ name: '', path: '', protocol: 'smb', permissions: 'rw' })
+
 const toast = ref({ show: false, type: 'success' as 'success' | 'error', message: '' })
 
-// 使用率
-const usagePercent = computed(() => {
-  if (!storageUsage.value.total_bytes) return 0
-  return Math.round((storageUsage.value.used_bytes / storageUsage.value.total_bytes) * 100)
-})
+const usagePercent = computed(() => storageUsage.value.total_bytes > 0 ? Math.round(storageUsage.value.used_bytes / storageUsage.value.total_bytes * 100) : 0)
+const availableDisks = computed(() => disks.value.filter(d => !d.pool_id))
+const getTabCount = (id: string) => id === 'disks' ? disks.value.length : id === 'pools' ? pools.value.length : shares.value.length
 
-// 获取数量
-const getCount = (tabId: string) => {
-  switch (tabId) {
-    case 'disks': return disks.value.length
-    case 'volumes': return volumes.value.length
-    case 'pools': return pools.value.length
-    default: return 0
-  }
-}
+const refreshAll = async () => { loading.value = true; await Promise.all([loadDisks(), loadPools(), loadShares()]); loading.value = false }
 
-// 加载存储使用量
-const loadStorageUsage = async () => {
-  try {
-    const response = await api.storage.getUsage()
-    storageUsage.value = response.data.data || response.data || { total_bytes: 0, used_bytes: 0, available_bytes: 0 }
-  } catch (error) {
-    console.error('Failed to load storage usage:', error)
-  }
-}
+const loadDisks = async () => { try { const r = await api.storage.getDisks(); disks.value = r.data.disks || r.data || [] } catch (e) {} }
+const loadPools = async () => { try { const r = await api.storage.getPools(); pools.value = r.data.pools || r.data || [] } catch (e) {} }
+const loadShares = async () => { try { const r = await api.storage.getUsage(); storageUsage.value = r.data.data || r.data || { total_bytes: 0, used_bytes: 0, available_bytes: 0 } } catch (e) {} }
 
-// 加载磁盘
-const loadDisks = async () => {
-  try {
-    const response = await api.storage.getDisks()
-    disks.value = response.data.data || response.data.disks || []
-  } catch (error) {
-    console.error('Failed to load disks:', error)
-  }
-}
+const showSmartDetails = (d: any) => { selectedDisk.value = d }
+const showDiskDetail = (d: any) => { selectedDisk.value = d }
 
-// 加载存储卷
-const loadVolumes = async () => {
-  try {
-    const response = await api.storage.getVolumes()
-    volumes.value = response.data.volumes || response.data.data || []
-  } catch (error) {
-    console.error('Failed to load volumes:', error)
-  }
-}
+const savePool = async () => { if (!poolForm.value.name) return; if (editingPool.value) { const i = pools.value.findIndex(p => p.id === editingPool.value.id); if (i >= 0) pools.value[i] = { ...editingPool.value, ...poolForm.value }; showToast('success', '存储池已更新') } else { pools.value.push({ id: Date.now(), ...poolForm.value, size_bytes: poolForm.value.disk_ids.reduce((sum, id) => { const d = disks.value.find(x => x.id === id); return sum + (d?.size_bytes || 0) }, 0), used_bytes: 0, status: 'online' }); showToast('success', '存储池已创建') } showPoolModal.value = false; editingPool.value = null }
+const editPool = (p: any) => { editingPool.value = p; poolForm.value = { name: p.name, raid_level: p.raid_level || 'single', disk_ids: p.disk_ids || [] }; showPoolModal.value = true }
+const deletePool = async (p: any) => { if (!confirm(`确定删除存储池 "${p.name}" 吗？`)) return; pools.value = pools.value.filter(x => x.id !== p.id); showToast('success', '存储池已删除') }
 
-// 加载存储池
-const loadPools = async () => {
-  try {
-    const response = await api.storage.getPools()
-    pools.value = response.data.pools || response.data.data || []
-  } catch (error) {
-    console.error('Failed to load pools:', error)
-  }
-}
+const saveShare = async () => { if (!shareForm.value.name || !shareForm.value.path) return; if (editingShare.value) { const i = shares.value.findIndex(s => s.id === editingShare.value.id); if (i >= 0) shares.value[i] = { ...editingShare.value, ...shareForm.value }; showToast('success', '共享已更新') } else { shares.value.push({ id: Date.now(), ...shareForm.value }); showToast('success', '共享已创建') } showShareModal.value = false; editingShare.value = null }
+const editShare = (s: any) => { editingShare.value = s; shareForm.value = { name: s.name, path: s.path, protocol: s.protocol || 'smb', permissions: s.permissions || 'rw' }; showShareModal.value = true }
+const deleteShare = async (s: any) => { if (!confirm(`确定删除共享 "${s.name}" 吗？`)) return; shares.value = shares.value.filter(x => x.id !== s.id); showToast('success', '共享已删除') }
 
-// 刷新所有
-const refreshAll = async () => {
-  loading.value = true
-  try {
-    await Promise.all([
-      loadStorageUsage(),
-      loadDisks(),
-      loadVolumes(),
-      loadPools()
-    ])
-    showToast('success', '刷新成功')
-  } catch (error) {
-    showToast('error', '刷新失败')
-  } finally {
-    loading.value = false
-  }
-}
+const formatBytes = (b: number) => { if (!b) return '0 B'; const k = 1024; const s = ['B', 'KB', 'MB', 'GB', 'TB']; const i = Math.floor(Math.log(b) / Math.log(k)); return (b / Math.pow(k, i)).toFixed(1) + ' ' + s[i] }
+const getTempClass = (t: number) => !t ? 'text-gray-900' : t > 50 ? 'text-red-600' : t > 40 ? 'text-yellow-600' : 'text-green-600'
+const getSmartClass = (s: string) => ['healthy', 'good'].includes(s?.toLowerCase()) ? 'bg-green-100 text-green-700' : ['warning', 'caution'].includes(s?.toLowerCase()) ? 'bg-yellow-100 text-yellow-700' : ['failed', 'bad'].includes(s?.toLowerCase()) ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+const getSmartLabel = (s: string) => ['healthy', 'good'].includes(s?.toLowerCase()) ? '健康' : ['warning', 'caution'].includes(s?.toLowerCase()) ? '警告' : ['failed', 'bad'].includes(s?.toLowerCase()) ? '故障' : '未知'
+const formatPowerOnHours = (h: number) => { if (!h) return '-'; const d = Math.floor(h / 24); return d > 365 ? `${Math.floor(d / 365)} 年 ${d % 365} 天` : d > 0 ? `${d} 天` : `${h} 小时` }
+const getProtocolClass = (p: string) => p === 'smb' ? 'bg-blue-100 text-blue-700' : p === 'nfs' ? 'bg-green-100 text-green-700' : p === 'webdav' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
 
-// 显示 S.M.A.R.T. 详情
-const showSmartDetails = (disk: any) => {
-  selectedDisk.value = disk
-}
+const showToast = (type: 'success' | 'error', msg: string) => { toast.value = { show: true, type, message: msg }; setTimeout(() => toast.value.show = false, 3000) }
 
-// 格式化字节
-const formatBytes = (bytes: number) => {
-  if (!bytes) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
-}
-
-// 格式化通电时间
-const formatPowerOnHours = (hours: number) => {
-  if (!hours) return '-'
-  const days = Math.floor(hours / 24)
-  const h = hours % 24
-  if (days > 0) return `${days} 天 ${h} 小时`
-  return `${h} 小时`
-}
-
-// 温度样式
-const getTemperatureClass = (temp: number) => {
-  if (!temp) return 'text-gray-900'
-  if (temp > 50) return 'text-red-600'
-  if (temp > 40) return 'text-yellow-600'
-  return 'text-green-600'
-}
-
-// SMART 样式
-const getSmartClass = (status: string) => {
-  switch (status?.toLowerCase()) {
-    case 'healthy':
-    case 'good':
-      return 'bg-green-100 text-green-700'
-    case 'warning':
-    case 'caution':
-      return 'bg-yellow-100 text-yellow-700'
-    case 'failed':
-    case 'bad':
-      return 'bg-red-100 text-red-700'
-    default:
-      return 'bg-gray-100 text-gray-700'
-  }
-}
-
-// SMART 标签
-const getSmartLabel = (status: string) => {
-  switch (status?.toLowerCase()) {
-    case 'healthy':
-    case 'good':
-      return '健康'
-    case 'warning':
-    case 'caution':
-      return '警告'
-    case 'failed':
-    case 'bad':
-      return '故障'
-    default:
-      return '未知'
-  }
-}
-
-// Toast
-const showToast = (type: 'success' | 'error', message: string) => {
-  toast.value = { show: true, type, message }
-  setTimeout(() => { toast.value.show = false }, 3000)
-}
-
-// 生命周期
-onMounted(() => {
-  refreshAll()
-})
+onMounted(() => refreshAll())
 </script>
