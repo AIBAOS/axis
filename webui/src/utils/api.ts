@@ -114,6 +114,19 @@ export const api = {
     copy: (path: string, destination: string) => apiClient.post(`/api/v1/files/${encodeURIComponent(path)}/copy`, { destination })
   },
 
+  // 应用管理
+  apps: {
+    list: (params?: any) => apiClient.get('/api/v1/apps', { params }),
+    get: (id: number) => apiClient.get(`/api/v1/apps/${id}`),
+    install: (data: { name: string; version: string; category?: string; description?: string; size_bytes?: number }) => 
+      apiClient.post('/api/v1/apps', data),
+    uninstall: (id: number) => apiClient.delete(`/api/v1/apps/${id}`),
+    start: (id: number) => apiClient.post(`/api/v1/apps/${id}/start`),
+    stop: (id: number) => apiClient.post(`/api/v1/apps/${id}/stop`),
+    restart: (id: number) => apiClient.post(`/api/v1/apps/${id}/restart`),
+    update: (id: number) => apiClient.post(`/api/v1/apps/${id}/update`)
+  },
+
   // 备份
   backups: {
     list: (params?: any) => apiClient.get('/api/v1/backups', { params }),
