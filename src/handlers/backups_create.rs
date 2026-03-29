@@ -84,7 +84,7 @@ pub struct ErrorResponse {
 }
 
 /// 创建备份任务
-/// - JWT 认证，登录用户可访问
+/// - JWT 认证，仅 admin 角色可访问
 /// - 创建新的备份任务
 pub async fn create_backup(
     req: actix_web::HttpRequest,
@@ -100,11 +100,20 @@ pub async fn create_backup(
         .and_then(|s| s.strip_prefix("Bearer "))
         .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing or invalid Authorization header"))?;
 
-    let _claims = jwt_service
+    let claims = jwt_service
         .validate_token(token)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))?;
 
-    // 2. 验证必填字段
+    // 2. 权限检查：仅 admin 可创建备份
+    if claims.role != "admin" {
+        return Ok(HttpResponse::Forbidden().json(ErrorResponse {
+            success: false,
+            error: "Only administrators can create backup tasks".to_string(),
+            code: "FORBIDDEN".to_string(),
+        }));
+    }
+
+    // 3. 验证必填字段
     if payload.name.is_empty() {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
             success: false,
@@ -129,7 +138,43 @@ pub async fn create_backup(
         }));
     }
 
-    // 3. 验证 backup_type
+    // 4. 路径安全验证：防止路径遍历攻击
+    fn validate_path(path: &str, field_name: &str) -> Result<(), ErrorResponse> {
+        // 必须是绝对路径
+        if !path.starts_with('/') {
+            return Err(ErrorResponse {
+                success: false,
+                error: format!("{} must be an absolute path", field_name),
+                code: "VALIDATION_ERROR".to_string(),
+            });
+        }
+        // 禁止路径遍历
+        if path.contains("..") {
+            return Err(ErrorResponse {
+                success: false,
+                error: format!("{} contains invalid path sequence", field_name),
+                code: "VALIDATION_ERROR".to_string(),
+            });
+        }
+        // 禁止 null 字节
+        if path.contains('\0') {
+            return Err(ErrorResponse {
+                success: false,
+                error: format!("{} contains invalid characters", field_name),
+                code: "VALIDATION_ERROR".to_string(),
+            });
+        }
+        Ok(())
+    }
+
+    if let Err(e) = validate_path(&payload.source_path, "source_path") {
+        return Ok(HttpResponse::BadRequest().json(e));
+    }
+    if let Err(e) = validate_path(&payload.destination_path, "destination_path") {
+        return Ok(HttpResponse::BadRequest().json(e));
+    }
+
+    // 5. 验证 backup_type
     let valid_types = ["full", "incremental", "differential"];
     if !valid_types.contains(&payload.backup_type.as_str()) {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
@@ -139,7 +184,7 @@ pub async fn create_backup(
         }));
     }
 
-    // 4. 验证 schedule 格式（如果提供）
+    // 6. 验证 schedule 格式（如果提供）
     if let Some(ref schedule) = payload.schedule {
         if !cron_expression_valid(schedule) {
             return Ok(HttpResponse::BadRequest().json(ErrorResponse {
@@ -150,7 +195,7 @@ pub async fn create_backup(
         }
     }
 
-    // 5. 创建备份任务
+    // 7. 创建备份任务
     let description = payload.description.clone().unwrap_or_default();
     let schedule_opt = payload.schedule.clone();
     let schedule = schedule_opt.as_deref();

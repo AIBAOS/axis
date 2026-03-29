@@ -298,7 +298,7 @@ const usagePercent = computed(() => storageUsage.value.total_bytes > 0 ? Math.ro
 const availableDisks = computed(() => disks.value.filter(d => !d.pool_id))
 const getTabCount = (id: string) => id === 'disks' ? disks.value.length : id === 'pools' ? pools.value.length : id === 'volumes' ? volumes.value.length : shares.value.length
 
-const refreshAll = async () => { loading.value = true; await Promise.all([loadDisks(), loadPools(), loadShares()]); loading.value = false }
+const refreshAll = async () => { loading.value = true; await Promise.all([loadDisks(), loadPools(), loadVolumes(), loadShares()]); loading.value = false }
 
 const loadDisks = async () => { try { const r = await api.storage.getDisks(); disks.value = r.data.disks || r.data || [] } catch (e) {} }
 const loadPools = async () => { try { const r = await api.storage.getPools(); pools.value = r.data.pools || r.data || [] } catch (e) {} }

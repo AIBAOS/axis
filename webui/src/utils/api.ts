@@ -144,7 +144,12 @@ export const api = {
     getPool: (id: string) => apiClient.get(`/api/v1/storage/pools/${id}`),
     getDisks: (params?: any) => apiClient.get('/api/v1/storage/disks', { params }),
     getDisk: (id: string) => apiClient.get(`/api/v1/storage/disks/${id}`),
-    getUsage: () => apiClient.get('/api/v1/storage/usage')
+    getUsage: () => apiClient.get('/api/v1/storage/usage'),
+    initializeDisk: (id: string) => apiClient.post(`/api/v1/storage/disks/${id}/initialize`),
+    formatDisk: (id: string, filesystem: string) => apiClient.post(`/api/v1/storage/disks/${id}/format`, { filesystem }),
+    runSmartTest: (id: string, testType: 'short' | 'long') => apiClient.post(`/api/v1/storage/disks/${id}/smart-test`, { test_type: testType }),
+    move: (sourcePath: string, targetPath: string) => apiClient.post('/api/v1/files/move', { source_path: sourcePath, target_path: targetPath }),
+    copy: (sourcePath: string, targetPath: string) => apiClient.post('/api/v1/files/copy', { source_path: sourcePath, target_path: targetPath })
   },
 
   // 设置

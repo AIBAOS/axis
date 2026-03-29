@@ -279,6 +279,6 @@ const handleSubmit = async () => {
 
   saving.value = true
   emit('save', data)
-  saving.value = false
+  // 不立即重置 saving，让父组件完成异步操作后关闭 modal
 }
 </script>
