@@ -37,6 +37,61 @@
 
       <!-- 系统信息 -->
       <div v-else-if="currentTab === 'system'" class="space-y-6">
+        <!-- 系统操作 -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="font-semibold text-gray-900 mb-4">系统操作</h3>
+          <div class="flex flex-wrap gap-3">
+            <button @click="checkUpdates" :disabled="checkingUpdates" class="btn-secondary flex items-center space-x-2">
+              <svg :class="{'animate-spin': checkingUpdates}" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>{{ checkingUpdates ? '检查中...' : '检查更新' }}</span>
+            </button>
+            <button @click="confirmRestart" class="px-4 py-2 border border-orange-300 text-orange-600 rounded-lg hover:bg-orange-50">重启系统</button>
+            <button @click="confirmShutdown" class="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50">关机</button>
+            <button @click="confirmFactoryReset" class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50">恢复出厂</button>
+          </div>
+          
+          <!-- 更新状态 -->
+          <div v-if="updateStatus" class="mt-4 p-3 rounded-lg bg-gray-50">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">当前版本</span>
+              <span class="text-sm font-medium">{{ updateStatus.current_version || systemInfo.version }}</span>
+            </div>
+            <div v-if="updateStatus.has_update" class="mt-2 p-2 bg-green-50 rounded flex items-center justify-between">
+              <span class="text-sm text-green-700">发现新版本: {{ updateStatus.latest_version }}</span>
+              <button @click="installUpdate" :disabled="installing" class="text-sm text-green-600 hover:text-green-700 font-medium">
+                {{ installing ? '安装中...' : '立即更新' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 硬件信息 -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="font-semibold text-gray-900 mb-4">硬件信息</h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <p class="text-gray-500">CPU 型号</p>
+              <p class="font-medium text-gray-900 truncate">{{ systemInfo.cpu_model || '-' }}</p>
+            </div>
+            <div>
+              <p class="text-gray-500">CPU 核心数</p>
+              <p class="font-medium text-gray-900">{{ resources.cpu.core_count || systemInfo.cpu_cores || '-' }} 核</p>
+            </div>
+            <div>
+              <p class="text-gray-500">总内存</p>
+              <p class="font-medium text-gray-900">{{ formatBytes(resources.memory.total_bytes) || systemInfo.total_memory_gb + ' GB' || '-' }}</p>
+            </div>
+            <div>
+              <p class="text-gray-500">磁盘温度</p>
+              <p class="font-medium" :class="avgTemperature > 60 ? 'text-red-600' : avgTemperature > 40 ? 'text-yellow-600' : 'text-green-600'">
+                {{ avgTemperature > 0 ? avgTemperature + '°C' : '-' }}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <!-- 版本信息 -->
         <div class="bg-white rounded-lg shadow p-6">
           <h3 class="font-semibold text-gray-900 mb-4">系统版本</h3>
@@ -422,6 +477,23 @@
           {{ toast.message }}
         </div>
       </div>
+
+      <!-- 确认对话框 -->
+      <div v-if="confirmAction" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-sm w-full mx-4">
+          <div class="p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ confirmAction.title }}</h3>
+            <p class="text-gray-600">{{ confirmAction.message }}</p>
+            <p v-if="confirmAction.warning" class="mt-2 text-sm text-red-600">{{ confirmAction.warning }}</p>
+          </div>
+          <div class="flex justify-end space-x-3 px-6 py-4 bg-gray-50 rounded-b-lg">
+            <button @click="confirmAction = null" class="px-4 py-2 text-gray-600 hover:text-gray-800">取消</button>
+            <button @click="executeConfirmAction" :disabled="executing" :class="confirmAction.danger ? 'bg-red-600 hover:bg-red-700' : 'btn-primary'" class="px-4 py-2 text-white rounded-lg disabled:opacity-50">
+              {{ executing ? '处理中...' : confirmAction.confirmText || '确认' }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </DefaultLayout>
 </template>
@@ -448,6 +520,13 @@ const networkLoading = ref(false)
 // Toast
 const toast = ref({ show: false, type: 'success' as 'success' | 'error', message: '' })
 
+// 系统操作
+const checkingUpdates = ref(false)
+const installing = ref(false)
+const updateStatus = ref<any>(null)
+const confirmAction = ref<{title: string; message: string; warning?: string; action: string; danger?: boolean; confirmText?: string} | null>(null)
+const executing = ref(false)
+
 // 系统信息
 const systemInfo = ref({
   version: 'v0.1.0',
@@ -457,12 +536,15 @@ const systemInfo = ref({
   uptime_seconds: 0,
   boot_time: 0,
   hostname: '',
-  timezone: 'UTC'
+  timezone: 'UTC',
+  cpu_model: '',
+  cpu_cores: 0,
+  total_memory_gb: 0
 })
 
 // 资源
 const resources = ref({
-  cpu: { usage_percent: 0, load_1m: 0, load_5m: 0, load_15m: 0 },
+  cpu: { usage_percent: 0, load_1m: 0, load_5m: 0, load_15m: 0, core_count: 0 },
   memory: { total_bytes: 0, used_bytes: 0, usage_percent: 0 }
 })
 
@@ -514,6 +596,13 @@ const diskUsagePercent = computed(() => {
   const total = disks.value.reduce((sum, d) => sum + (d.size_bytes || 0), 0)
   const used = disks.value.reduce((sum, d) => sum + (d.used_bytes || 0), 0)
   return total > 0 ? Math.round(used / total * 100) : 0
+})
+
+// 平均温度
+const avgTemperature = computed(() => {
+  const temps = disks.value.filter(d => d.temperature && d.temperature > 0).map(d => d.temperature)
+  if (temps.length === 0) return 0
+  return Math.round(temps.reduce((a, b) => a + b, 0) / temps.length)
 })
 
 // 加载系统信息
@@ -670,6 +759,98 @@ const formatBytes = (bytes: number) => {
 const showToast = (type: 'success' | 'error', message: string) => {
   toast.value = { show: true, type, message }
   setTimeout(() => { toast.value.show = false }, 3000)
+}
+
+// 检查更新
+const checkUpdates = async () => {
+  checkingUpdates.value = true
+  try {
+    const response = await api.system.checkUpdates()
+    updateStatus.value = response.data.data || response.data
+    if (updateStatus.value?.has_update) {
+      showToast('success', `发现新版本 ${updateStatus.value.latest_version}`)
+    } else {
+      showToast('success', '已是最新版本')
+    }
+  } catch (error) {
+    showToast('error', '检查更新失败')
+  } finally {
+    checkingUpdates.value = false
+  }
+}
+
+// 安装更新
+const installUpdate = async () => {
+  installing.value = true
+  try {
+    await api.system.installUpdate?.()
+    showToast('success', '系统更新已开始，请稍候...')
+  } catch (error) {
+    showToast('error', '更新失败')
+  } finally {
+    installing.value = false
+  }
+}
+
+// 确认重启
+const confirmRestart = () => {
+  confirmAction.value = {
+    title: '确认重启',
+    message: '系统将立即重启，所有服务将暂时中断。',
+    action: 'restart',
+    confirmText: '重启'
+  }
+}
+
+// 确认关机
+const confirmShutdown = () => {
+  confirmAction.value = {
+    title: '确认关机',
+    message: '系统将立即关机，请确保所有重要数据已保存。',
+    action: 'shutdown',
+    danger: true,
+    confirmText: '关机'
+  }
+}
+
+// 确认恢复出厂
+const confirmFactoryReset = () => {
+  confirmAction.value = {
+    title: '恢复出厂设置',
+    message: '此操作将删除所有用户数据和配置，系统将恢复到初始状态。',
+    warning: '此操作不可撤销！',
+    action: 'factory_reset',
+    danger: true,
+    confirmText: '恢复出厂'
+  }
+}
+
+// 执行确认操作
+const executeConfirmAction = async () => {
+  if (!confirmAction.value) return
+  executing.value = true
+  
+  try {
+    switch (confirmAction.value.action) {
+      case 'restart':
+        await api.system.restart()
+        showToast('success', '重启命令已发送')
+        break
+      case 'shutdown':
+        await api.system.shutdown()
+        showToast('success', '关机命令已发送')
+        break
+      case 'factory_reset':
+        await api.system.factoryReset?.()
+        showToast('success', '恢复出厂设置已开始')
+        break
+    }
+    confirmAction.value = null
+  } catch (error) {
+    showToast('error', '操作失败')
+  } finally {
+    executing.value = false
+  }
 }
 
 // 生命周期

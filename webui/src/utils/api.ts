@@ -79,7 +79,9 @@ export const api = {
     health: () => apiClient.get('/api/v1/system/health'),
     restart: (delaySeconds?: number) => apiClient.post('/api/v1/system/restart', { delay_seconds: delaySeconds || 0 }),
     shutdown: (delaySeconds?: number) => apiClient.post('/api/v1/system/shutdown', { delay_seconds: delaySeconds || 0 }),
+    factoryReset: () => apiClient.post('/api/v1/system/factory-reset'),
     checkUpdates: () => apiClient.get('/api/v1/system/updates/check'),
+    installUpdate: () => apiClient.post('/api/v1/system/updates/install'),
     cronJobs: {
       list: (params?: any) => apiClient.get('/api/v1/system/cron-jobs', { params }),
       get: (id: number) => apiClient.get(`/api/v1/system/cron-jobs/${id}`),
