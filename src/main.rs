@@ -388,7 +388,7 @@ async fn main() -> std::io::Result<()> {
             AppSettings {
                 jwt: config::SettingsJwtConfig {
                     secret_key: env::var("JWT_SECRET_KEY")
-                        .unwrap_or_else(|_| "default_secret_key".to_string()),
+                        .expect("JWT_SECRET_KEY environment variable must be set"),
                     issuer: "axis-nas".to_string(),
                     audience: "axis-nas-users".to_string(),
                     expiration_minutes: 60,
