@@ -582,6 +582,141 @@
         </div>
       </div>
 
+      <!-- 存储设置 -->
+      <div v-else-if="currentTab === 'storage'" class="max-w-2xl space-y-6">
+        <div class="bg-white rounded-lg shadow p-4">
+          <h3 class="font-semibold text-gray-900 mb-4">存储池设置</h3>
+          <form @submit.prevent="handleSaveStorage" class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">自动均衡</label>
+                <p class="text-sm text-gray-500">自动平衡存储池中的数据分布</p>
+              </div>
+              <input v-model="storageSettings.autoBalance" type="checkbox" class="h-5 w-5 text-primary-600 rounded" />
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">自动清理回收站</label>
+                <p class="text-sm text-gray-500">定期清理已删除的文件</p>
+              </div>
+              <input v-model="storageSettings.autoTrashCleanup" type="checkbox" class="h-5 w-5 text-primary-600 rounded" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">回收站保留天数</label>
+              <input v-model.number="storageSettings.trashRetentionDays" type="number" min="1" max="365" class="w-24 px-3 py-2 border border-gray-300 rounded-lg" />
+            </div>
+            <div class="flex justify-end">
+              <button type="submit" :disabled="saving" class="btn-primary">{{ saving ? '保存中...' : '保存' }}</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-4">
+          <h3 class="font-semibold text-gray-900 mb-4">S.M.A.R.T. 监控</h3>
+          <form @submit.prevent="handleSaveSmart" class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">启用 S.M.A.R.T. 监控</label>
+                <p class="text-sm text-gray-500">监控磁盘健康状态</p>
+              </div>
+              <input v-model="smartSettings.enabled" type="checkbox" class="h-5 w-5 text-primary-600 rounded" />
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">温度警告阈值 (°C)</label>
+              </div>
+              <input v-model.number="smartSettings.tempWarningThreshold" type="number" min="40" max="80" class="w-20 px-3 py-2 border border-gray-300 rounded-lg" />
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">邮件告警</label>
+                <p class="text-sm text-gray-500">当检测到磁盘问题时发送邮件通知</p>
+              </div>
+              <input v-model="smartSettings.emailAlert" type="checkbox" class="h-5 w-5 text-primary-600 rounded" />
+            </div>
+            <div class="flex justify-end">
+              <button type="submit" :disabled="saving" class="btn-primary">{{ saving ? '保存中...' : '保存' }}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 安全设置 -->
+      <div v-else-if="currentTab === 'security'" class="max-w-2xl space-y-6">
+        <div class="bg-white rounded-lg shadow p-4">
+          <h3 class="font-semibold text-gray-900 mb-4">登录安全</h3>
+          <form @submit.prevent="handleSaveSecurity" class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">双因素认证</label>
+                <p class="text-sm text-gray-500">要求用户启用 2FA</p>
+              </div>
+              <input v-model="securitySettings.require2FA" type="checkbox" class="h-5 w-5 text-primary-600 rounded" />
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">登录失败锁定</label>
+                <p class="text-sm text-gray-500">多次失败后锁定账户</p>
+              </div>
+              <input v-model="securitySettings.loginLockout" type="checkbox" class="h-5 w-5 text-primary-600 rounded" />
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">最大失败次数</label>
+                <input v-model.number="securitySettings.maxFailedAttempts" type="number" min="3" max="10" class="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">锁定时间 (分钟)</label>
+                <input v-model.number="securitySettings.lockoutDuration" type="number" min="5" max="60" class="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+              </div>
+            </div>
+            <div class="flex justify-end">
+              <button type="submit" :disabled="saving" class="btn-primary">{{ saving ? '保存中...' : '保存' }}</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-4">
+          <h3 class="font-semibold text-gray-900 mb-4">会话管理</h3>
+          <form @submit.prevent="handleSaveSession" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">会话超时 (分钟)</label>
+              <input v-model.number="securitySettings.sessionTimeout" type="number" min="5" max="480" class="w-24 px-3 py-2 border border-gray-300 rounded-lg" />
+              <p class="text-xs text-gray-500 mt-1">无操作自动登出时间</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">最大并发会话</label>
+              <input v-model.number="securitySettings.maxConcurrentSessions" type="number" min="1" max="10" class="w-20 px-3 py-2 border border-gray-300 rounded-lg" />
+            </div>
+            <div class="flex justify-end">
+              <button type="submit" :disabled="saving" class="btn-primary">{{ saving ? '保存中...' : '保存' }}</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-4">
+          <h3 class="font-semibold text-gray-900 mb-4">API 访问控制</h3>
+          <form @submit.prevent="handleSaveApiAccess" class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">API 密钥认证</label>
+                <p class="text-sm text-gray-500">要求 API 请求使用密钥认证</p>
+              </div>
+              <input v-model="securitySettings.apiKeyRequired" type="checkbox" class="h-5 w-5 text-primary-600 rounded" />
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">CORS 允许来源</label>
+              </div>
+              <input v-model="securitySettings.corsOrigins" type="text" class="flex-1 ml-4 px-3 py-2 border border-gray-300 rounded-lg" placeholder="*, https://example.com" />
+            </div>
+            <div class="flex justify-end">
+              <button type="submit" :disabled="saving" class="btn-primary">{{ saving ? '保存中...' : '保存' }}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <!-- Toast -->
       <div v-if="toast.show" class="fixed bottom-4 right-4 z-50">
         <div :class="toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'" class="text-white px-4 py-2 rounded-lg shadow-lg">
@@ -616,12 +751,13 @@ import { api } from '@/utils/api'
 
 // 选项卡
 const tabs = [
-  { id: 'system', name: '系统信息' },
-  { id: 'basic', name: '基本设置' },
-  { id: 'network', name: '网络设置' },
-  { id: 'time', name: '时间设置' },
-  { id: 'users', name: '用户管理' },
-  { id: 'notification', name: '通知设置' }
+  { id: 'system', name: '系统信息', icon: '⚙️' },
+  { id: 'basic', name: '基本设置', icon: '🔧' },
+  { id: 'network', name: '网络设置', icon: '🌐' },
+  { id: 'storage', name: '存储设置', icon: '💾' },
+  { id: 'time', name: '时间设置', icon: '🕐' },
+  { id: 'notification', name: '通知设置', icon: '🔔' },
+  { id: 'security', name: '安全设置', icon: '🔒' }
 ]
 
 const currentTab = ref('system')
@@ -1062,6 +1198,97 @@ const executeConfirmAction = async () => {
     showToast('error', '操作失败')
   } finally {
     executing.value = false
+  }
+}
+
+// 存储设置
+const storageSettings = ref({
+  autoBalance: false,
+  autoTrashCleanup: true,
+  trashRetentionDays: 30
+})
+
+const smartSettings = ref({
+  enabled: true,
+  tempWarningThreshold: 50,
+  emailAlert: false
+})
+
+const handleSaveStorage = async () => {
+  saving.value = true
+  try {
+    await api.settings.update({ storage: storageSettings.value })
+    showToast('success', '存储设置已保存')
+  } catch (error) {
+    showToast('error', '保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+const handleSaveSmart = async () => {
+  saving.value = true
+  try {
+    await api.settings.update({ smart: smartSettings.value })
+    showToast('success', 'S.M.A.R.T. 设置已保存')
+  } catch (error) {
+    showToast('error', '保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+// 安全设置
+const securitySettings = ref({
+  require2FA: false,
+  loginLockout: true,
+  maxFailedAttempts: 5,
+  lockoutDuration: 30,
+  sessionTimeout: 30,
+  maxConcurrentSessions: 3,
+  apiKeyRequired: false,
+  corsOrigins: '*'
+})
+
+const handleSaveSecurity = async () => {
+  saving.value = true
+  try {
+    await api.settings.update({ security: securitySettings.value })
+    showToast('success', '安全设置已保存')
+  } catch (error) {
+    showToast('error', '保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+const handleSaveSession = async () => {
+  saving.value = true
+  try {
+    await api.settings.update({
+      session_timeout: securitySettings.value.sessionTimeout,
+      max_concurrent_sessions: securitySettings.value.maxConcurrentSessions
+    })
+    showToast('success', '会话设置已保存')
+  } catch (error) {
+    showToast('error', '保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+const handleSaveApiAccess = async () => {
+  saving.value = true
+  try {
+    await api.settings.update({
+      api_key_required: securitySettings.value.apiKeyRequired,
+      cors_origins: securitySettings.value.corsOrigins
+    })
+    showToast('success', 'API 访问设置已保存')
+  } catch (error) {
+    showToast('error', '保存失败')
+  } finally {
+    saving.value = false
   }
 }
 
