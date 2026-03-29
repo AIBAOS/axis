@@ -56,7 +56,7 @@
         <div v-if="loading" class="flex justify-center py-12"><svg class="animate-spin h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg></div>
         <div v-else-if="disks.length === 0" class="text-center py-12 bg-white rounded-lg shadow"><svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" /></svg><p class="mt-4 text-gray-600">暂无磁盘</p></div>
         <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <DiskCard v-for="disk in disks" :key="disk.id" :disk="disk" @smart="showSmartDetails" @detail="showDiskDetail" />
+          <DiskCard v-for="disk in disks" :key="disk.id" :disk="disk" @smart="showSmartDetails" @detail="showDiskDetail" @initialize="initializeDisk" @format="formatDisk" />
         </div>
       </template>
 
@@ -142,7 +142,7 @@
       <div v-if="selectedDisk" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
           <div class="flex justify-between items-center px-6 py-4 border-b sticky top-0 bg-white">
-            <h3 class="text-lg font-semibold text-gray-900">磁盘详情</h3>
+            <h3 class="text-lg font-semibold text-gray-900">磁盘详情 - {{ selectedDisk.name }}</h3>
             <button @click="selectedDisk = null" class="text-gray-400 hover:text-gray-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
           </div>
           <div class="p-6 space-y-4">
@@ -156,10 +156,29 @@
               <div><p class="text-gray-500">通电时间</p><p class="font-medium text-gray-900">{{ formatPowerOnHours(selectedDisk.power_on_hours) }}</p></div>
               <div v-if="selectedDisk.speed_rpm"><p class="text-gray-500">转速</p><p class="font-medium text-gray-900">{{ selectedDisk.speed_rpm }} RPM</p></div>
             </div>
+            
+            <!-- S.M.A.R.T. 测试按钮 -->
+            <div class="border-t pt-4">
+              <h4 class="font-medium text-gray-900 mb-3">S.M.A.R.T. 测试</h4>
+              <div class="flex space-x-3">
+                <button @click="runSmartTest(selectedDisk, 'short')" class="btn-secondary text-sm">短测试 (约 2 分钟)</button>
+                <button @click="runSmartTest(selectedDisk, 'long')" class="btn-secondary text-sm">长测试 (约 1 小时)</button>
+              </div>
+            </div>
+
             <div v-if="selectedDisk.smart_attributes" class="border-t pt-4">
               <h4 class="font-medium text-gray-900 mb-3">S.M.A.R.T. 属性</h4>
               <div class="space-y-2 text-sm">
                 <div v-for="attr in selectedDisk.smart_attributes" :key="attr.id" class="flex justify-between"><span class="text-gray-600">{{ attr.name }}</span><span :class="attr.value < attr.threshold ? 'text-red-600' : 'text-gray-900'">{{ attr.value }} (阈值: {{ attr.threshold }})</span></div>
+              </div>
+            </div>
+
+            <!-- 热插拔检测 -->
+            <div class="border-t pt-4">
+              <h4 class="font-medium text-gray-900 mb-2">磁盘操作</h4>
+              <div class="flex space-x-3">
+                <button v-if="!selectedDisk.in_use" @click="initializeDisk(selectedDisk); selectedDisk = null" class="px-3 py-1.5 text-sm border border-green-300 text-green-600 rounded hover:bg-green-50">初始化磁盘</button>
+                <button v-if="selectedDisk.in_use" @click="formatDisk(selectedDisk); selectedDisk = null" class="px-3 py-1.5 text-sm border border-blue-300 text-blue-600 rounded hover:bg-blue-50">格式化</button>
               </div>
             </div>
           </div>
@@ -287,6 +306,40 @@ const loadShares = async () => { try { const r = await api.storage.getUsage(); s
 
 const showSmartDetails = (d: any) => { selectedDisk.value = d }
 const showDiskDetail = (d: any) => { selectedDisk.value = d }
+
+// 磁盘操作
+const initializeDisk = async (disk: any) => {
+  if (!confirm(`确定初始化磁盘 "${disk.name}" 吗？此操作将清除磁盘上的所有数据！`)) return
+  try {
+    await api.storage.initializeDisk?.(disk.id)
+    showToast('success', `磁盘 ${disk.name} 已初始化`)
+    loadDisks()
+  } catch (e) {
+    showToast('error', '初始化失败')
+  }
+}
+
+const formatDisk = async (disk: any) => {
+  const filesystem = prompt('请输入文件系统类型（ext4/xfs/btrfs）:', 'ext4')
+  if (!filesystem) return
+  if (!confirm(`确定格式化磁盘 "${disk.name}" 为 ${filesystem} 吗？此操作将清除所有数据！`)) return
+  try {
+    await api.storage.formatDisk?.(disk.id, filesystem)
+    showToast('success', `磁盘 ${disk.name} 已格式化`)
+    loadDisks()
+  } catch (e) {
+    showToast('error', '格式化失败')
+  }
+}
+
+const runSmartTest = async (disk: any, testType: 'short' | 'long' = 'short') => {
+  try {
+    await api.storage.runSmartTest?.(disk.id, testType)
+    showToast('success', `S.M.A.R.T. ${testType === 'long' ? '长' : '短'}测试已开始`)
+  } catch (e) {
+    showToast('error', '测试启动失败')
+  }
+}
 
 const savePool = async () => { if (!poolForm.value.name) return; if (editingPool.value) { const i = pools.value.findIndex(p => p.id === editingPool.value.id); if (i >= 0) pools.value[i] = { ...editingPool.value, ...poolForm.value }; showToast('success', '存储池已更新') } else { pools.value.push({ id: Date.now(), ...poolForm.value, size_bytes: poolForm.value.disk_ids.reduce((sum, id) => { const d = disks.value.find(x => x.id === id); return sum + (d?.size_bytes || 0) }, 0), used_bytes: 0, status: 'online' }); showToast('success', '存储池已创建') } showPoolModal.value = false; editingPool.value = null }
 const editPool = (p: any) => { editingPool.value = p; poolForm.value = { name: p.name, raid_level: p.raid_level || 'single', disk_ids: p.disk_ids || [] }; showPoolModal.value = true }

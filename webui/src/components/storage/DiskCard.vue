@@ -83,19 +83,37 @@
     </div>
 
     <!-- 操作按钮 -->
-    <div class="px-4 py-3 flex justify-end space-x-2">
-      <button
-        @click="$emit('smart', disk)"
-        class="px-3 py-1.5 text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
-      >
-        S.M.A.R.T.
-      </button>
-      <button
-        @click="$emit('detail', disk)"
-        class="px-3 py-1.5 text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
-      >
-        详情
-      </button>
+    <div class="px-4 py-3 flex justify-between items-center">
+      <div class="flex space-x-2">
+        <button
+          v-if="!disk.in_use && disk.status !== 'online'"
+          @click="$emit('initialize', disk)"
+          class="px-3 py-1.5 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors"
+        >
+          初始化
+        </button>
+        <button
+          v-if="disk.in_use && !disk.formatted"
+          @click="$emit('format', disk)"
+          class="px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
+        >
+          格式化
+        </button>
+      </div>
+      <div class="flex space-x-2">
+        <button
+          @click="$emit('smart', disk)"
+          class="px-3 py-1.5 text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
+        >
+          S.M.A.R.T.
+        </button>
+        <button
+          @click="$emit('detail', disk)"
+          class="px-3 py-1.5 text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
+        >
+          详情
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -119,6 +137,7 @@ const props = defineProps<{
     status?: string
     path?: string
     in_use?: boolean
+    formatted?: boolean
     power_on_hours?: number
     speed_rpm?: number
   }
@@ -127,6 +146,8 @@ const props = defineProps<{
 defineEmits<{
   smart: [disk: any]
   detail: [disk: any]
+  initialize: [disk: any]
+  format: [disk: any]
 }>()
 
 // 磁盘类型图标
