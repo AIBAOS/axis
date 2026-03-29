@@ -13,7 +13,7 @@
             <h1 class="text-xl font-bold text-gray-900">Axis NAS 管理面板</h1>
           </div>
           <nav class="flex space-x-4">
-            <router-link to="/" class="text-primary-600 hover:text-primary-700 font-medium">首页</router-link>
+            <router-link to="/" class="text-gray-600 hover:text-gray-900">首页</router-link>
             <router-link to="/files" class="text-gray-600 hover:text-gray-900 font-medium">文件</router-link>
             <router-link to="/storage" class="text-gray-600 hover:text-gray-900 font-medium">存储</router-link>
             <router-link to="/users" class="text-gray-600 hover:text-gray-900 font-medium">用户</router-link>
