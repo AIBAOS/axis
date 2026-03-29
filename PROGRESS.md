@@ -79,6 +79,18 @@
 
 ## ✅ WebUI 开发
 
+- [x] **Phase 308 WebUI 日志查看界面** - 2026-03-29 01:45
+  - LogsView.vue: 日志查看主页
+  - 功能：日志级别筛选(全部/DEBUG/INFO/WARN/ERROR)、时间范围筛选、关键词搜索、实时刷新
+  - 自动刷新：可开启每 10 秒自动刷新
+  - 分页：支持每页 20/50/100 条
+  - 列表字段：时间戳、级别、来源模块、消息
+  - 级别颜色：ERROR 红色、WARN 黄色、INFO 蓝色、DEBUG 灰色
+  - 统计卡片：显示各级别日志数量
+  - 路由：/logs
+  - 导航：顶部导航栏新增"日志"入口
+  - 对接 API: GET /api/v1/system/logs
+
 - [x] **Phase 307 WebUI 共享管理界面** - 2026-03-29 01:30
   - SharesView.vue: 共享管理主页（选项卡：SMB/NFS/WebDAV/FTP）
   - ShareCard.vue: 共享卡片组件（名称/路径/协议/状态/公开/只读）
