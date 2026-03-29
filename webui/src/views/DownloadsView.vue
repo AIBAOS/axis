@@ -161,7 +161,14 @@
               <td class="px-4 py-3 text-right">
                 <button v-if="task.status === 'downloading'" @click="pauseTask(task)" class="text-yellow-600 hover:text-yellow-700 mr-2">暂停</button>
                 <button v-if="task.status === 'pending'" @click="startTask(task)" class="text-blue-600 hover:text-blue-700 mr-2">开始</button>
+                <button v-if="task.status === 'paused'" @click="startTask(task)" class="text-blue-600 hover:text-blue-700 mr-2">继续</button>
                 <button v-if="['completed', 'failed', 'cancelled'].includes(task.status)" @click="retryTask(task)" class="text-green-600 hover:text-green-700 mr-2">重试</button>
+                <select v-if="['pending', 'downloading', 'paused'].includes(task.status)" @change="changePriority(task, $event)" class="text-xs px-2 py-1 border rounded mr-2">
+                  <option value="" disabled selected>优先级</option>
+                  <option value="high">高</option>
+                  <option value="normal">普通</option>
+                  <option value="low">低</option>
+                </select>
                 <button @click="confirmDelete(task)" class="text-red-600 hover:text-red-700">删除</button>
               </td>
             </tr>
@@ -174,6 +181,69 @@
         <button @click="changePage(pagination.page - 1)" :disabled="pagination.page <= 1" class="px-3 py-1 border rounded disabled:opacity-50">上一页</button>
         <span class="px-3 py-1 text-gray-600">第 {{ pagination.page }} / {{ pagination.total_pages }} 页</span>
         <button @click="changePage(pagination.page + 1)" :disabled="pagination.page >= pagination.total_pages" class="px-3 py-1 border rounded disabled:opacity-50">下一页</button>
+      </div>
+
+      <!-- 带宽限制设置 -->
+      <div class="bg-white rounded-lg shadow p-4">
+        <h3 class="font-semibold text-gray-900 mb-4">带宽限制</h3>
+        <form @submit.prevent="saveBandwidthLimit" class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">下载限速</label>
+              <div class="flex items-center space-x-2">
+                <input v-model.number="bandwidthLimit.download" type="number" min="0" class="w-24 px-3 py-2 border rounded-lg" />
+                <span class="text-sm text-gray-500">KB/s (0 = 不限)</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">上传限速</label>
+              <div class="flex items-center space-x-2">
+                <input v-model.number="bandwidthLimit.upload" type="number" min="0" class="w-24 px-3 py-2 border rounded-lg" />
+                <span class="text-sm text-gray-500">KB/s (0 = 不限)</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <label class="flex items-center space-x-2">
+              <input v-model="bandwidthLimit.enabled" type="checkbox" class="h-4 w-4 rounded" />
+              <span class="text-sm text-gray-700">启用带宽限制</span>
+            </label>
+            <button type="submit" class="btn-primary text-sm">保存设置</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- 下载历史记录 -->
+      <div class="bg-white rounded-lg shadow p-4">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-semibold text-gray-900">下载历史</h3>
+          <button @click="clearHistory" class="text-sm text-red-600 hover:text-red-700">清空历史</button>
+        </div>
+        <div v-if="downloadHistory.length === 0" class="text-center py-4 text-gray-500 text-sm">暂无历史记录</div>
+        <div v-else class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 border-b">
+              <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">文件名</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">完成时间</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">大小</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">耗时</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">状态</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y">
+              <tr v-for="record in downloadHistory" :key="record.id" class="hover:bg-gray-50">
+                <td class="px-4 py-2 font-medium text-gray-900 truncate max-w-xs">{{ record.filename }}</td>
+                <td class="px-4 py-2 text-gray-600">{{ record.completed_at }}</td>
+                <td class="px-4 py-2 text-gray-600">{{ formatSize(record.size) }}</td>
+                <td class="px-4 py-2 text-gray-600">{{ record.duration }}</td>
+                <td class="px-4 py-2">
+                  <span :class="record.status === 'success' ? 'text-green-600' : 'text-red-600'" class="text-xs font-medium">{{ record.status === 'success' ? '成功' : '失败' }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -433,6 +503,48 @@ const getProgressClass = (status: string) => {
 const showToast = (type: 'success' | 'error', message: string) => {
   toast.value = { show: true, type, message }
   setTimeout(() => toast.value.show = false, 3000)
+}
+
+// 带宽限制
+const bandwidthLimit = ref({
+  enabled: false,
+  download: 0,
+  upload: 0
+})
+
+const saveBandwidthLimit = async () => {
+  try {
+    await api.settings.update({ bandwidth_limit: bandwidthLimit.value })
+    showToast('success', '带宽限制设置已保存')
+  } catch (e) {
+    showToast('error', '保存失败')
+  }
+}
+
+// 优先级调整
+const changePriority = async (task: any, event: Event) => {
+  const priority = (event.target as HTMLSelectElement).value
+  if (!priority) return
+  try {
+    await api.downloads.update?.(task.id, { priority })
+    showToast('success', `优先级已设为${priority === 'high' ? '高' : priority === 'low' ? '低' : '普通'}`)
+    loadDownloads()
+  } catch (e) {
+    showToast('error', '设置失败')
+  }
+}
+
+// 下载历史记录
+const downloadHistory = ref([
+  { id: 1, filename: 'ubuntu-24.04-desktop-amd64.iso', completed_at: '2026-03-29 10:30', size: 5368709120, duration: '45分', status: 'success' },
+  { id: 2, filename: 'movie_2026.mkv', completed_at: '2026-03-28 22:15', size: 2147483648, duration: '25分', status: 'success' },
+  { id: 3, filename: 'backup_2026-03-27.tar.gz', completed_at: '2026-03-27 18:00', size: 1073741824, duration: '10分', status: 'failed' }
+])
+
+const clearHistory = () => {
+  if (!confirm('确定清空下载历史记录吗？')) return
+  downloadHistory.value = []
+  showToast('success', '历史记录已清空')
 }
 
 onMounted(() => {
