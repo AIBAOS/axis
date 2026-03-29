@@ -63,6 +63,10 @@ export const api = {
     info: () => apiClient.get('/api/v1/system/info'),
     resources: () => apiClient.get('/api/v1/system/resources'),
     logs: (params?: any) => apiClient.get('/api/v1/system/logs', { params }),
+    health: () => apiClient.get('/api/v1/system/health'),
+    restart: (delaySeconds?: number) => apiClient.post('/api/v1/system/restart', { delay_seconds: delaySeconds || 0 }),
+    shutdown: (delaySeconds?: number) => apiClient.post('/api/v1/system/shutdown', { delay_seconds: delaySeconds || 0 }),
+    checkUpdates: () => apiClient.get('/api/v1/system/updates/check'),
     cronJobs: {
       list: (params?: any) => apiClient.get('/api/v1/system/cron-jobs', { params }),
       get: (id: number) => apiClient.get(`/api/v1/system/cron-jobs/${id}`),

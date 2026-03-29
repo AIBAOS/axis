@@ -1,3 +1,5 @@
 export { default as MetricCard } from './MetricCard.vue'
 export { default as QuickLinkCard } from './QuickLinkCard.vue'
 export { default as AlertsPanel } from './AlertsPanel.vue'
+export { default as NetworkChart } from './NetworkChart.vue'
+export { default as QuickActions } from './QuickActions.vue'
