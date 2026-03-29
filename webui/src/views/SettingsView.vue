@@ -404,6 +404,117 @@
             </div>
           </form>
         </div>
+
+        <!-- DNS 设置 -->
+        <div class="bg-white rounded-lg shadow p-4">
+          <h3 class="font-semibold text-gray-900 mb-4">DNS 设置</h3>
+          <form @submit.prevent="handleSaveDns" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">主 DNS</label>
+                <input v-model="dnsSettings.primary" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="8.8.8.8" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">备用 DNS</label>
+                <input v-model="dnsSettings.secondary" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="8.8.4.4" />
+              </div>
+            </div>
+            <div class="flex justify-end">
+              <button type="submit" :disabled="saving" class="btn-primary">{{ saving ? '保存中...' : '保存' }}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 时间设置 -->
+      <div v-else-if="currentTab === 'time'" class="max-w-2xl space-y-6">
+        <div class="bg-white rounded-lg shadow p-4">
+          <h3 class="font-semibold text-gray-900 mb-4">时区设置</h3>
+          <form @submit.prevent="handleSaveTimezone" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">当前时区</label>
+              <select v-model="timeSettings.timezone" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                <option value="UTC">UTC</option>
+                <option value="Asia/Shanghai">Asia/Shanghai (北京时间)</option>
+                <option value="Asia/Tokyo">Asia/Tokyo (东京)</option>
+                <option value="America/New_York">America/New_York (纽约)</option>
+                <option value="America/Los_Angeles">America/Los_Angeles (洛杉矶)</option>
+                <option value="Europe/London">Europe/London (伦敦)</option>
+                <option value="Europe/Paris">Europe/Paris (巴黎)</option>
+                <option value="Australia/Sydney">Australia/Sydney (悉尼)</option>
+              </select>
+            </div>
+            <div class="p-3 bg-gray-50 rounded-lg">
+              <p class="text-sm text-gray-600">当前系统时间: {{ currentTime }}</p>
+            </div>
+            <div class="flex justify-end">
+              <button type="submit" :disabled="saving" class="btn-primary">{{ saving ? '保存中...' : '保存' }}</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-4">
+          <h3 class="font-semibold text-gray-900 mb-4">NTP 时间同步</h3>
+          <form @submit.prevent="handleSaveNtp" class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">启用 NTP 同步</label>
+                <p class="text-sm text-gray-500">自动与网络时间服务器同步</p>
+              </div>
+              <input v-model="timeSettings.ntp_enabled" type="checkbox" class="h-5 w-5 text-primary-600 rounded" />
+            </div>
+
+            <div v-if="timeSettings.ntp_enabled">
+              <label class="block text-sm font-medium text-gray-700 mb-1">NTP 服务器</label>
+              <div class="space-y-2">
+                <input v-model="timeSettings.ntp_servers[0]" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="pool.ntp.org" />
+                <input v-model="timeSettings.ntp_servers[1]" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="time.google.com" />
+                <input v-model="timeSettings.ntp_servers[2]" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="time.cloudflare.com" />
+              </div>
+              <p class="text-xs text-gray-500 mt-1">可添加多个 NTP 服务器，每行一个</p>
+            </div>
+
+            <div v-if="timeSettings.ntp_enabled" class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div>
+                <p class="text-sm text-gray-600">上次同步: {{ timeSettings.last_sync || '-' }}</p>
+                <p class="text-xs text-gray-500 mt-1">同步状态: {{ timeSettings.sync_status || '未知' }}</p>
+              </div>
+              <button type="button" @click="syncNow" :disabled="syncing" class="btn-secondary text-sm">
+                {{ syncing ? '同步中...' : '立即同步' }}
+              </button>
+            </div>
+
+            <div class="flex justify-end">
+              <button type="submit" :disabled="saving" class="btn-primary">{{ saving ? '保存中...' : '保存' }}</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-4">
+          <h3 class="font-semibold text-gray-900 mb-4">手动时间设置</h3>
+          <form @submit.prevent="handleSetManualTime" class="space-y-4">
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-sm font-medium text-gray-700">手动设置时间</label>
+              <input v-model="timeSettings.manual_mode" type="checkbox" class="h-4 w-4 text-primary-600 rounded" />
+            </div>
+            <div v-if="timeSettings.manual_mode" class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">日期</label>
+                <input v-model="timeSettings.manual_date" type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">时间</label>
+                <input v-model="timeSettings.manual_time" type="time" class="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+              </div>
+            </div>
+            <p v-if="timeSettings.manual_mode" class="text-xs text-yellow-600">
+              ⚠️ 手动设置时间将禁用 NTP 自动同步
+            </p>
+            <div class="flex justify-end">
+              <button type="submit" :disabled="saving || !timeSettings.manual_mode" class="btn-primary disabled:opacity-50">设置时间</button>
+            </div>
+          </form>
+        </div>
       </div>
 
       <!-- 用户管理 -->
@@ -508,6 +619,7 @@ const tabs = [
   { id: 'system', name: '系统信息' },
   { id: 'basic', name: '基本设置' },
   { id: 'network', name: '网络设置' },
+  { id: 'time', name: '时间设置' },
   { id: 'users', name: '用户管理' },
   { id: 'notification', name: '通知设置' }
 ]
@@ -589,6 +701,27 @@ const webhookSettings = ref({
   enabled: false,
   url: ''
 })
+
+// DNS 设置
+const dnsSettings = ref({
+  primary: '8.8.8.8',
+  secondary: '8.8.4.4'
+})
+
+// 时间设置
+const timeSettings = ref({
+  timezone: 'Asia/Shanghai',
+  ntp_enabled: true,
+  ntp_servers: ['pool.ntp.org', 'time.google.com', 'time.cloudflare.com'],
+  last_sync: '2026-03-29 10:30:00',
+  sync_status: '已同步',
+  manual_mode: false,
+  manual_date: '',
+  manual_time: ''
+})
+
+const currentTime = ref(new Date().toLocaleString('zh-CN'))
+const syncing = ref(false)
 
 // 磁盘使用率
 const diskUsagePercent = computed(() => {
@@ -727,6 +860,85 @@ const handleSaveWebhookNotification = async () => {
     showToast('success', 'Webhook 设置已保存')
   } catch (error) {
     showToast('error', '保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+// 保存 DNS
+const handleSaveDns = async () => {
+  saving.value = true
+  try {
+    await api.settings.update({
+      dns_primary: dnsSettings.value.primary,
+      dns_secondary: dnsSettings.value.secondary
+    })
+    showToast('success', 'DNS 设置已保存')
+  } catch (error) {
+    showToast('error', '保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+// 保存时区
+const handleSaveTimezone = async () => {
+  saving.value = true
+  try {
+    await api.settings.update({
+      timezone: timeSettings.value.timezone
+    })
+    showToast('success', '时区设置已保存')
+  } catch (error) {
+    showToast('error', '保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+// 保存 NTP
+const handleSaveNtp = async () => {
+  saving.value = true
+  try {
+    await api.settings.update({
+      ntp_enabled: timeSettings.value.ntp_enabled,
+      ntp_servers: timeSettings.value.ntp_servers.filter(s => s)
+    })
+    showToast('success', 'NTP 设置已保存')
+  } catch (error) {
+    showToast('error', '保存失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+// 立即同步
+const syncNow = async () => {
+  syncing.value = true
+  try {
+    await api.system.syncTime?.()
+    timeSettings.value.last_sync = new Date().toLocaleString('zh-CN')
+    timeSettings.value.sync_status = '已同步'
+    showToast('success', '时间同步成功')
+  } catch (error) {
+    showToast('error', '同步失败')
+  } finally {
+    syncing.value = false
+  }
+}
+
+// 手动设置时间
+const handleSetManualTime = async () => {
+  if (!timeSettings.value.manual_date || !timeSettings.value.manual_time) {
+    showToast('error', '请选择日期和时间')
+    return
+  }
+  saving.value = true
+  try {
+    await api.system.setManualTime?.(`${timeSettings.value.manual_date} ${timeSettings.value.manual_time}`)
+    showToast('success', '时间已设置')
+  } catch (error) {
+    showToast('error', '设置失败')
   } finally {
     saving.value = false
   }
