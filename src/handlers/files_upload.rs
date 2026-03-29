@@ -40,7 +40,87 @@ pub struct ErrorResponse {
 
 // 配置常量
 const MAX_FILE_SIZE: u64 = 100 * 1024 * 1024; // 100MB
+const MIN_FILE_SIZE: u64 = 1; // 最小 1 字节，防止空文件
 const ALLOWED_EXTENSIONS: [&str; 10] = ["txt", "pdf", "doc", "docx", "xls", "xlsx", "jpg", "jpeg", "png", "gif"];
+
+/// 路径安全验证（防止路径遍历攻击）
+fn validate_path(path: &str) -> Result<(), ErrorResponse> {
+    // 必须是绝对路径
+    if !path.starts_with('/') {
+        return Err(ErrorResponse {
+            success: false,
+            error: "Path must be absolute (start with /)".to_string(),
+            code: "INVALID_PATH".to_string(),
+        });
+    }
+    // 禁止路径遍历
+    if path.contains("..") {
+        return Err(ErrorResponse {
+            success: false,
+            error: "Path contains forbidden sequence '..'".to_string(),
+            code: "PATH_TRAVERSAL".to_string(),
+        });
+    }
+    // 禁止 null 字节
+    if path.contains('\0') {
+        return Err(ErrorResponse {
+            success: false,
+            error: "Path contains invalid null byte".to_string(),
+            code: "INVALID_PATH".to_string(),
+        });
+    }
+    Ok(())
+}
+
+/// 文件名安全验证（过滤危险字符）
+fn validate_filename(filename: &str) -> Result<String, ErrorResponse> {
+    // 禁止空文件名
+    if filename.is_empty() {
+        return Err(ErrorResponse {
+            success: false,
+            error: "Filename cannot be empty".to_string(),
+            code: "INVALID_FILENAME".to_string(),
+        });
+    }
+    // 禁止路径分隔符
+    if filename.contains('/') || filename.contains('\\') {
+        return Err(ErrorResponse {
+            success: false,
+            error: "Filename cannot contain path separators (/ or \\)".to_string(),
+            code: "INVALID_FILENAME".to_string(),
+        });
+    }
+    // 禁止路径遍历
+    if filename.contains("..") {
+        return Err(ErrorResponse {
+            success: false,
+            error: "Filename cannot contain '..'".to_string(),
+            code: "PATH_TRAVERSAL".to_string(),
+        });
+    }
+    // 禁止 null 字节
+    if filename.contains('\0') {
+        return Err(ErrorResponse {
+            success: false,
+            error: "Filename contains invalid null byte".to_string(),
+            code: "INVALID_FILENAME".to_string(),
+        });
+    }
+    // 禁止控制字符
+    if filename.chars().any(|c| c.is_control()) {
+        return Err(ErrorResponse {
+            success: false,
+            error: "Filename contains control characters".to_string(),
+            code: "INVALID_FILENAME".to_string(),
+        });
+    }
+    // 返回清理后的文件名（仅保留安全字符）
+    let safe_filename = filename
+        .chars()
+        .filter(|c| !c.is_control() && *c != '/' && *c != '\\' && *c != '\0')
+        .collect::<String>();
+    Ok(safe_filename)
+}
 
 /// 上传文件（Phase 119）
 /// - JWT 认证，登录用户可访问
@@ -90,12 +170,21 @@ pub async fn upload_file(
                     data.extend_from_slice(&chunk);
                 }
                 
-                // 检查文件大小
+                // 检查文件大小（上限）
                 if data.len() as u64 > MAX_FILE_SIZE {
                     return Ok(HttpResponse::PayloadTooLarge().json(ErrorResponse {
                         success: false,
                         error: format!("File size exceeds limit of {} MB", MAX_FILE_SIZE / 1024 / 1024),
                         code: "FILE_TOO_LARGE".to_string(),
+                    }));
+                }
+                
+                // 检查文件大小（下限 - Bug #18 修复）
+                if data.len() as u64 < MIN_FILE_SIZE {
+                    return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+                        success: false,
+                        error: "Empty files are not allowed".to_string(),
+                        code: "FILE_EMPTY".to_string(),
                     }));
                 }
                 
@@ -119,10 +208,16 @@ pub async fn upload_file(
 
     // 4. 验证必要参数
     let file_data = file_data.ok_or_else(|| actix_web::error::ErrorBadRequest("file is required"))?;
-    let filename = filename.ok_or_else(|| actix_web::error::ErrorBadRequest("filename is required"))?;
+    let raw_filename = filename.ok_or_else(|| actix_web::error::ErrorBadRequest("filename is required"))?;
+
+    // 4.1 验证文件名安全性（Bug #17 修复）
+    let safe_filename = match validate_filename(&raw_filename) {
+        Ok(name) => name,
+        Err(e) => return Ok(HttpResponse::BadRequest().json(e)),
+    };
 
     // 5. 验证文件类型
-    let extension = filename.split('.').last().unwrap_or("").to_lowercase();
+    let extension = safe_filename.split('.').last().unwrap_or("").to_lowercase();
     if !ALLOWED_EXTENSIONS.contains(&extension.as_str()) {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
             success: false,
@@ -132,15 +227,21 @@ pub async fn upload_file(
     }
 
     // 6. 确定保存路径（默认用户主目录）
-    let upload_dir = target_path
+    let raw_upload_dir = target_path
         .unwrap_or_else(|| format!("/users/{}", username));
     
+    // 6.1 验证路径安全性（Bug #16 修复）
+    if let Err(e) = validate_path(&raw_upload_dir) {
+        return Ok(HttpResponse::BadRequest().json(e));
+    }
+    let upload_dir = raw_upload_dir;
+    
     // 7. 处理文件名冲突（自动重命名）
-    let file_path = PathBuf::from(&upload_dir).join(&filename);
+    let file_path = PathBuf::from(&upload_dir).join(&safe_filename);
     let final_path = if file_path.exists() {
         // 文件已存在，自动重命名
-        let stem = filename.rsplit_once('.').map(|(s, _)| s).unwrap_or(&filename);
-        let ext = filename.rsplit_once('.').map(|(_, e)| e).unwrap_or("");
+        let stem = safe_filename.rsplit_once('.').map(|(s, _)| s).unwrap_or(&safe_filename);
+        let ext = safe_filename.rsplit_once('.').map(|(_, e)| e).unwrap_or("");
         let mut counter = 1;
         loop {
             let new_filename = if ext.is_empty() {
