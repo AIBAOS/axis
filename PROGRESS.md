@@ -79,6 +79,19 @@
 
 ## ✅ WebUI 开发
 
+- [x] **Phase 307 WebUI 共享管理界面** - 2026-03-29 01:30
+  - SharesView.vue: 共享管理主页（选项卡：SMB/NFS/WebDAV/FTP）
+  - ShareCard.vue: 共享卡片组件（名称/路径/协议/状态/公开/只读）
+  - ShareModal.vue: 新建/编辑共享模态框
+  - SMB 配置：访客访问/可浏览/有效用户/只读
+  - NFS 配置：客户端列表(CIDR+权限)/子树检查/同步写入
+  - 功能：共享列表展示、新建、编辑、删除、搜索、筛选
+  - 支持：状态筛选（活跃/非活跃）、名称/路径搜索
+  - 路由：/shares
+  - 导航：顶部导航栏新增"共享"入口
+  - 对接 API: GET/POST/PUT/DELETE /api/v1/shares/{smb|nfs|webdav|ftp}
+  - API 客户端扩展：shares 模块（SMB/NFS/WebDAV/FTP CRUD）
+
 - [x] **Phase 306 WebUI 系统设置界面** - 2026-03-28 18:50
   - SettingsView.vue: 系统设置主页（选项卡：基本/网络/通知）
   - 功能：主机名/时区/语言配置、网络配置、邮件通知配置

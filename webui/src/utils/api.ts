@@ -102,5 +102,36 @@ export const api = {
   settings: {
     get: () => apiClient.get('/api/v1/settings'),
     update: (data: any) => apiClient.put('/api/v1/settings', data)
+  },
+
+  // 共享
+  shares: {
+    // SMB
+    listSmb: (params?: any) => apiClient.get('/api/v1/shares/smb', { params }),
+    getSmb: (id: number) => apiClient.get(`/api/v1/shares/smb/${id}`),
+    createSmb: (data: any) => apiClient.post('/api/v1/shares/smb', data),
+    updateSmb: (id: number, data: any) => apiClient.put(`/api/v1/shares/smb/${id}`, data),
+    deleteSmb: (id: number) => apiClient.delete(`/api/v1/shares/smb/${id}`),
+
+    // NFS
+    listNfs: (params?: any) => apiClient.get('/api/v1/shares/nfs', { params }),
+    getNfs: (id: number) => apiClient.get(`/api/v1/shares/nfs/${id}`),
+    createNfs: (data: any) => apiClient.post('/api/v1/shares/nfs', data),
+    updateNfs: (id: number, data: any) => apiClient.put(`/api/v1/shares/nfs/${id}`, data),
+    deleteNfs: (id: number) => apiClient.delete(`/api/v1/shares/nfs/${id}`),
+
+    // WebDAV
+    listWebdav: (params?: any) => apiClient.get('/api/v1/shares/webdav', { params }),
+    getWebdav: (id: number) => apiClient.get(`/api/v1/shares/webdav/${id}`),
+    createWebdav: (data: any) => apiClient.post('/api/v1/shares/webdav', data),
+    updateWebdav: (id: number, data: any) => apiClient.put(`/api/v1/shares/webdav/${id}`, data),
+    deleteWebdav: (id: number) => apiClient.delete(`/api/v1/shares/webdav/${id}`),
+
+    // FTP
+    listFtp: (params?: any) => apiClient.get('/api/v1/shares/ftp', { params }),
+    getFtp: (id: number) => apiClient.get(`/api/v1/shares/ftp/${id}`),
+    createFtp: (data: any) => apiClient.post('/api/v1/shares/ftp', data),
+    updateFtp: (id: number, data: any) => apiClient.put(`/api/v1/shares/ftp/${id}`, data),
+    deleteFtp: (id: number) => apiClient.delete(`/api/v1/shares/ftp/${id}`)
   }
 }
