@@ -147,6 +147,157 @@
         </div>
       </div>
 
+      <!-- 端口管理 -->
+      <div v-else-if="currentTab === 'ports'" class="space-y-4">
+        <div class="flex justify-between items-center">
+          <h2 class="text-lg font-semibold">服务端口映射</h2>
+          <button @click="showPortModal = true" class="btn-primary text-sm">添加端口</button>
+        </div>
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+          <table class="w-full">
+            <thead class="bg-gray-50 border-b">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">服务</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">内部端口</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">外部端口</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">协议</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">操作</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y">
+              <tr v-for="port in servicePorts" :key="port.id" class="hover:bg-gray-50">
+                <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ port.name }}</td>
+                <td class="px-4 py-3 text-sm text-gray-600 font-mono">{{ port.internal_port }}</td>
+                <td class="px-4 py-3 text-sm text-gray-600 font-mono">{{ port.external_port }}</td>
+                <td class="px-4 py-3 text-sm text-gray-600 uppercase">{{ port.protocol }}</td>
+                <td class="px-4 py-3">
+                  <span :class="port.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'" class="px-2 py-1 text-xs rounded-full">{{ port.enabled ? '已启用' : '已禁用' }}</span>
+                </td>
+                <td class="px-4 py-3 text-right">
+                  <button @click="togglePort(port)" class="text-sm text-primary-600 hover:text-primary-700 mr-2">{{ port.enabled ? '禁用' : '启用' }}</button>
+                  <button @click="deletePort(port)" class="text-sm text-red-600 hover:text-red-700">删除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 防火墙规则 -->
+      <div v-else-if="currentTab === 'firewall'" class="space-y-6">
+        <!-- 入站规则 -->
+        <div>
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold">入站规则</h2>
+            <button @click="showFirewallModal = true; firewallRule.direction = 'inbound'" class="btn-primary text-sm">添加规则</button>
+          </div>
+          <div class="bg-white rounded-lg shadow overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 border-b">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">端口</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">协议</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">来源</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">动作</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500">操作</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y">
+                <tr v-for="rule in inboundRules" :key="rule.id" class="hover:bg-gray-50">
+                  <td class="px-4 py-3 font-mono">{{ rule.port }}</td>
+                  <td class="px-4 py-3 uppercase">{{ rule.protocol }}</td>
+                  <td class="px-4 py-3">{{ rule.source || '任意' }}</td>
+                  <td class="px-4 py-3">
+                    <span :class="rule.action === 'allow' ? 'text-green-600' : 'text-red-600'" class="font-medium">{{ rule.action === 'allow' ? '允许' : '拒绝' }}</span>
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <button @click="deleteFirewallRule(rule)" class="text-red-600 hover:text-red-700">删除</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 出站规则 -->
+        <div>
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold">出站规则</h2>
+            <button @click="showFirewallModal = true; firewallRule.direction = 'outbound'" class="btn-primary text-sm">添加规则</button>
+          </div>
+          <div class="bg-white rounded-lg shadow overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 border-b">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">端口</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">协议</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">目标</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">动作</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500">操作</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y">
+                <tr v-for="rule in outboundRules" :key="rule.id" class="hover:bg-gray-50">
+                  <td class="px-4 py-3 font-mono">{{ rule.port }}</td>
+                  <td class="px-4 py-3 uppercase">{{ rule.protocol }}</td>
+                  <td class="px-4 py-3">{{ rule.destination || '任意' }}</td>
+                  <td class="px-4 py-3">
+                    <span :class="rule.action === 'allow' ? 'text-green-600' : 'text-red-600'" class="font-medium">{{ rule.action === 'allow' ? '允许' : '拒绝' }}</span>
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <button @click="deleteFirewallRule(rule)" class="text-red-600 hover:text-red-700">删除</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VPN 配置 -->
+      <div v-else-if="currentTab === 'vpn'" class="space-y-6">
+        <!-- OpenVPN -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900">OpenVPN</h3>
+              <p class="text-sm text-gray-500 mt-1">安全的 SSL/TLS VPN 解决方案</p>
+            </div>
+            <div class="flex items-center space-x-3">
+              <span :class="vpnStatus.openvpn ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'" class="px-2 py-1 text-xs rounded-full">{{ vpnStatus.openvpn ? '运行中' : '已停止' }}</span>
+              <button @click="toggleVpn('openvpn')" :class="vpnStatus.openvpn ? 'btn-secondary' : 'btn-primary'" class="text-sm">{{ vpnStatus.openvpn ? '停止' : '启动' }}</button>
+            </div>
+          </div>
+          <div v-if="vpnStatus.openvpn" class="mt-4 grid grid-cols-2 gap-4 text-sm">
+            <div><p class="text-gray-500">本地 IP</p><p class="font-medium text-gray-900">{{ vpnConfig.openvpn.local_ip || '10.8.0.1' }}</p></div>
+            <div><p class="text-gray-500">端口</p><p class="font-medium text-gray-900">{{ vpnConfig.openvpn.port || 1194 }}</p></div>
+            <div><p class="text-gray-500">协议</p><p class="font-medium text-gray-900 uppercase">{{ vpnConfig.openvpn.protocol || 'UDP' }}</p></div>
+            <div><p class="text-gray-500">连接数</p><p class="font-medium text-gray-900">{{ vpnConfig.openvpn.clients || 0 }}</p></div>
+          </div>
+        </div>
+
+        <!-- WireGuard -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900">WireGuard</h3>
+              <p class="text-sm text-gray-500 mt-1">高性能现代 VPN 协议</p>
+            </div>
+            <div class="flex items-center space-x-3">
+              <span :class="vpnStatus.wireguard ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'" class="px-2 py-1 text-xs rounded-full">{{ vpnStatus.wireguard ? '运行中' : '已停止' }}</span>
+              <button @click="toggleVpn('wireguard')" :class="vpnStatus.wireguard ? 'btn-secondary' : 'btn-primary'" class="text-sm">{{ vpnStatus.wireguard ? '停止' : '启动' }}</button>
+            </div>
+          </div>
+          <div v-if="vpnStatus.wireguard" class="mt-4 grid grid-cols-2 gap-4 text-sm">
+            <div><p class="text-gray-500">公钥</p><p class="font-mono text-gray-900 truncate">{{ vpnConfig.wireguard.public_key || '未生成' }}</p></div>
+            <div><p class="text-gray-500">监听端口</p><p class="font-medium text-gray-900">{{ vpnConfig.wireguard.port || 51820 }}</p></div>
+            <div><p class="text-gray-500">接口地址</p><p class="font-medium text-gray-900">{{ vpnConfig.wireguard.address || '10.0.0.1/24' }}</p></div>
+            <div><p class="text-gray-500">Peers</p><p class="font-medium text-gray-900">{{ vpnConfig.wireguard.peers || 0 }}</p></div>
+          </div>
+        </div>
+      </div>
+
       <!-- 编辑模态框 -->
       <div v-if="editingInterface" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -183,7 +334,15 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import NetworkInterfaceCard from '@/components/network/NetworkInterfaceCard.vue'
 import { api } from '@/utils/api'
 
-const tabs = [{ id: 'interfaces', name: '网络接口' }, { id: 'dns', name: 'DNS 配置' }, { id: 'gateway', name: '网关配置' }, { id: 'test', name: '网络测试' }]
+const tabs = [
+  { id: 'interfaces', name: '网络接口' },
+  { id: 'ports', name: '端口管理' },
+  { id: 'firewall', name: '防火墙' },
+  { id: 'vpn', name: 'VPN 配置' },
+  { id: 'dns', name: 'DNS 配置' },
+  { id: 'gateway', name: '网关配置' },
+  { id: 'test', name: '网络测试' }
+]
 const currentTab = ref('interfaces')
 const loading = ref(true)
 const saving = ref(false)
@@ -204,6 +363,35 @@ const pingHost = ref('8.8.8.8')
 const pingResult = ref('')
 const dnsHost = ref('google.com')
 const dnsResult = ref('')
+
+// 端口管理
+const showPortModal = ref(false)
+const servicePorts = ref([
+  { id: 1, name: 'Web UI (HTTP)', internal_port: 80, external_port: 80, protocol: 'tcp', enabled: true },
+  { id: 2, name: 'Web UI (HTTPS)', internal_port: 443, external_port: 443, protocol: 'tcp', enabled: true },
+  { id: 3, name: 'SSH', internal_port: 22, external_port: 22, protocol: 'tcp', enabled: true },
+  { id: 4, name: 'SMB/CIFS', internal_port: 445, external_port: 445, protocol: 'tcp', enabled: true },
+  { id: 5, name: 'NFS', internal_port: 2049, external_port: 2049, protocol: 'tcp', enabled: false }
+])
+
+// 防火墙
+const showFirewallModal = ref(false)
+const firewallRule = ref({ direction: 'inbound', port: '', protocol: 'tcp', source: '', action: 'allow' })
+const inboundRules = ref([
+  { id: 1, port: '22', protocol: 'tcp', source: '', action: 'allow' },
+  { id: 2, port: '80', protocol: 'tcp', source: '', action: 'allow' },
+  { id: 3, port: '443', protocol: 'tcp', source: '', action: 'allow' }
+])
+const outboundRules = ref([
+  { id: 1, port: '*', protocol: 'all', destination: '', action: 'allow' }
+])
+
+// VPN
+const vpnStatus = ref({ openvpn: false, wireguard: false })
+const vpnConfig = ref({
+  openvpn: { local_ip: '10.8.0.1', port: 1194, protocol: 'UDP', clients: 0 },
+  wireguard: { public_key: 'aBcDeFgHiJkLmNoPqRsTuVwXyZ123456789=', port: 51820, address: '10.0.0.1/24', peers: 0 }
+})
 
 const toast = ref({ show: false, type: 'success' as 'success' | 'error', message: '' })
 
@@ -233,6 +421,28 @@ const runDnsResolve = async () => { if (!dnsHost.value) return; testing.value = 
 // 工具
 const formatSpeed = (bps: number) => { if (!bps) return '0 B/s'; const k = 1024; const s = ['B/s', 'KB/s', 'MB/s']; const i = Math.floor(Math.log(bps) / Math.log(k)); return (bps / Math.pow(k, i)).toFixed(1) + ' ' + s[i] }
 const showToast = (type: 'success' | 'error', msg: string) => { toast.value = { show: true, type, message: msg }; setTimeout(() => toast.value.show = false, 3000) }
+
+// 端口管理
+const togglePort = (port: any) => { port.enabled = !port.enabled; showToast('success', `${port.name} 已${port.enabled ? '启用' : '禁用'}`) }
+const deletePort = (port: any) => { if (!confirm(`确定删除端口映射 "${port.name}" 吗？`)) return; servicePorts.value = servicePorts.value.filter(p => p.id !== port.id); showToast('success', '端口映射已删除') }
+
+// 防火墙
+const deleteFirewallRule = (rule: any) => { 
+  if (!confirm('确定删除此规则吗？')) return
+  if (rule.direction === 'inbound') inboundRules.value = inboundRules.value.filter(r => r.id !== rule.id)
+  else outboundRules.value = outboundRules.value.filter(r => r.id !== rule.id)
+  showToast('success', '规则已删除')
+}
+
+// VPN
+const toggleVpn = async (type: 'openvpn' | 'wireguard') => {
+  try {
+    vpnStatus.value[type] = !vpnStatus.value[type]
+    showToast('success', `${type === 'openvpn' ? 'OpenVPN' : 'WireGuard'} 已${vpnStatus.value[type] ? '启动' : '停止'}`)
+  } catch (e) {
+    showToast('error', '操作失败')
+  }
+}
 
 let statsTimer: ReturnType<typeof setInterval> | null = null
 onMounted(() => { refreshAll(); statsTimer = setInterval(loadStats, 5000) })
