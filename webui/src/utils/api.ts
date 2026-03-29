@@ -49,6 +49,19 @@ export const api = {
     logout: () => apiClient.post('/api/v1/auth/logout')
   },
 
+  // 下载
+  downloads: {
+    list: (params?: any) => apiClient.get('/api/v1/downloads', { params }),
+    get: (id: number) => apiClient.get(`/api/v1/downloads/${id}`),
+    create: (data: { url: string; filename?: string; save_path?: string }) => apiClient.post('/api/v1/downloads', data),
+    delete: (id: number) => apiClient.delete(`/api/v1/downloads/${id}`),
+    cancel: (id: number) => apiClient.post(`/api/v1/downloads/${id}/cancel`),
+    start: (id: number) => apiClient.post(`/api/v1/downloads/${id}/start`),
+    pause: (id: number) => apiClient.post(`/api/v1/downloads/${id}/pause`),
+    retry: (id: number) => apiClient.post(`/api/v1/downloads/${id}/retry`),
+    stats: () => apiClient.get('/api/v1/downloads/stats')
+  },
+
   // 用户
   users: {
     list: (params?: any) => apiClient.get('/api/v1/users', { params }),

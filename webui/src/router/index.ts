@@ -73,6 +73,11 @@ const router = createRouter({
       path: '/network',
       name: 'network',
       component: () => import('../views/NetworkView.vue')
+    },
+    {
+      path: '/downloads',
+      name: 'downloads',
+      component: () => import('../views/DownloadsView.vue')
     }
   ]
 })
