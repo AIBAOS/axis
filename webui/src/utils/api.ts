@@ -62,7 +62,14 @@ export const api = {
   system: {
     info: () => apiClient.get('/api/v1/system/info'),
     resources: () => apiClient.get('/api/v1/system/resources'),
-    logs: (params?: any) => apiClient.get('/api/v1/system/logs', { params })
+    logs: (params?: any) => apiClient.get('/api/v1/system/logs', { params }),
+    cronJobs: {
+      list: (params?: any) => apiClient.get('/api/v1/system/cron-jobs', { params }),
+      get: (id: number) => apiClient.get(`/api/v1/system/cron-jobs/${id}`),
+      create: (data: any) => apiClient.post('/api/v1/system/cron-jobs', data),
+      update: (id: number, data: any) => apiClient.put(`/api/v1/system/cron-jobs/${id}`, data),
+      delete: (id: number) => apiClient.delete(`/api/v1/system/cron-jobs/${id}`)
+    }
   },
 
   // 文件
