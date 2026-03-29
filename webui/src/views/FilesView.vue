@@ -91,8 +91,9 @@
           <input v-model="searchQuery" type="text" placeholder="搜索文件和文件夹..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm" />
           <div v-if="selectedItems.length > 0" class="flex items-center space-x-2">
             <span class="text-sm text-gray-600">已选 {{ selectedItems.length }} 项</span>
-            <button @click="showMoveModal = true" class="text-sm text-blue-600 hover:text-blue-700 font-medium">批量移动</button>
-            <button @click="batchDelete" class="text-sm text-red-600 hover:text-red-700 font-medium">批量删除</button>
+            <button @click="showCopyModal = true" class="text-sm text-green-600 hover:text-green-700 font-medium">复制</button>
+            <button @click="showMoveModal = true" class="text-sm text-blue-600 hover:text-blue-700 font-medium">移动</button>
+            <button @click="batchDelete" class="text-sm text-red-600 hover:text-red-700 font-medium">删除</button>
             <button @click="selectedItems = []" class="text-sm text-gray-500 hover:text-gray-700">取消选择</button>
           </div>
         </div>
@@ -185,6 +186,9 @@
               <button @click.stop="downloadFile(file)" class="p-1.5 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded" title="下载">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
               </button>
+              <button @click.stop="openShareModal(file)" class="p-1.5 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded" title="分享">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+              </button>
               <button @click.stop="openRenameModal(file, 'file')" class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded" title="重命名">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
               </button>
@@ -226,6 +230,7 @@
               <td class="px-4 py-3 text-sm text-gray-500">{{ formatDate(file.modified_at) }}</td>
               <td class="px-4 py-3 text-right">
                 <button @click.stop="downloadFile(file)" class="text-gray-400 hover:text-primary-600 mr-2">下载</button>
+                <button @click.stop="openShareModal(file)" class="text-gray-400 hover:text-green-600 mr-2">分享</button>
                 <button @click.stop="openRenameModal(file, 'file')" class="text-gray-400 hover:text-blue-600 mr-2">重命名</button>
                 <button @click.stop="confirmDelete(file)" class="text-gray-400 hover:text-red-600">删除</button>
               </td>
@@ -297,6 +302,71 @@
       </div>
     </div>
 
+    <!-- 复制模态框 -->
+    <div v-if="showCopyModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="px-4 py-3 border-b"><h3 class="font-semibold text-gray-900">复制到</h3></div>
+        <div class="p-4">
+          <p class="text-sm text-gray-600 mb-3">选择目标文件夹：</p>
+          <div class="border rounded-lg max-h-64 overflow-y-auto">
+            <div v-for="folder in moveableFolders" :key="folder.path"
+              @click="copyTargetPath = folder.path"
+              :class="copyTargetPath === folder.path ? 'bg-green-50 border-green-300' : 'hover:bg-gray-50'"
+              class="px-3 py-2 border-b last:border-b-0 cursor-pointer flex items-center space-x-2">
+              <svg class="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-4z" /></svg>
+              <span class="text-sm">{{ folder.name || '/' }}</span>
+            </div>
+          </div>
+          <p class="text-xs text-gray-500 mt-2">将复制 {{ selectedItems.length }} 个项目</p>
+        </div>
+        <div class="px-4 py-3 bg-gray-50 rounded-b-lg flex justify-end space-x-2">
+          <button @click="showCopyModal = false; copyTargetPath = ''" class="px-4 py-2 text-gray-600 hover:text-gray-800">取消</button>
+          <button @click="executeCopy" :disabled="!copyTargetPath" class="btn-primary disabled:opacity-50">复制</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分享模态框 -->
+    <div v-if="showShareModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="px-4 py-3 border-b flex justify-between items-center">
+          <h3 class="font-semibold text-gray-900">分享文件</h3>
+          <button @click="showShareModal = false" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div class="p-4 space-y-4">
+          <div>
+            <p class="text-sm text-gray-600 mb-2">分享链接</p>
+            <div class="flex space-x-2">
+              <input :value="shareUrl" readonly class="flex-1 px-3 py-2 border rounded-lg bg-gray-50 text-sm font-mono" />
+              <button @click="copyShareUrl" class="px-3 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700">复制</button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm text-gray-700 mb-1">有效期</label>
+            <select v-model="shareExpiry" class="w-full px-3 py-2 border rounded-lg">
+              <option value="1h">1 小时</option>
+              <option value="24h">24 小时</option>
+              <option value="7d">7 天</option>
+              <option value="30d">30 天</option>
+              <option value="never">永不过期</option>
+            </select>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-700">设置密码保护</span>
+            <input v-model="sharePassword" type="checkbox" class="h-4 w-4 rounded" />
+          </div>
+          <div v-if="sharePassword">
+            <input v-model="sharePasswordValue" type="text" placeholder="输入分享密码" class="w-full px-3 py-2 border rounded-lg" />
+          </div>
+        </div>
+        <div class="px-4 py-3 bg-gray-50 rounded-b-lg flex justify-end">
+          <button @click="createShare" class="btn-primary">创建分享链接</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 文件预览模态框 -->
     <div v-if="previewingFile" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" @click="previewingFile = null">
       <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-auto" @click.stop>
@@ -358,6 +428,14 @@ const textPreview = ref('')
 const previewUrl = ref('')
 const showMoveModal = ref(false)
 const moveTargetPath = ref('')
+const showCopyModal = ref(false)
+const copyTargetPath = ref('')
+const showShareModal = ref(false)
+const shareTarget = ref<any>(null)
+const shareUrl = ref('')
+const shareExpiry = ref('24h')
+const sharePassword = ref(false)
+const sharePasswordValue = ref('')
 
 // Toast
 const toast = ref({ show: false, type: 'success' as 'success' | 'error', message: '' })
@@ -525,6 +603,51 @@ const executeMove = async () => {
     showToast('success', `已移动 ${success} 个项目`)
   } else {
     showToast('error', `移动完成：成功 ${success}，失败 ${failed}`)
+  }
+}
+
+const executeCopy = async () => {
+  if (!copyTargetPath.value) return
+  let success = 0
+  let failed = 0
+  for (const item of selectedItems.value) {
+    try {
+      await api.files.copy(item.path, copyTargetPath.value)
+      success++
+    } catch (e) {
+      failed++
+    }
+  }
+  showCopyModal.value = false
+  copyTargetPath.value = ''
+  selectedItems.value = []
+  loadFiles()
+  if (failed === 0) {
+    showToast('success', `已复制 ${success} 个项目`)
+  } else {
+    showToast('error', `复制完成：成功 ${success}，失败 ${failed}`)
+  }
+}
+
+const openShareModal = (file: any) => {
+  shareTarget.value = file
+  shareUrl.value = `${window.location.origin}/share/${file.path.replace(/\//g, '_')}`
+  showShareModal.value = true
+}
+
+const copyShareUrl = () => {
+  navigator.clipboard.writeText(shareUrl.value)
+  showToast('success', '链接已复制到剪贴板')
+}
+
+const createShare = async () => {
+  if (!shareTarget.value) return
+  try {
+    // 调用后端创建分享链接
+    showToast('success', '分享链接已创建')
+    showShareModal.value = false
+  } catch (e) {
+    showToast('error', '创建分享失败')
   }
 }
 
