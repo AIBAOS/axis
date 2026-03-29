@@ -91,6 +91,7 @@
           <input v-model="searchQuery" type="text" placeholder="搜索文件和文件夹..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm" />
           <div v-if="selectedItems.length > 0" class="flex items-center space-x-2">
             <span class="text-sm text-gray-600">已选 {{ selectedItems.length }} 项</span>
+            <button @click="showMoveModal = true" class="text-sm text-blue-600 hover:text-blue-700 font-medium">批量移动</button>
             <button @click="batchDelete" class="text-sm text-red-600 hover:text-red-700 font-medium">批量删除</button>
             <button @click="selectedItems = []" class="text-sm text-gray-500 hover:text-gray-700">取消选择</button>
           </div>
@@ -272,6 +273,30 @@
       </div>
     </div>
 
+    <!-- 移动模态框 -->
+    <div v-if="showMoveModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="px-4 py-3 border-b"><h3 class="font-semibold text-gray-900">移动到</h3></div>
+        <div class="p-4">
+          <p class="text-sm text-gray-600 mb-3">选择目标文件夹：</p>
+          <div class="border rounded-lg max-h-64 overflow-y-auto">
+            <div v-for="folder in moveableFolders" :key="folder.path"
+              @click="moveTargetPath = folder.path"
+              :class="moveTargetPath === folder.path ? 'bg-primary-50 border-primary-300' : 'hover:bg-gray-50'"
+              class="px-3 py-2 border-b last:border-b-0 cursor-pointer flex items-center space-x-2">
+              <svg class="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-4z" /></svg>
+              <span class="text-sm">{{ folder.name || '/' }}</span>
+            </div>
+          </div>
+          <p class="text-xs text-gray-500 mt-2">将移动 {{ selectedItems.length }} 个项目</p>
+        </div>
+        <div class="px-4 py-3 bg-gray-50 rounded-b-lg flex justify-end space-x-2">
+          <button @click="showMoveModal = false; moveTargetPath = ''" class="px-4 py-2 text-gray-600 hover:text-gray-800">取消</button>
+          <button @click="executeMove" :disabled="!moveTargetPath" class="btn-primary disabled:opacity-50">移动</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 文件预览模态框 -->
     <div v-if="previewingFile" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" @click="previewingFile = null">
       <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-auto" @click.stop>
@@ -331,6 +356,8 @@ const deleteTarget = ref<any>(null)
 const previewingFile = ref<any>(null)
 const textPreview = ref('')
 const previewUrl = ref('')
+const showMoveModal = ref(false)
+const moveTargetPath = ref('')
 
 // Toast
 const toast = ref({ show: false, type: 'success' as 'success' | 'error', message: '' })
@@ -340,6 +367,14 @@ const filteredFolders = computed(() => { if (!searchQuery.value) return folders.
 const filteredFiles = computed(() => { if (!searchQuery.value) return files.value; const q = searchQuery.value.toLowerCase(); return files.value.filter(f => f.name.toLowerCase().includes(q)) })
 const filteredItems = computed(() => [...filteredFolders.value, ...filteredFiles.value])
 const allSelected = computed(() => filteredItems.value.length > 0 && selectedItems.value.length === filteredItems.value.length)
+const moveableFolders = computed(() => {
+  // 可移动到的文件夹列表（排除当前路径和子路径）
+  const allFolders = [
+    { path: '/', name: '根目录' },
+    ...folders.value.filter(f => !selectedItems.value.some(s => s.path === f.path))
+  ]
+  return allFolders
+})
 
 const isSelected = (path: string, type: string) => selectedItems.value.some(s => s.path === path && s.type === type)
 
@@ -468,6 +503,29 @@ const batchDelete = async () => {
   showToast('success', '批量删除完成')
   selectedItems.value = []
   loadFiles()
+}
+
+const executeMove = async () => {
+  if (!moveTargetPath.value) return
+  let success = 0
+  let failed = 0
+  for (const item of selectedItems.value) {
+    try {
+      await api.files.move(item.path, moveTargetPath.value)
+      success++
+    } catch (e) {
+      failed++
+    }
+  }
+  showMoveModal.value = false
+  moveTargetPath.value = ''
+  selectedItems.value = []
+  loadFiles()
+  if (failed === 0) {
+    showToast('success', `已移动 ${success} 个项目`)
+  } else {
+    showToast('error', `移动完成：成功 ${success}，失败 ${failed}`)
+  }
 }
 
 const previewFile = async (file: any) => {
