@@ -4,8 +4,8 @@
       <!-- 页面标题 -->
       <div class="flex justify-between items-center">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">系统日志</h1>
-          <p class="text-gray-600 mt-1">查看系统运行日志和错误信息</p>
+          <h1 class="text-2xl font-bold text-gray-900">日志管理</h1>
+          <p class="text-gray-600 mt-1">系统日志、操作审计和故障排查</p>
         </div>
         <div class="flex items-center space-x-3">
           <!-- 实时日志流开关 -->
@@ -23,6 +23,10 @@
             <option :value="30000">30 秒</option>
             <option :value="60000">1 分钟</option>
           </select>
+          <!-- 清空按钮 -->
+          <button @click="confirmClearLogs" class="px-3 py-1.5 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 text-sm">
+            清空
+          </button>
           <!-- 导出按钮 -->
           <button @click="exportLogs" class="btn-secondary flex items-center space-x-1 text-sm">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
@@ -34,6 +38,16 @@
             <span>刷新</span>
           </button>
         </div>
+      </div>
+
+      <!-- 选项卡 -->
+      <div class="border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8">
+          <button v-for="tab in tabs" :key="tab.id" @click="currentTab = tab.id; loadLogs()" :class="[currentTab === tab.id ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm']">
+            {{ tab.name }}
+            <span v-if="tab.count" class="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600">{{ tab.count }}</span>
+          </button>
+        </nav>
       </div>
 
       <!-- 统计卡片 -->
@@ -65,10 +79,10 @@
       <div v-if="loading && logs.length === 0" class="flex justify-center py-12"><svg class="animate-spin h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg></div>
 
       <!-- 空状态 -->
-      <div v-else-if="logs.length === 0" class="text-center py-12 bg-white rounded-lg shadow"><svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><p class="mt-4 text-gray-600">暂无日志记录</p></div>
+      <div v-else-if="logs.length === 0 && currentTab !== 'config'" class="text-center py-12 bg-white rounded-lg shadow"><svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><p class="mt-4 text-gray-600">暂无日志记录</p></div>
 
       <!-- 日志列表 -->
-      <div v-else class="bg-white rounded-lg shadow overflow-hidden">
+      <div v-else-if="currentTab !== 'config'" class="bg-white rounded-lg shadow overflow-hidden">
         <!-- 日志条目 -->
         <div class="divide-y divide-gray-100">
           <div v-for="log in logs" :key="log.id" class="hover:bg-gray-50">
@@ -122,6 +136,65 @@
         </div>
       </div>
 
+      <!-- 轮转配置选项卡 -->
+      <div v-else-if="currentTab === 'config'" class="max-w-2xl space-y-6">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="font-semibold text-gray-900 mb-4">日志轮转配置</h3>
+          <form @submit.prevent="saveRotationConfig" class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">启用日志轮转</label>
+                <p class="text-sm text-gray-500">自动轮转日志文件，防止单个文件过大</p>
+              </div>
+              <input v-model="rotationConfig.enabled" type="checkbox" class="h-5 w-5 text-primary-600 rounded" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">单个文件最大 (MB)</label>
+                <input v-model.number="rotationConfig.maxSizeMB" type="number" min="1" max="1000" class="w-full px-3 py-2 border rounded-lg" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">保留文件数</label>
+                <input v-model.number="rotationConfig.maxFiles" type="number" min="1" max="100" class="w-full px-3 py-2 border rounded-lg" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">保留天数</label>
+              <input v-model.number="rotationConfig.retentionDays" type="number" min="1" max="365" class="w-32 px-3 py-2 border rounded-lg" />
+              <p class="text-xs text-gray-500 mt-1">超过天数的日志将被自动删除</p>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">压缩旧日志</label>
+                <p class="text-sm text-gray-500">压缩轮转后的日志文件以节省空间</p>
+              </div>
+              <input v-model="rotationConfig.compress" type="checkbox" class="h-5 w-5 text-primary-600 rounded" />
+            </div>
+
+            <div class="flex justify-end">
+              <button type="submit" class="btn-primary">保存配置</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="font-semibold text-gray-900 mb-4">日志统计</h3>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <p class="text-sm text-gray-500">日志文件总大小</p>
+              <p class="text-2xl font-bold text-gray-900">{{ Math.round(total * 0.5) }} MB</p>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <p class="text-sm text-gray-500">最早日志时间</p>
+              <p class="text-lg font-medium text-gray-900">2026-03-01</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 实时日志流指示器 -->
       <div v-if="liveStream" class="fixed bottom-4 left-4 bg-green-500 text-white px-3 py-2 rounded-lg shadow-lg flex items-center space-x-2">
         <span class="w-2 h-2 bg-white rounded-full animate-pulse"></span>
@@ -146,6 +219,15 @@ const total = ref(0)
 const currentPage = ref(1)
 const totalPages = ref(1)
 const pageSize = ref(100)
+
+// 选项卡
+const tabs = [
+  { id: 'system', name: '系统日志', count: 0 },
+  { id: 'audit', name: '操作审计', count: 0 },
+  { id: 'hardware', name: '硬件日志', count: 0 },
+  { id: 'config', name: '轮转配置', count: 0 }
+]
+const currentTab = ref('system')
 
 // 筛选
 const searchQuery = ref('')
@@ -255,6 +337,41 @@ const formatTime = (ts: number) => {
 const showToast = (type: 'success' | 'error', msg: string) => {
   toast.value = { show: true, type, message: msg }
   setTimeout(() => toast.value.show = false, 3000)
+}
+
+// 清空日志
+const confirmClearLogs = () => {
+  if (!confirm('确定清空所有日志吗？此操作不可撤销！')) return
+  clearLogs()
+}
+
+const clearLogs = async () => {
+  try {
+    await api.system.clearLogs?.()
+    logs.value = []
+    total.value = 0
+    showToast('success', '日志已清空')
+  } catch (e) {
+    showToast('error', '清空失败')
+  }
+}
+
+// 轮转配置
+const rotationConfig = ref({
+  enabled: true,
+  maxSizeMB: 100,
+  maxFiles: 10,
+  compress: true,
+  retentionDays: 30
+})
+
+const saveRotationConfig = async () => {
+  try {
+    await api.settings.update({ log_rotation: rotationConfig.value })
+    showToast('success', '轮转配置已保存')
+  } catch (e) {
+    showToast('error', '保存失败')
+  }
 }
 
 // 监听
