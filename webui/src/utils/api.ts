@@ -67,15 +67,25 @@ export const api = {
 
   // 文件
   files: {
+    browse: (params?: any) => apiClient.get('/api/v1/files/browse', { params }),
     list: (params?: any) => apiClient.get('/api/v1/files', { params }),
-    upload: (file: File) => {
+    get: (id: string) => apiClient.get(`/api/v1/files/${id}`),
+    upload: (file: File, path?: string) => {
       const formData = new FormData()
       formData.append('file', file)
+      if (path) formData.append('path', path)
       return apiClient.post('/api/v1/files/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
     },
-    delete: (id: string) => apiClient.delete(`/api/v1/files/${id}`)
+    download: (path: string) => apiClient.get(`/api/v1/files/${encodeURIComponent(path)}/download`, {
+      responseType: 'blob'
+    }),
+    delete: (path: string) => apiClient.delete(`/api/v1/files/${encodeURIComponent(path)}`),
+    createFolder: (path: string, name: string) => apiClient.post('/api/v1/files/folder', { path, name }),
+    rename: (path: string, newName: string) => apiClient.put(`/api/v1/files/${encodeURIComponent(path)}`, { name: newName }),
+    move: (path: string, destination: string) => apiClient.post(`/api/v1/files/${encodeURIComponent(path)}/move`, { destination }),
+    copy: (path: string, destination: string) => apiClient.post(`/api/v1/files/${encodeURIComponent(path)}/copy`, { destination })
   },
 
   // 备份
