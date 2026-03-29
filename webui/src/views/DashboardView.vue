@@ -26,7 +26,6 @@
 
       <!-- 核心指标卡片 -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- CPU 使用率 -->
         <MetricCard
           title="CPU 使用率"
           :value="resources.cpu.usage_percent"
@@ -38,8 +37,6 @@
           progress-label="使用率"
           :sub-info="`负载: ${resources.cpu.load_1m?.toFixed(2) || '-'} / ${resources.cpu.core_count || 0} 核`"
         />
-
-        <!-- 内存使用率 -->
         <MetricCard
           title="内存使用率"
           :value="resources.memory.usage_percent"
@@ -51,8 +48,6 @@
           progress-label="已使用"
           :sub-info="`${formatBytes(resources.memory.used_bytes)} / ${formatBytes(resources.memory.total_bytes)}`"
         />
-
-        <!-- 磁盘空间 -->
         <MetricCard
           title="磁盘空间"
           :value="diskUsagePercent"
@@ -64,8 +59,6 @@
           progress-label="已使用"
           :sub-info="`${disks.length} 个磁盘在线`"
         />
-
-        <!-- 运行服务 -->
         <MetricCard
           title="网络吞吐"
           :value="networkThroughput"
@@ -74,88 +67,190 @@
         />
       </div>
 
+      <!-- 服务状态概览 -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- 打印机状态 -->
+        <div class="bg-white rounded-lg shadow-md p-4">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-gray-900">打印机状态</h3>
+            <router-link to="/printers" class="text-sm text-primary-600 hover:text-primary-700">查看全部</router-link>
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div class="bg-green-50 rounded-lg p-3">
+              <p class="text-2xl font-bold text-green-600">{{ printerStats.idle }}</p>
+              <p class="text-xs text-gray-500">空闲</p>
+            </div>
+            <div class="bg-blue-50 rounded-lg p-3">
+              <p class="text-2xl font-bold text-blue-600">{{ printerStats.printing }}</p>
+              <p class="text-xs text-gray-500">打印中</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3">
+              <p class="text-2xl font-bold text-gray-600">{{ printerStats.offline }}</p>
+              <p class="text-xs text-gray-500">离线</p>
+            </div>
+          </div>
+          <p class="text-sm text-gray-500 mt-3">
+            共 {{ printerStats.total }} 台打印机
+          </p>
+        </div>
+
+        <!-- 任务队列 -->
+        <div class="bg-white rounded-lg shadow-md p-4">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-gray-900">任务队列</h3>
+            <router-link to="/jobs" class="text-sm text-primary-600 hover:text-primary-700">查看全部</router-link>
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div class="bg-gray-50 rounded-lg p-3">
+              <p class="text-2xl font-bold text-gray-600">{{ jobStats.queued }}</p>
+              <p class="text-xs text-gray-500">排队中</p>
+            </div>
+            <div class="bg-blue-50 rounded-lg p-3">
+              <p class="text-2xl font-bold text-blue-600">{{ jobStats.running }}</p>
+              <p class="text-xs text-gray-500">进行中</p>
+            </div>
+            <div class="bg-green-50 rounded-lg p-3">
+              <p class="text-2xl font-bold text-green-600">{{ jobStats.completed }}</p>
+              <p class="text-xs text-gray-500">已完成</p>
+            </div>
+          </div>
+          <p class="text-sm text-red-500 mt-3" v-if="jobStats.failed > 0">
+            {{ jobStats.failed }} 个任务失败
+          </p>
+          <p class="text-sm text-gray-500 mt-3" v-else>
+            所有任务运行正常
+          </p>
+        </div>
+
+        <!-- 备份状态 -->
+        <div class="bg-white rounded-lg shadow-md p-4">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-gray-900">备份状态</h3>
+            <router-link to="/backups" class="text-sm text-primary-600 hover:text-primary-700">查看全部</router-link>
+          </div>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">活跃备份任务</span>
+              <span class="font-semibold text-gray-900">{{ backupStats.active }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">最近备份</span>
+              <span class="text-sm text-gray-500">{{ backupStats.lastBackup || '暂无' }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">存储使用</span>
+              <span class="text-sm text-gray-500">{{ backupStats.storageUsed || '-' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 主内容区域 -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- 左侧：快速入口 -->
+        <!-- 左侧：快速入口 + 系统信息 -->
         <div class="lg:col-span-2 space-y-6">
           <!-- 快速入口 -->
           <div>
             <h2 class="text-lg font-semibold text-gray-900 mb-4">快速入口</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               <QuickLinkCard
-                title="文件管理"
-                description="浏览和管理文件"
+                title="文件"
+                description="文件管理"
                 to="/files"
                 type="files"
               />
               <QuickLinkCard
-                title="存储管理"
-                description="管理存储卷和磁盘"
+                title="存储"
+                description="磁盘管理"
                 to="/storage"
                 type="storage"
               />
               <QuickLinkCard
-                title="共享管理"
-                description="SMB/NFS/WebDAV 共享"
+                title="共享"
+                description="共享管理"
                 to="/shares"
                 type="shares"
               />
               <QuickLinkCard
-                title="用户管理"
-                description="管理用户和权限"
+                title="打印机"
+                description="打印机管理"
+                to="/printers"
+                type="default"
+              />
+              <QuickLinkCard
+                title="任务"
+                description="任务队列"
+                to="/jobs"
+                type="default"
+              />
+              <QuickLinkCard
+                title="用户"
+                description="用户管理"
                 to="/users"
                 type="users"
               />
               <QuickLinkCard
-                title="备份管理"
-                description="备份任务和恢复"
+                title="备份"
+                description="备份管理"
                 to="/backups"
                 type="backups"
               />
               <QuickLinkCard
-                title="系统日志"
-                description="查看系统运行日志"
+                title="日志"
+                description="系统日志"
                 to="/logs"
                 type="logs"
               />
             </div>
           </div>
 
-          <!-- 系统信息卡片 -->
-          <div class="bg-white rounded-lg shadow-md p-6">
+          <!-- 最近活动 -->
+          <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="px-4 py-3 border-b flex justify-between items-center">
+              <h3 class="font-semibold text-gray-900">最近活动</h3>
+              <router-link to="/logs" class="text-sm text-primary-600 hover:text-primary-700">查看全部</router-link>
+            </div>
+            <div v-if="recentLogs.length === 0" class="p-6 text-center text-gray-500">
+              暂无活动记录
+            </div>
+            <div v-else class="divide-y divide-gray-100">
+              <div
+                v-for="log in recentLogs"
+                :key="log.id"
+                class="px-4 py-3 hover:bg-gray-50"
+              >
+                <div class="flex items-start space-x-3">
+                  <span :class="getLogLevelClass(log.level)" class="px-2 py-0.5 text-xs rounded">
+                    {{ log.level?.toUpperCase() }}
+                  </span>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm text-gray-900 truncate">{{ log.message }}</p>
+                    <p class="text-xs text-gray-400">{{ log.source }} · {{ formatLogTime(log.created_at) }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 系统信息 -->
+          <div class="bg-white rounded-lg shadow-md p-4">
             <h2 class="text-lg font-semibold text-gray-900 mb-4">系统信息</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <p class="text-gray-500">主机名</p>
-                <p class="font-medium text-gray-900">{{ systemInfo.hostname || '-' }}</p>
+                <p class="font-medium text-gray-900 truncate">{{ systemInfo.hostname || '-' }}</p>
               </div>
               <div>
                 <p class="text-gray-500">操作系统</p>
-                <p class="font-medium text-gray-900">{{ systemInfo.os_version || '-' }}</p>
+                <p class="font-medium text-gray-900 truncate">{{ systemInfo.os_version || '-' }}</p>
               </div>
               <div>
-                <p class="text-gray-500">CPU 型号</p>
-                <p class="font-medium text-gray-900 truncate" :title="systemInfo.cpu_model">{{ systemInfo.cpu_model || '-' }}</p>
+                <p class="text-gray-500">CPU</p>
+                <p class="font-medium text-gray-900 truncate">{{ systemInfo.cpu_cores || '-' }} 核</p>
               </div>
               <div>
-                <p class="text-gray-500">内存容量</p>
+                <p class="text-gray-500">内存</p>
                 <p class="font-medium text-gray-900">{{ systemInfo.total_memory_gb || '-' }} GB</p>
-              </div>
-              <div>
-                <p class="text-gray-500">内核版本</p>
-                <p class="font-medium text-gray-900 truncate" :title="systemInfo.kernel_version">{{ systemInfo.kernel_version || '-' }}</p>
-              </div>
-              <div>
-                <p class="text-gray-500">CPU 核心数</p>
-                <p class="font-medium text-gray-900">{{ systemInfo.cpu_cores || '-' }} 核</p>
-              </div>
-              <div>
-                <p class="text-gray-500">启动时间</p>
-                <p class="font-medium text-gray-900">{{ formatBootTime(systemInfo.boot_time) }}</p>
-              </div>
-              <div>
-                <p class="text-gray-500">WebUI 版本</p>
-                <p class="font-medium text-gray-900">{{ version }}</p>
               </div>
             </div>
           </div>
@@ -180,7 +275,6 @@ import AlertsPanel from '@/components/dashboard/AlertsPanel.vue'
 import { api } from '@/utils/api'
 
 const router = useRouter()
-const version = import.meta.env.VITE_APP_VERSION || '0.1.0'
 
 // 状态
 const loading = ref(false)
@@ -201,33 +295,28 @@ const systemInfo = ref({
 
 // 系统资源
 const resources = ref({
-  cpu: {
-    usage_percent: 0,
-    load_1m: 0,
-    load_5m: 0,
-    load_15m: 0,
-    core_count: 0
-  },
-  memory: {
-    total_bytes: 0,
-    used_bytes: 0,
-    available_bytes: 0,
-    usage_percent: 0
-  },
-  disk_io: {
-    read_bytes_sec: 0,
-    write_bytes_sec: 0
-  },
-  network_io: {
-    rx_bytes_sec: 0,
-    tx_bytes_sec: 0
-  }
+  cpu: { usage_percent: 0, load_1m: 0, load_5m: 0, load_15m: 0, core_count: 0 },
+  memory: { total_bytes: 0, used_bytes: 0, available_bytes: 0, usage_percent: 0 },
+  disk_io: { read_bytes_sec: 0, write_bytes_sec: 0 },
+  network_io: { rx_bytes_sec: 0, tx_bytes_sec: 0 }
 })
 
-// 磁盘信息
+// 磁盘
 const disks = ref<any[]>([])
 
-// 计算磁盘使用率
+// 打印机统计
+const printerStats = ref({ total: 0, idle: 0, printing: 0, offline: 0, error: 0 })
+
+// 任务统计
+const jobStats = ref({ total: 0, queued: 0, running: 0, completed: 0, failed: 0 })
+
+// 备份统计
+const backupStats = ref({ active: 0, lastBackup: '', storageUsed: '' })
+
+// 最近日志
+const recentLogs = ref<any[]>([])
+
+// 计算属性
 const diskUsagePercent = computed(() => {
   if (disks.value.length === 0) return 0
   const total = disks.value.reduce((sum, d) => sum + (d.size_bytes || 0), 0)
@@ -235,14 +324,13 @@ const diskUsagePercent = computed(() => {
   return total > 0 ? Math.round(used / total * 100) : 0
 })
 
-// 计算网络吞吐
 const networkThroughput = computed(() => {
   const rx = resources.value.network_io?.rx_bytes_sec || 0
   const tx = resources.value.network_io?.tx_bytes_sec || 0
   return `${formatSpeed(rx)} / ${formatSpeed(tx)}`
 })
 
-// 加载系统信息
+// 加载函数
 const loadSystemInfo = async () => {
   try {
     const response = await api.system.info()
@@ -254,7 +342,6 @@ const loadSystemInfo = async () => {
   }
 }
 
-// 加载系统资源
 const loadResources = async () => {
   try {
     const response = await api.system.resources()
@@ -266,7 +353,6 @@ const loadResources = async () => {
   }
 }
 
-// 加载磁盘信息
 const loadDisks = async () => {
   try {
     const response = await api.storage.getDisks()
@@ -276,14 +362,89 @@ const loadDisks = async () => {
   }
 }
 
-// 刷新所有数据
+const loadPrinters = async () => {
+  try {
+    const response = await api.printers.list()
+    const printers = response.data.data || response.data || []
+    printerStats.value = {
+      total: printers.length,
+      idle: printers.filter((p: any) => p.status === 'idle').length,
+      printing: printers.filter((p: any) => p.status === 'printing').length,
+      offline: printers.filter((p: any) => p.status === 'offline').length,
+      error: printers.filter((p: any) => p.status === 'error').length
+    }
+  } catch (error) {
+    console.error('Failed to load printers:', error)
+  }
+}
+
+const loadJobs = async () => {
+  try {
+    // 获取打印机任务
+    const printers = await api.printers.list()
+    const printerList = printers.data.data || []
+    let totalJobs = 0
+    let queued = 0
+    let running = 0
+    let completed = 0
+    let failed = 0
+
+    for (const printer of printerList) {
+      try {
+        const jobsRes = await api.printers.jobs(printer.printer_id || printer.id)
+        const jobs = jobsRes.data.data || []
+        totalJobs += jobs.length
+        jobs.forEach((j: any) => {
+          if (['pending', 'queued'].includes(j.status)) queued++
+          else if (['printing', 'running'].includes(j.status)) running++
+          else if (['completed', 'success'].includes(j.status)) completed++
+          else if (['failed', 'error'].includes(j.status)) failed++
+        })
+      } catch (e) {}
+    }
+
+    jobStats.value = { total: totalJobs, queued, running, completed, failed }
+  } catch (error) {
+    console.error('Failed to load jobs:', error)
+  }
+}
+
+const loadBackups = async () => {
+  try {
+    const response = await api.backups.list()
+    const backups = response.data.backups || response.data || []
+    const active = backups.filter((b: any) => b.status === 'active' || b.status === 'running').length
+    backupStats.value = {
+      active,
+      lastBackup: backups[0]?.created_at ? formatLogTime(backups[0].created_at) : '暂无',
+      storageUsed: '-'
+    }
+  } catch (error) {
+    console.error('Failed to load backups:', error)
+  }
+}
+
+const loadRecentLogs = async () => {
+  try {
+    const response = await api.system.logs({ page_size: 5 })
+    recentLogs.value = response.data.data || response.data || []
+  } catch (error) {
+    console.error('Failed to load logs:', error)
+  }
+}
+
+// 刷新所有
 const refreshAll = async () => {
   loading.value = true
   try {
     await Promise.all([
       loadSystemInfo(),
       loadResources(),
-      loadDisks()
+      loadDisks(),
+      loadPrinters(),
+      loadJobs(),
+      loadBackups(),
+      loadRecentLogs()
     ])
     lastUpdate.value = new Date().toLocaleTimeString('zh-CN')
   } finally {
@@ -291,7 +452,7 @@ const refreshAll = async () => {
   }
 }
 
-// 格式化字节
+// 辅助函数
 const formatBytes = (bytes: number) => {
   if (bytes === 0) return '0 B'
   const k = 1024
@@ -300,48 +461,49 @@ const formatBytes = (bytes: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }
 
-// 格式化速度
 const formatSpeed = (bytesPerSec: number) => {
   if (!bytesPerSec) return '0 B/s'
   return formatBytes(bytesPerSec) + '/s'
 }
 
-// 格式化运行时间
 const formatUptime = (seconds: number) => {
   if (!seconds) return '-'
   const days = Math.floor(seconds / 86400)
   const hours = Math.floor((seconds % 86400) / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
-
   if (days > 0) return `${days} 天 ${hours} 小时`
   if (hours > 0) return `${hours} 小时 ${minutes} 分钟`
   return `${minutes} 分钟`
 }
 
-// 格式化启动时间
-const formatBootTime = (timestamp: number) => {
+const formatLogTime = (timestamp: number | string) => {
   if (!timestamp) return '-'
-  return new Date(timestamp * 1000).toLocaleDateString('zh-CN')
+  const date = typeof timestamp === 'number'
+    ? (timestamp > 9999999999 ? new Date(timestamp) : new Date(timestamp * 1000))
+    : new Date(timestamp)
+  return date.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
-// 处理告警点击
-const handleAlertClick = (alert: any) => {
+const getLogLevelClass = (level: string) => {
+  switch (level) {
+    case 'error': return 'bg-red-100 text-red-700'
+    case 'warn': return 'bg-yellow-100 text-yellow-700'
+    case 'info': return 'bg-blue-100 text-blue-700'
+    default: return 'bg-gray-100 text-gray-700'
+  }
+}
+
+const handleAlertClick = () => {
   router.push('/logs')
 }
 
 // 生命周期
 onMounted(() => {
   refreshAll()
-
-  // 每 30 秒自动刷新
-  refreshTimer = setInterval(() => {
-    refreshAll()
-  }, 30000)
+  refreshTimer = setInterval(() => refreshAll(), 30000)
 })
 
 onUnmounted(() => {
-  if (refreshTimer) {
-    clearInterval(refreshTimer)
-  }
+  if (refreshTimer) clearInterval(refreshTimer)
 })
 </script>
