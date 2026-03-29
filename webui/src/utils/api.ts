@@ -154,5 +154,17 @@ export const api = {
     delete: (id: number) => apiClient.delete(`/api/v1/printers/${id}`),
     jobs: (id: number, params?: any) => apiClient.get(`/api/v1/printers/${id}/jobs`, { params }),
     createJob: (id: number, data: any) => apiClient.post(`/api/v1/printers/${id}/jobs`, data)
+  },
+
+  // 网络
+  network: {
+    listInterfaces: (params?: any) => apiClient.get('/api/v1/network/interfaces', { params }),
+    getInterface: (id: number) => apiClient.get(`/api/v1/network/interfaces/${id}`),
+    createInterface: (data: any) => apiClient.post('/api/v1/network/interfaces', data),
+    updateInterface: (id: number, data: any) => apiClient.put(`/api/v1/network/interfaces/${id}`, data),
+    deleteInterface: (id: number) => apiClient.delete(`/api/v1/network/interfaces/${id}`),
+    listConfig: () => apiClient.get('/api/v1/network/config'),
+    getConfig: (id: number) => apiClient.get(`/api/v1/network/config/${id}`),
+    updateConfig: (id: number, data: any) => apiClient.put(`/api/v1/network/config/${id}`, data)
   }
 }
