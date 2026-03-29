@@ -115,6 +115,140 @@
         </div>
       </template>
 
+      <!-- 角色管理 -->
+      <template v-else-if="currentTab === 'roles'">
+        <div class="space-y-6">
+          <div class="flex justify-between items-center">
+            <h2 class="text-lg font-semibold">角色列表</h2>
+            <button @click="showRoleModal = true" class="btn-primary text-sm">新建角色</button>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- 管理员角色 -->
+            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-red-500">
+              <div class="flex justify-between items-start mb-3">
+                <div>
+                  <h3 class="font-semibold text-gray-900">管理员</h3>
+                  <p class="text-sm text-gray-500">Administrator</p>
+                </div>
+                <span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700">系统角色</span>
+              </div>
+              <p class="text-sm text-gray-600 mb-4">拥有系统完全控制权限，可管理所有用户和系统设置</p>
+              <div class="space-y-2">
+                <p class="text-xs text-gray-500 font-medium">权限:</p>
+                <div class="flex flex-wrap gap-1">
+                  <span class="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">读</span>
+                  <span class="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">写</span>
+                  <span class="px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded">删除</span>
+                  <span class="px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded">分享</span>
+                  <span class="px-2 py-0.5 text-xs bg-orange-100 text-orange-700 rounded">管理</span>
+                </div>
+              </div>
+              <div class="mt-4 pt-3 border-t">
+                <p class="text-xs text-gray-500">{{ roleCounts.admin }} 个用户</p>
+              </div>
+            </div>
+
+            <!-- 普通用户角色 -->
+            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
+              <div class="flex justify-between items-start mb-3">
+                <div>
+                  <h3 class="font-semibold text-gray-900">普通用户</h3>
+                  <p class="text-sm text-gray-500">User</p>
+                </div>
+                <span class="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">系统角色</span>
+              </div>
+              <p class="text-sm text-gray-600 mb-4">标准访问权限，可使用大部分功能，无管理权限</p>
+              <div class="space-y-2">
+                <p class="text-xs text-gray-500 font-medium">权限:</p>
+                <div class="flex flex-wrap gap-1">
+                  <span class="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">读</span>
+                  <span class="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">写</span>
+                  <span class="px-2 py-0.5 text-xs bg-gray-100 text-gray-400 rounded line-through">删除</span>
+                  <span class="px-2 py-0.5 text-xs bg-gray-100 text-gray-400 rounded line-through">管理</span>
+                </div>
+              </div>
+              <div class="mt-4 pt-3 border-t">
+                <p class="text-xs text-gray-500">{{ roleCounts.user }} 个用户</p>
+              </div>
+            </div>
+
+            <!-- 访客角色 -->
+            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-gray-400">
+              <div class="flex justify-between items-start mb-3">
+                <div>
+                  <h3 class="font-semibold text-gray-900">访客</h3>
+                  <p class="text-sm text-gray-500">Guest</p>
+                </div>
+                <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700">系统角色</span>
+              </div>
+              <p class="text-sm text-gray-600 mb-4">只读访问权限，仅可查看公开信息</p>
+              <div class="space-y-2">
+                <p class="text-xs text-gray-500 font-medium">权限:</p>
+                <div class="flex flex-wrap gap-1">
+                  <span class="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">读</span>
+                  <span class="px-2 py-0.5 text-xs bg-gray-100 text-gray-400 rounded line-through">写</span>
+                  <span class="px-2 py-0.5 text-xs bg-gray-100 text-gray-400 rounded line-through">删除</span>
+                  <span class="px-2 py-0.5 text-xs bg-gray-100 text-gray-400 rounded line-through">管理</span>
+                </div>
+              </div>
+              <div class="mt-4 pt-3 border-t">
+                <p class="text-xs text-gray-500">{{ roleCounts.guest || 0 }} 个用户</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 自定义角色 -->
+          <div class="bg-white rounded-lg shadow p-4">
+            <h3 class="font-semibold text-gray-900 mb-4">自定义角色</h3>
+            <div v-if="customRoles.length === 0" class="text-center py-8 text-gray-500">
+              <p class="text-sm">暂无自定义角色</p>
+              <button @click="showRoleModal = true" class="btn-secondary text-sm mt-2">创建自定义角色</button>
+            </div>
+            <div v-else class="space-y-3">
+              <div v-for="role in customRoles" :key="role.id" class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <h4 class="font-medium text-gray-900">{{ role.name }}</h4>
+                  <p class="text-sm text-gray-500">{{ role.description }}</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                  <div class="flex flex-wrap gap-1">
+                    <span v-for="perm in role.permissions" :key="perm" class="px-2 py-0.5 text-xs bg-primary-100 text-primary-700 rounded">{{ perm }}</span>
+                  </div>
+                  <button @click="editRole(role)" class="text-sm text-primary-600 hover:text-primary-700">编辑</button>
+                  <button @click="deleteRole(role)" class="text-sm text-red-600 hover:text-red-700">删除</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 权限矩阵 -->
+          <div class="bg-white rounded-lg shadow p-4">
+            <h3 class="font-semibold text-gray-900 mb-4">权限矩阵</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-2 text-left font-medium text-gray-700">功能模块</th>
+                    <th class="px-4 py-2 text-center font-medium text-gray-700">管理员</th>
+                    <th class="px-4 py-2 text-center font-medium text-gray-700">普通用户</th>
+                    <th class="px-4 py-2 text-center font-medium text-gray-700">访客</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y">
+                  <tr v-for="module in permissionModules" :key="module.id">
+                    <td class="px-4 py-2 font-medium text-gray-900">{{ module.name }}</td>
+                    <td class="px-4 py-2 text-center"><span class="text-green-600">✓</span></td>
+                    <td class="px-4 py-2 text-center"><span :class="module.user ? 'text-green-600' : 'text-red-600'">{{ module.user ? '✓' : '✗' }}</span></td>
+                    <td class="px-4 py-2 text-center"><span :class="module.guest ? 'text-green-600' : 'text-red-600'">{{ module.guest ? '✓' : '✗' }}</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </template>
+
       <!-- 权限概览 -->
       <template v-else-if="currentTab === 'permissions'">
         <div class="bg-white rounded-lg shadow p-6">
@@ -266,7 +400,7 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import UserModal from '@/components/users/UserModal.vue'
 import { api } from '@/utils/api'
 
-const tabs = [{ id: 'users', name: '用户列表' }, { id: 'groups', name: '用户组' }, { id: 'permissions', name: '权限概览' }, { id: 'policy', name: '密码策略' }]
+const tabs = [{ id: 'users', name: '用户列表' }, { id: 'groups', name: '用户组' }, { id: 'roles', name: '角色管理' }, { id: 'permissions', name: '权限概览' }, { id: 'policy', name: '密码策略' }]
 const currentTab = ref('users')
 const loading = ref(true)
 const users = ref<any[]>([])
@@ -309,6 +443,21 @@ const sessionPolicy = ref({
   maxConcurrent: 3,
   require2FA: false
 })
+
+// 角色管理
+const showRoleModal = ref(false)
+const customRoles = ref<any[]>([])
+const permissionModules = ref([
+  { id: 'dashboard', name: '仪表板', user: true, guest: true },
+  { id: 'files', name: '文件管理', user: true, guest: true },
+  { id: 'storage', name: '存储管理', user: true, guest: false },
+  { id: 'downloads', name: '下载管理', user: true, guest: false },
+  { id: 'printers', name: '打印服务', user: true, guest: true },
+  { id: 'users', name: '用户管理', user: false, guest: false },
+  { id: 'settings', name: '系统设置', user: false, guest: false },
+  { id: 'logs', name: '系统日志', user: true, guest: false },
+  { id: 'apps', name: '应用管理', user: false, guest: false }
+])
 
 const toast = ref({ show: false, type: 'success' as 'success' | 'error', message: '' })
 
@@ -372,6 +521,17 @@ const saveSessionPolicy = async () => {
   } catch (e) {
     showToast('error', '保存失败')
   }
+}
+
+// 角色管理函数
+const editRole = (role: any) => {
+  showToast('info', '角色编辑功能开发中')
+}
+
+const deleteRole = async (role: any) => {
+  if (!confirm(`确定删除角色 "${role.name}" 吗？`)) return
+  customRoles.value = customRoles.value.filter(r => r.id !== role.id)
+  showToast('success', '角色已删除')
 }
 
 onMounted(() => { loadUsers(); loadGroups() })
