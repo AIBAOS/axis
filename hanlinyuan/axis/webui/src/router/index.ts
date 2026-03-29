@@ -1,19 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-<<<<<<< HEAD
-import Home from '../views/Home.vue'
-
-const routes = [
-  {
-    path: '/',
-    name: 'Home',
-    component: Home
-  }
-]
-
-const router = createRouter({
-  history: createWebHistory(),
-  routes
-=======
 import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
@@ -33,9 +18,33 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue')
+    },
+    {
+      path: '/files',
+      name: 'files',
+      component: () => import('../views/FilesView.vue')
+    },
+    {
+      path: '/storage',
+      name: 'storage',
+      component: () => import('../views/StorageView.vue')
+    },
+    {
+      path: '/users',
+      name: 'users',
+      component: () => import('../views/UsersView.vue')
+    },
+    {
+      path: '/backups',
+      name: 'backups',
+      component: () => import('../views/BackupsView.vue')
+    },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('../views/SettingsView.vue')
     }
   ]
->>>>>>> a37251b (feat(webui): Phase 301 创建 WebUI 基础框架)
 })
 
 export default router

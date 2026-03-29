@@ -85,5 +85,22 @@ export const api = {
     create: (data: any) => apiClient.post('/api/v1/backups', data),
     update: (id: string, data: any) => apiClient.put(`/api/v1/backups/${id}`, data),
     delete: (id: string) => apiClient.delete(`/api/v1/backups/${id}`)
+  },
+
+  // 存储
+  storage: {
+    getVolumes: (params?: any) => apiClient.get('/api/v1/storage/volumes', { params }),
+    getVolume: (id: string) => apiClient.get(`/api/v1/storage/volumes/${id}`),
+    getPools: (params?: any) => apiClient.get('/api/v1/storage/pools', { params }),
+    getPool: (id: string) => apiClient.get(`/api/v1/storage/pools/${id}`),
+    getDisks: (params?: any) => apiClient.get('/api/v1/storage/disks', { params }),
+    getDisk: (id: string) => apiClient.get(`/api/v1/storage/disks/${id}`),
+    getUsage: () => apiClient.get('/api/v1/storage/usage')
+  },
+
+  // 设置
+  settings: {
+    get: () => apiClient.get('/api/v1/settings'),
+    update: (data: any) => apiClient.put('/api/v1/settings', data)
   }
 }

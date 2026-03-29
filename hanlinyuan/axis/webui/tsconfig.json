@@ -15,14 +15,9 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-<<<<<<< HEAD
-    "paths": {
-      "@/*": ["./src/*"]
-=======
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
->>>>>>> a37251b (feat(webui): Phase 301 创建 WebUI 基础框架)
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],

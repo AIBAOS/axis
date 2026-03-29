@@ -1,24 +1,14 @@
 # Axis 项目进度追踪
 
-<<<<<<< HEAD
-> 最后更新：2026-03-28 17:35 UTC
-=======
-> 最后更新：2026-03-28 17:30 UTC
->>>>>>> a37251b (feat(webui): Phase 301 创建 WebUI 基础框架)
+> 最后更新：2026-03-28 18:50 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-<<<<<<< HEAD
-| 最新 commit | a368611 |
-| 提交时间 | 2026-03-28 17:35 UTC |
-| 当前阶段 | Phase 301 WebUI 项目基础框架 |
-=======
-| 最新 commit | Phase 301 WebUI 基础框架 |
-| 提交时间 | 2026-03-28 17:30 UTC |
-| 当前阶段 | Phase 301 WebUI 基础框架 |
->>>>>>> a37251b (feat(webui): Phase 301 创建 WebUI 基础框架)
+| 最新 commit | Phase 306 系统设置界面 |
+| 提交时间 | 2026-03-28 18:50 UTC |
+| 当前阶段 | Phase 306 系统设置界面 |
 | 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
@@ -28,6 +18,11 @@
 
 | 模块 | 状态 | Commit | 完成时间 |
 |------|:----:|--------|----------|
+| **WebUI 系统设置** | ✅ | Phase 306 | 2026-03-28 18:50 |
+| **WebUI 备份管理** | ✅ | Phase 305 | 2026-03-28 18:35 |
+| **WebUI 用户管理** | ✅ | Phase 304 | 2026-03-28 18:20 |
+| **WebUI 存储管理** | ✅ | Phase 303 | 2026-03-28 18:10 |
+| **WebUI 文件管理** | ✅ | Phase 302 | 2026-03-28 17:55 |
 | **WebUI 基础框架** | ✅ | Phase 301 | 2026-03-28 17:30 |
 | 核心框架 | ✅ | - | 03-14 |
 | JWT 认证 | ✅ | 0b34819 | 03-17 05:52 |
@@ -83,6 +78,49 @@
 ---
 
 ## ✅ WebUI 开发
+
+- [x] **Phase 306 WebUI 系统设置界面** - 2026-03-28 18:50
+  - SettingsView.vue: 系统设置主页（选项卡：基本/网络/通知）
+  - 功能：主机名/时区/语言配置、网络配置、邮件通知配置
+  - 支持：表单验证、保存确认、选项卡切换
+  - 路由：/settings
+  - 对接 API: GET/PUT /api/v1/settings
+
+- [x] **Phase 305 WebUI 备份管理界面** - 2026-03-28 18:35
+  - BackupsView.vue: 备份管理主页（卡片列表）
+  - BackupCard.vue: 备份任务卡片（名称/类型/路径/计划/状态）
+  - BackupModal.vue: 新建/编辑备份模态框
+  - 功能：备份任务列表、新建、编辑、删除、执行、恢复
+  - 支持：状态筛选（活跃/非活跃/运行中）、搜索
+  - 路由：/backups
+  - 对接 API: GET/POST/PUT/DELETE /api/v1/backups/*, POST /api/v1/backups/{id}/execute, POST /api/v1/backups/{id}/restore
+
+- [x] **Phase 304 WebUI 用户管理界面** - 2026-03-28 18:20
+  - UsersView.vue: 用户管理主页（表格列表）
+  - UserRow.vue: 用户行组件（头像/用户名/角色/状态）
+  - UserModal.vue: 新建/编辑用户模态框
+  - 功能：用户列表展示、新建、编辑、删除、搜索、筛选
+  - 支持：角色筛选（管理员/普通用户/访客）、状态筛选（活跃/离线/禁用）
+  - 路由：/users
+  - 对接 API: GET/POST/PUT/DELETE /api/v1/users/*
+
+- [x] **Phase 303 WebUI 存储管理界面** - 2026-03-28 18:10
+  - StorageView.vue: 存储管理主页（选项卡：存储卷/存储池/磁盘）
+  - StorageCard.vue: 存储卷卡片（容量/使用率/状态）
+  - StoragePoolCard.vue: 存储池卡片（磁盘数量/容量）
+  - DiskCard.vue: 磁盘卡片（型号/温度/健康状态）
+  - 功能：存储卷/池/磁盘列表展示，使用率可视化
+  - 路由：/storage
+  - 对接 API: GET /api/v1/storage/volumes|pools|disks|usage
+
+- [x] **Phase 302 WebUI 文件管理界面** - 2026-03-28 17:55
+  - FilesView.vue: 文件列表页面
+  - FileCard.vue: 文件卡片组件
+  - 功能：文件列表展示、上传、下载、删除、重命名
+  - 支持：面包屑导航、搜索、类型筛选、分页
+  - 路由：/files
+  - 对接 API: GET/POST/DELETE /api/v1/files/*
+  - Commit: Phase 302
 
 - [x] Phase 301 WebUI 项目基础框架 - 2026-03-28 17:35
   - Vue 3 + TypeScript + Vite 5
@@ -652,6 +690,13 @@
 ## ✅ 已完成事项
 
 <<<<<<< HEAD
+- [x] **Phase 301 WebUI 基础框架** - 2026-03-28 17:30
+  - 技术栈：Vue 3 + TypeScript + Vite + TailwindCSS + Pinia
+  - 目录：`axis/webui/`
+  - 功能：项目脚手架、路由配置、API 客户端、认证 store、首页、关于页、登录页
+  - 构建：`npm run dev` (开发) / `npm run build` (生产)
+  - 文档：webui/README.md
+=======
 - [x] WebDAV 共享列表 API (Phase 215) - 2026-03-28 05:05
   - GET /api/v1/shares/webdav — 获取 WebDAV 共享列表
   - JWT 认证，仅 admin 用户可访问
@@ -894,14 +939,7 @@
   - 完善错误处理（404 Not Found / 409 Conflict / 500 Database Error）
   - 删除成功返回 200 OK + 确认消息
   - Commit: eeefbe3
-=======
-- [x] **Phase 301 WebUI 基础框架** - 2026-03-28 17:30
-  - 技术栈：Vue 3 + TypeScript + Vite + TailwindCSS + Pinia
-  - 目录：`axis/webui/`
-  - 功能：项目脚手架、路由配置、API 客户端、认证 store、首页、关于页、登录页
-  - 构建：`npm run dev` (开发) / `npm run build` (生产)
-  - 文档：webui/README.md
->>>>>>> a37251b (feat(webui): Phase 301 创建 WebUI 基础框架)
+>>>>>>> 4c9cf127741819c070e89e08e5e2fe8e2ae36269
 
 - [x] 备份任务更新 API (Phase 191) - 2026-03-27 19:58
   - PUT /api/v1/backups/{id} — 更新备份任务配置

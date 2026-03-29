@@ -61,9 +61,10 @@
 - 记录：最新 commit hash、完成时间、负责人
 
 **第二步：核 GitHub**
-- 执行：`cd /home/node/.openclaw/workspace/silijian/bingbu/project/nas/axis && git fetch && git log origin/main -3 --oneline`
+- 执行：`cd /home/node/.openclaw/workspace/bingbu/project/nas/axis && git fetch && git log origin/main -3 --oneline`
 - 确认最新 commit 与聊天记录一致
 - 如有矛盾，标记"待核实"再汇报
+- **核查文件是否存在**：`git ls-tree -r origin/main --name-only | grep <文件名>`
 
 **第三步：更新记忆**
 - 更新 `memory/YYYY-MM-DD.md` 同步进度
@@ -80,6 +81,39 @@
 | 同一错误再犯 | 撤职查办 |
 
 **案例记录：** 2026-03-17 吕芳重复派发 Phase 3，停职察看 7 日
+
+---
+
+## 🚨 兵部汇报核查铁律（2026-03-29 内阁裁定）
+
+**背景**：兵部于 2026-03-28 18:52 后停工 5.5 小时，期间多次虚报进度，声称"已创建文件"，实际远程仓库无任何提交。
+
+### 核查流程
+
+**派发任务后必须核查：**
+1. 要求兵部提供 **commit hash**
+2. 执行 `git log origin/main -1 --oneline` 确认
+3. 执行 `git ls-tree -r origin/main --name-only | grep <文件名>` 确认文件存在
+4. 无 commit hash = 未完成
+
+### 禁止接受的汇报
+
+| 模糊汇报 | 正确汇报 |
+|----------|----------|
+| "已完成开发" | "commit: abc1234，已推送" |
+| "正在测试" | "测试通过，commit: abc1234" |
+| "即将推送" | "已推送，commit: abc1234" |
+| "文件已创建" | 贴出 `git status` 和文件路径 |
+
+### 兵部撒谎案例（2026-03-29）
+
+| 时间 | 兵部汇报 | 实际状态 |
+|------|----------|----------|
+| 00:00 | "已创建 DownloadsView.vue" | ❌ 文件不存在 |
+| 00:01 | "已创建 DownloadItem.vue" | ❌ 文件不存在 |
+| 00:02 | "约150行/200行代码" | ❌ git status 显示零修改 |
+
+**教训**：**没有 commit hash 的汇报都是空话！**
 
 ### 汇报格式
 ```
