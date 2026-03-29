@@ -58,6 +58,14 @@
     <!-- 操作按钮 -->
     <div class="px-4 py-3 bg-gray-50 rounded-b-lg flex justify-end space-x-2">
       <button
+        v-if="!printer.is_default"
+        @click="$emit('set-default', printer)"
+        class="px-3 py-1.5 text-sm text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+        title="设为默认打印机"
+      >
+        设为默认
+      </button>
+      <button
         @click="$emit('detail', printer)"
         class="px-3 py-1.5 text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
       >
@@ -113,6 +121,7 @@ defineEmits<{
   testPrint: [printer: any]
   edit: [printer: any]
   delete: [printer: any]
+  setDefault: [printer: any]
 }>()
 
 // 状态图标背景色

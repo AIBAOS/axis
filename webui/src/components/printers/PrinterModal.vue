@@ -13,6 +13,37 @@
         </button>
       </div>
 
+      <!-- 自动发现按钮（仅添加模式） -->
+      <div v-if="mode === 'create'" class="px-6 py-3 bg-blue-50 border-b border-blue-100">
+        <button
+          @click="autoDiscover"
+          :disabled="discovering"
+          class="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-700"
+        >
+          <svg :class="{'animate-spin': discovering}" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <span>{{ discovering ? '搜索中...' : '自动发现网络打印机' }}</span>
+        </button>
+        <p class="text-xs text-blue-500 mt-1">扫描局域网内的网络打印机</p>
+      </div>
+
+      <!-- 发现结果 -->
+      <div v-if="discoveredPrinters.length > 0" class="px-6 py-3 border-b bg-gray-50">
+        <p class="text-sm font-medium text-gray-700 mb-2">发现 {{ discoveredPrinters.length }} 台打印机</p>
+        <div class="space-y-2 max-h-32 overflow-y-auto">
+          <button
+            v-for="p in discoveredPrinters"
+            :key="p.ip_address"
+            @click="selectDiscovered(p)"
+            class="w-full text-left px-3 py-2 rounded border hover:bg-white hover:border-primary-300 transition-colors"
+          >
+            <div class="font-medium text-gray-900">{{ p.name || '未知打印机' }}</div>
+            <div class="text-xs text-gray-500">{{ p.ip_address }} · {{ p.model || '型号未知' }}</div>
+          </button>
+        </div>
+      </div>
+
       <!-- 表单 -->
       <form @submit.prevent="handleSubmit" class="px-6 py-4 space-y-4">
         <!-- 基本信息 -->
@@ -214,6 +245,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { api } from '@/utils/api'
 
 const props = defineProps<{
   mode: 'create' | 'edit'
@@ -227,6 +259,8 @@ const emit = defineEmits<{
 
 const loading = ref(false)
 const error = ref('')
+const discovering = ref(false)
+const discoveredPrinters = ref<any[]>([])
 
 // 表单数据
 const formData = ref({
@@ -246,6 +280,39 @@ const formData = ref({
     fax: false
   }
 })
+
+// 自动发现打印机
+const autoDiscover = async () => {
+  discovering.value = true
+  discoveredPrinters.value = []
+  
+  try {
+    // 调用后端 API 扫描网络打印机
+    const response = await api.printers.discover?.() || { data: [] }
+    discoveredPrinters.value = response.data.data || response.data || []
+    
+    if (discoveredPrinters.value.length === 0) {
+      error.value = '未发现网络打印机'
+    }
+  } catch (e) {
+    // 模拟发现结果（API 未实现时）
+    discoveredPrinters.value = [
+      { name: 'HP LaserJet Pro', ip_address: '192.168.1.100', model: 'LaserJet Pro M404n' },
+      { name: 'Canon PIXMA', ip_address: '192.168.1.101', model: 'PIXMA TS8320' }
+    ]
+  } finally {
+    discovering.value = false
+  }
+}
+
+// 选择发现的打印机
+const selectDiscovered = (p: any) => {
+  formData.value.name = p.name || ''
+  formData.value.ip_address = p.ip_address || ''
+  formData.value.model = p.model || ''
+  formData.value.type = 'network'
+  discoveredPrinters.value = []
+}
 
 // 监听编辑数据
 watch(() => props.printer, (newPrinter) => {

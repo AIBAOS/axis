@@ -163,8 +163,12 @@ export const api = {
     create: (data: any) => apiClient.post('/api/v1/printers', data),
     update: (id: number, data: any) => apiClient.put(`/api/v1/printers/${id}`, data),
     delete: (id: number) => apiClient.delete(`/api/v1/printers/${id}`),
+    discover: () => apiClient.get('/api/v1/printers/discover'),
+    setDefault: (id: number) => apiClient.post(`/api/v1/printers/${id}/set-default`),
     jobs: (id: number, params?: any) => apiClient.get(`/api/v1/printers/${id}/jobs`, { params }),
-    createJob: (id: number, data: any) => apiClient.post(`/api/v1/printers/${id}/jobs`, data)
+    createJob: (id: number, data: any) => apiClient.post(`/api/v1/printers/${id}/jobs`, data),
+    updateJob: (printerId: number, jobId: number, data: any) => apiClient.put(`/api/v1/printers/${printerId}/jobs/${jobId}`, data),
+    cancelJob: (printerId: number, jobId: number) => apiClient.delete(`/api/v1/printers/${printerId}/jobs/${jobId}`)
   },
 
   // 网络

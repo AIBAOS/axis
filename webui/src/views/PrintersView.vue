@@ -51,7 +51,7 @@
         <div v-if="loading" class="flex justify-center py-12"><svg class="animate-spin h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg></div>
         <div v-else-if="filteredPrinters.length === 0" class="text-center py-12 bg-white rounded-lg shadow"><svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg><p class="mt-4 text-gray-600">暂无打印机</p></div>
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <PrinterCard v-for="printer in filteredPrinters" :key="printer.printer_id || printer.id" :printer="printer" @detail="showPrinterDetail" @test-print="testPrint" @edit="openEditModal" @delete="confirmDelete" />
+          <PrinterCard v-for="printer in filteredPrinters" :key="printer.printer_id || printer.id" :printer="printer" @detail="showPrinterDetail" @test-print="testPrint" @edit="openEditModal" @delete="confirmDelete" @set-default="setDefaultPrinter" />
         </div>
       </template>
 
@@ -212,6 +212,7 @@ const resumeAllJobs = async () => { for (const j of pausedJobs.value) await resu
 const showPrinterDetail = (p: any) => { detailPrinter.value = p }
 const testPrint = async (p: any) => { try { await api.printers.createJob(p.printer_id || p.id, { document_name: 'Test Page', test_page: true }); showToast('success', `测试页已发送到 ${p.name}`) } catch (e) { showToast('success', `测试页已发送`) } }
 const openEditModal = (p: any) => { modalMode.value = 'edit'; editingPrinter.value = p; showModal.value = true }
+const setDefaultPrinter = async (p: any) => { try { await api.printers.setDefault(p.printer_id || p.id); showToast('success', `${p.name} 已设为默认打印机`); loadPrinters() } catch (e) { showToast('error', '设置失败') } }
 const closeModal = () => { showModal.value = false; editingPrinter.value = null }
 const confirmDelete = (p: any) => { deleteTarget.value = p }
 const executeDelete = async () => { if (!deleteTarget.value) return; deleting.value = true; try { await api.printers.delete(deleteTarget.value.printer_id || deleteTarget.value.id); showToast('success', '已删除'); deleteTarget.value = null; loadPrinters() } catch (e) { showToast('error', '删除失败') } finally { deleting.value = false } }
