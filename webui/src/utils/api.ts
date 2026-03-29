@@ -143,5 +143,16 @@ export const api = {
     createFtp: (data: any) => apiClient.post('/api/v1/shares/ftp', data),
     updateFtp: (id: number, data: any) => apiClient.put(`/api/v1/shares/ftp/${id}`, data),
     deleteFtp: (id: number) => apiClient.delete(`/api/v1/shares/ftp/${id}`)
+  },
+
+  // 打印机
+  printers: {
+    list: (params?: any) => apiClient.get('/api/v1/printers', { params }),
+    get: (id: number) => apiClient.get(`/api/v1/printers/${id}`),
+    create: (data: any) => apiClient.post('/api/v1/printers', data),
+    update: (id: number, data: any) => apiClient.put(`/api/v1/printers/${id}`, data),
+    delete: (id: number) => apiClient.delete(`/api/v1/printers/${id}`),
+    jobs: (id: number, params?: any) => apiClient.get(`/api/v1/printers/${id}/jobs`, { params }),
+    createJob: (id: number, data: any) => apiClient.post(`/api/v1/printers/${id}/jobs`, data)
   }
 }
