@@ -249,6 +249,123 @@
         </div>
       </template>
 
+      <!-- 配额管理 -->
+      <template v-else-if="currentTab === 'quotas'">
+        <div class="space-y-6">
+          <!-- 用户配额 -->
+          <div class="bg-white rounded-lg shadow p-4">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="font-semibold text-gray-900">用户存储配额</h3>
+              <button @click="showQuotaModal = true" class="btn-primary text-sm">设置配额</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">用户</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">配额限制</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">已使用</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">使用率</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">操作</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y">
+                  <tr v-for="quota in userQuotas" :key="quota.id" class="hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                      <div class="flex items-center space-x-2">
+                        <div :class="getAvatarClass(quota.role)" class="w-6 h-6 rounded-full flex items-center justify-center">
+                          <span class="text-xs">{{ quota.username?.charAt(0).toUpperCase() }}</span>
+                        </div>
+                        <span class="font-medium text-gray-900">{{ quota.username }}</span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 text-gray-600">{{ quota.limit === 0 ? '无限制' : formatBytes(quota.limit) }}</td>
+                    <td class="px-4 py-3 text-gray-600">{{ formatBytes(quota.used) }}</td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center space-x-2">
+                        <div class="w-20 bg-gray-200 rounded-full h-2">
+                          <div :class="getQuotaClass(quota.percent)" class="h-2 rounded-full" :style="{ width: Math.min(quota.percent, 100) + '%' }"></div>
+                        </div>
+                        <span class="text-xs text-gray-600">{{ quota.percent.toFixed(1) }}%</span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3">
+                      <span :class="getQuotaStatusClass(quota.percent)" class="px-2 py-1 text-xs rounded-full">{{ getQuotaStatusLabel(quota.percent) }}</span>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                      <button @click="editQuota(quota)" class="text-sm text-primary-600 hover:text-primary-700 mr-2">编辑</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 用户组配额 -->
+          <div class="bg-white rounded-lg shadow p-4">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="font-semibold text-gray-900">用户组存储配额</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div v-for="groupQuota in groupQuotas" :key="groupQuota.id" class="p-4 border rounded-lg">
+                <div class="flex justify-between items-start mb-2">
+                  <div>
+                    <h4 class="font-medium text-gray-900">{{ groupQuota.name }}</h4>
+                    <p class="text-sm text-gray-500">{{ groupQuota.members }} 个成员</p>
+                  </div>
+                  <span :class="groupQuota.limit === 0 ? 'text-gray-500' : 'text-primary-600'" class="text-sm font-medium">
+                    {{ groupQuota.limit === 0 ? '无限制' : formatBytes(groupQuota.limit) }}
+                  </span>
+                </div>
+                <div class="mt-2">
+                  <div class="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>已使用</span>
+                    <span>{{ formatBytes(groupQuota.used) }}</span>
+                  </div>
+                  <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div :class="getQuotaClass(groupQuota.percent)" class="h-2 rounded-full" :style="{ width: Math.min(groupQuota.percent, 100) + '%' }"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 共享文件夹权限 -->
+          <div class="bg-white rounded-lg shadow p-4">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="font-semibold text-gray-900">共享文件夹权限</h3>
+              <button @click="showFolderPermModal = true" class="btn-primary text-sm">添加权限</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">文件夹</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">用户/组</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">权限</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">操作</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y">
+                  <tr v-for="perm in folderPermissions" :key="perm.id" class="hover:bg-gray-50">
+                    <td class="px-4 py-3 font-mono text-gray-900">{{ perm.folder }}</td>
+                    <td class="px-4 py-3 text-gray-600">{{ perm.target }}</td>
+                    <td class="px-4 py-3">
+                      <span :class="getPermClass(perm.permission)" class="px-2 py-1 text-xs rounded-full font-medium">{{ getPermLabel(perm.permission) }}</span>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                      <button @click="editFolderPerm(perm)" class="text-sm text-primary-600 hover:text-primary-700 mr-2">编辑</button>
+                      <button @click="deleteFolderPerm(perm)" class="text-sm text-red-600 hover:text-red-700">删除</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </template>
+
       <!-- 权限概览 -->
       <template v-else-if="currentTab === 'permissions'">
         <div class="bg-white rounded-lg shadow p-6">
@@ -400,7 +517,7 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import UserModal from '@/components/users/UserModal.vue'
 import { api } from '@/utils/api'
 
-const tabs = [{ id: 'users', name: '用户列表' }, { id: 'groups', name: '用户组' }, { id: 'roles', name: '角色管理' }, { id: 'permissions', name: '权限概览' }, { id: 'policy', name: '密码策略' }]
+const tabs = [{ id: 'users', name: '用户列表' }, { id: 'groups', name: '用户组' }, { id: 'roles', name: '角色管理' }, { id: 'permissions', name: '权限概览' }, { id: 'quotas', name: '配额管理' }, { id: 'policy', name: '密码策略' }]
 const currentTab = ref('users')
 const loading = ref(true)
 const users = ref<any[]>([])
@@ -532,6 +649,89 @@ const deleteRole = async (role: any) => {
   if (!confirm(`确定删除角色 "${role.name}" 吗？`)) return
   customRoles.value = customRoles.value.filter(r => r.id !== role.id)
   showToast('success', '角色已删除')
+}
+
+// 配额管理
+const showQuotaModal = ref(false)
+const showFolderPermModal = ref(false)
+const userQuotas = ref([
+  { id: 1, username: 'admin', role: 'admin', limit: 0, used: 53687091200, percent: 0 },
+  { id: 2, username: 'user1', role: 'user', limit: 107374182400, used: 53687091200, percent: 50 },
+  { id: 3, username: 'user2', role: 'user', limit: 53687091200, used: 48318382080, percent: 90 },
+  { id: 4, username: 'guest1', role: 'guest', limit: 10737418240, used: 2147483648, percent: 20 }
+])
+const groupQuotas = ref([
+  { id: 1, name: 'admin', members: 1, limit: 0, used: 53687091200, percent: 0 },
+  { id: 2, name: 'users', members: 5, limit: 536870912000, used: 214748364800, percent: 40 },
+  { id: 3, name: 'developers', members: 3, limit: 107374182400, used: 85899345920, percent: 80 }
+])
+const folderPermissions = ref([
+  { id: 1, folder: '/shared/documents', target: 'users (组)', permission: 'rw' },
+  { id: 2, folder: '/shared/media', target: 'everyone', permission: 'ro' },
+  { id: 3, folder: '/shared/backups', target: 'admin (用户)', permission: 'rw' },
+  { id: 4, folder: '/shared/private', target: 'developers (组)', permission: 'deny' }
+])
+
+const formatBytes = (bytes: number) => {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
+
+const getQuotaClass = (percent: number) => {
+  if (percent >= 95) return 'bg-red-500'
+  if (percent >= 80) return 'bg-yellow-500'
+  return 'bg-green-500'
+}
+
+const getQuotaStatusClass = (percent: number) => {
+  if (percent >= 95) return 'bg-red-100 text-red-700'
+  if (percent >= 80) return 'bg-yellow-100 text-yellow-700'
+  return 'bg-green-100 text-green-700'
+}
+
+const getQuotaStatusLabel = (percent: number) => {
+  if (percent >= 95) return '即将满'
+  if (percent >= 80) return '使用率高'
+  return '正常'
+}
+
+const getPermClass = (perm: string) => {
+  switch (perm) {
+    case 'rw': return 'bg-green-100 text-green-700'
+    case 'ro': return 'bg-blue-100 text-blue-700'
+    case 'deny': return 'bg-red-100 text-red-700'
+    default: return 'bg-gray-100 text-gray-700'
+  }
+}
+
+const getPermLabel = (perm: string) => {
+  switch (perm) {
+    case 'rw': return '读写'
+    case 'ro': return '只读'
+    case 'deny': return '拒绝'
+    default: return perm
+  }
+}
+
+const editQuota = (quota: any) => {
+  const newLimit = prompt(`设置 ${quota.username} 的配额限制 (GB, 0 表示无限制):`, quota.limit === 0 ? '0' : Math.round(quota.limit / 1073741824).toString())
+  if (newLimit !== null) {
+    quota.limit = parseInt(newLimit) * 1073741824
+    showToast('success', '配额已更新')
+  }
+}
+
+const editFolderPerm = (perm: any) => {
+  showToast('info', '权限编辑功能开发中')
+}
+
+const deleteFolderPerm = (perm: any) => {
+  if (!confirm(`确定删除此权限吗？`)) return
+  folderPermissions.value = folderPermissions.value.filter(p => p.id !== perm.id)
+  showToast('success', '权限已删除')
 }
 
 onMounted(() => { loadUsers(); loadGroups() })
