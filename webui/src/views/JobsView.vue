@@ -159,6 +159,78 @@
         />
       </div>
 
+      <!-- 计划任务管理面板 -->
+      <div v-if="currentTab === 'cron'" class="space-y-4">
+        <div class="flex justify-between items-center">
+          <h3 class="font-semibold text-gray-900">计划任务列表</h3>
+          <button @click="openCronCreate" class="btn-primary text-sm">新建计划任务</button>
+        </div>
+        
+        <div v-if="cronJobs.length === 0" class="text-center py-8 bg-white rounded-lg shadow text-gray-500">
+          暂无计划任务
+        </div>
+        
+        <div v-else class="bg-white rounded-lg shadow overflow-hidden">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 border-b">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">名称</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cron 表达式</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">下次执行</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">操作</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y">
+              <tr v-for="cron in cronJobs" :key="cron.id" class="hover:bg-gray-50">
+                <td class="px-4 py-3 font-medium text-gray-900">{{ cron.name }}</td>
+                <td class="px-4 py-3 font-mono text-gray-600">{{ cron.schedule }}</td>
+                <td class="px-4 py-3 text-gray-600">{{ cron.next_run || '-' }}</td>
+                <td class="px-4 py-3">
+                  <span :class="cron.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'" class="px-2 py-1 text-xs rounded-full">
+                    {{ cron.enabled ? '已启用' : '已暂停' }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-right">
+                  <button @click="runCronNow(cron)" class="text-sm text-blue-600 hover:text-blue-700 mr-2">执行</button>
+                  <button @click="toggleCron(cron)" class="text-sm text-gray-600 hover:text-gray-700 mr-2">{{ cron.enabled ? '暂停' : '启用' }}</button>
+                  <button @click="openCronEdit(cron)" class="text-sm text-primary-600 hover:text-primary-700 mr-2">编辑</button>
+                  <button @click="deleteCronJob(cron)" class="text-sm text-red-600 hover:text-red-700">删除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 执行历史 -->
+        <div class="bg-white rounded-lg shadow p-4">
+          <h4 class="font-medium text-gray-900 mb-3">执行历史</h4>
+          <div v-if="cronHistory.length === 0" class="text-center py-4 text-gray-500 text-sm">暂无执行记录</div>
+          <div v-else class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="border-b">
+                <tr>
+                  <th class="px-3 py-2 text-left text-xs text-gray-500">任务名</th>
+                  <th class="px-3 py-2 text-left text-xs text-gray-500">执行时间</th>
+                  <th class="px-3 py-2 text-left text-xs text-gray-500">耗时</th>
+                  <th class="px-3 py-2 text-left text-xs text-gray-500">状态</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y">
+                <tr v-for="record in cronHistory" :key="record.id" class="hover:bg-gray-50">
+                  <td class="px-3 py-2">{{ record.name }}</td>
+                  <td class="px-3 py-2 text-gray-600">{{ record.executed_at }}</td>
+                  <td class="px-3 py-2 text-gray-600">{{ record.duration }}</td>
+                  <td class="px-3 py-2">
+                    <span :class="record.status === 'success' ? 'text-green-600' : 'text-red-600'" class="text-xs font-medium">{{ record.status === 'success' ? '成功' : '失败' }}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- 任务详情模态框 -->
       <div v-if="selectedJob" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
@@ -206,6 +278,48 @@
           </div>
           <div class="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end">
             <button @click="selectedJob = null" class="btn-secondary">关闭</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 计划任务创建/编辑模态框 -->
+      <div v-if="showCronModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
+          <div class="flex justify-between items-center px-6 py-4 border-b">
+            <h3 class="text-lg font-semibold text-gray-900">{{ editingCron ? '编辑计划任务' : '新建计划任务' }}</h3>
+            <button @click="showCronModal = false" class="text-gray-400 hover:text-gray-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <form @submit.prevent="saveCronJob" class="p-6 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">任务名称 *</label>
+              <input v-model="cronForm.name" type="text" required class="w-full px-3 py-2 border rounded-lg" placeholder="每日备份" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">执行命令 *</label>
+              <input v-model="cronForm.command" type="text" required class="w-full px-3 py-2 border rounded-lg font-mono text-sm" placeholder="/usr/local/bin/backup.sh" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Cron 表达式 *</label>
+              <input v-model="cronForm.schedule" type="text" required class="w-full px-3 py-2 border rounded-lg font-mono text-sm" placeholder="0 2 * * *" />
+              <p class="text-xs text-gray-500 mt-1">格式：分 时 日 月 周（例：0 2 * * * = 每天 2:00）</p>
+              <div class="flex flex-wrap gap-2 mt-2">
+                <button v-for="preset in cronPresets" :key="preset.expr" type="button" @click="cronForm.schedule = preset.expr" class="px-2 py-1 text-xs border rounded hover:bg-gray-50">{{ preset.label }}</button>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <label class="flex items-center space-x-2">
+                <input v-model="cronForm.enabled" type="checkbox" class="h-4 w-4 rounded" />
+                <span class="text-sm text-gray-700">启用任务</span>
+              </label>
+            </div>
+          </form>
+          <div class="flex justify-end space-x-3 px-6 py-4 bg-gray-50 rounded-b-lg">
+            <button @click="showCronModal = false" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">取消</button>
+            <button @click="saveCronJob" class="btn-primary">保存</button>
           </div>
         </div>
       </div>
@@ -422,6 +536,93 @@ const showToast = (type: 'success' | 'error', message: string) => {
   toast.value = { show: true, type, message }
   setTimeout(() => { toast.value.show = false }, 3000)
 }
+
+// 计划任务管理
+const showCronModal = ref(false)
+const editingCron = ref<any>(null)
+const cronForm = ref({
+  name: '',
+  command: '',
+  schedule: '',
+  enabled: true
+})
+const cronHistory = ref([
+  { id: 1, name: '每日备份', executed_at: '2026-03-29 02:00', status: 'success', duration: '5分30秒' },
+  { id: 2, name: '日志清理', executed_at: '2026-03-28 03:00', status: 'success', duration: '2分15秒' },
+  { id: 3, name: '系统检查', executed_at: '2026-03-27 04:00', status: 'failed', duration: '-' }
+])
+
+const openCronCreate = () => {
+  editingCron.value = null
+  cronForm.value = { name: '', command: '', schedule: '', enabled: true }
+  showCronModal.value = true
+}
+
+const openCronEdit = (cron: any) => {
+  editingCron.value = cron
+  cronForm.value = { name: cron.name, command: cron.command, schedule: cron.schedule, enabled: cron.enabled }
+  showCronModal.value = true
+}
+
+const saveCronJob = async () => {
+  if (!cronForm.value.name || !cronForm.value.schedule) {
+    showToast('error', '请填写完整信息')
+    return
+  }
+  try {
+    if (editingCron.value) {
+      await api.system.cronJobs?.update?.(editingCron.value.id, cronForm.value)
+      showToast('success', '计划任务已更新')
+    } else {
+      await api.system.cronJobs?.create?.(cronForm.value)
+      showToast('success', '计划任务已创建')
+    }
+    showCronModal.value = false
+    loadCronJobs()
+  } catch (e) {
+    showToast('error', '保存失败')
+  }
+}
+
+const deleteCronJob = async (cron: any) => {
+  if (!confirm(`确定删除计划任务 "${cron.name}" 吗？`)) return
+  try {
+    await api.system.cronJobs?.delete?.(cron.id)
+    showToast('success', '计划任务已删除')
+    loadCronJobs()
+  } catch (e) {
+    showToast('error', '删除失败')
+  }
+}
+
+const toggleCron = async (cron: any) => {
+  try {
+    await api.system.cronJobs?.update?.(cron.id, { enabled: !cron.enabled })
+    cron.enabled = !cron.enabled
+    showToast('success', cron.enabled ? '任务已启用' : '任务已暂停')
+  } catch (e) {
+    showToast('error', '操作失败')
+  }
+}
+
+const runCronNow = async (cron: any) => {
+  try {
+    await api.system.cronJobs?.run?.(cron.id)
+    showToast('success', '任务已立即执行')
+  } catch (e) {
+    showToast('error', '执行失败')
+  }
+}
+
+// Cron 表达式帮助
+const cronPresets = [
+  { label: '每分钟', expr: '* * * * *' },
+  { label: '每小时', expr: '0 * * * *' },
+  { label: '每天 0 点', expr: '0 0 * * *' },
+  { label: '每天 2 点', expr: '0 2 * * *' },
+  { label: '每周日 0 点', expr: '0 0 * * 0' },
+  { label: '每月 1 日 0 点', expr: '0 0 1 * *' }
+]
 
 // 生命周期
 onMounted(() => {
