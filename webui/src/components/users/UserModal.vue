@@ -1,8 +1,8 @@
 <template>
   <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
       <!-- 标题栏 -->
-      <div class="flex justify-between items-center px-6 py-4 border-b">
+      <div class="flex justify-between items-center px-6 py-4 border-b sticky top-0 bg-white">
         <h3 class="text-lg font-semibold text-gray-900">
           {{ mode === 'create' ? '新建用户' : '编辑用户' }}
         </h3>
@@ -17,19 +17,23 @@
       <form @submit.prevent="handleSubmit" class="px-6 py-4 space-y-4">
         <!-- 用户名 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">用户名 *</label>
           <input
             v-model="formData.username"
             type="text"
             required
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            :disabled="mode === 'edit'"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100"
             placeholder="请输入用户名"
+            minlength="3"
+            maxlength="32"
           />
+          <p v-if="mode === 'edit'" class="text-xs text-gray-500 mt-1">用户名不可修改</p>
         </div>
 
         <!-- 邮箱 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">邮箱</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">邮箱 *</label>
           <input
             v-model="formData.email"
             type="email"
@@ -41,7 +45,7 @@
 
         <!-- 密码（仅新建时显示） -->
         <div v-if="mode === 'create'">
-          <label class="block text-sm font-medium text-gray-700 mb-1">密码</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">密码 *</label>
           <input
             v-model="formData.password"
             type="password"
@@ -50,11 +54,25 @@
             placeholder="请输入密码"
             minlength="6"
           />
+          <p class="text-xs text-gray-500 mt-1">密码长度至少 6 位</p>
+        </div>
+
+        <!-- 重置密码（编辑时显示） -->
+        <div v-if="mode === 'edit'" class="p-3 bg-yellow-50 rounded-lg">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-yellow-800">重置密码</p>
+              <p class="text-xs text-yellow-600">生成随机密码并发送到用户邮箱</p>
+            </div>
+            <button type="button" @click="resetPassword" class="text-sm text-yellow-700 hover:text-yellow-900 font-medium">
+              重置
+            </button>
+          </div>
         </div>
 
         <!-- 角色 -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">角色</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">角色 *</label>
           <select
             v-model="formData.role"
             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -63,6 +81,11 @@
             <option value="admin">管理员</option>
             <option value="guest">访客</option>
           </select>
+          <div class="mt-2 space-y-1 text-xs text-gray-500">
+            <p><span class="font-medium text-red-600">管理员</span> - 完全访问权限，可管理用户和系统设置</p>
+            <p><span class="font-medium text-blue-600">普通用户</span> - 标准访问权限，可使用所有功能</p>
+            <p><span class="font-medium text-gray-600">访客</span> - 只读权限，仅可查看信息</p>
+          </div>
         </div>
 
         <!-- 状态 -->
@@ -77,10 +100,26 @@
             <option value="disabled">禁用</option>
           </select>
         </div>
+
+        <!-- 显示名称 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">显示名称</label>
+          <input
+            v-model="formData.display_name"
+            type="text"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            placeholder="可选，用于界面显示"
+          />
+        </div>
       </form>
 
+      <!-- 错误提示 -->
+      <div v-if="error" class="px-6 py-2 bg-red-50 text-sm text-red-600">
+        {{ error }}
+      </div>
+
       <!-- 按钮栏 -->
-      <div class="flex justify-end space-x-3 px-6 py-4 border-t bg-gray-50 rounded-b-lg">
+      <div class="flex justify-end space-x-3 px-6 py-4 border-t bg-gray-50 rounded-b-lg sticky bottom-0">
         <button
           type="button"
           @click="$emit('close')"
@@ -91,9 +130,10 @@
         <button
           type="submit"
           @click="handleSubmit"
-          class="btn-primary"
+          :disabled="saving"
+          class="btn-primary disabled:opacity-50"
         >
-          {{ mode === 'create' ? '创建' : '保存' }}
+          {{ saving ? '保存中...' : (mode === 'create' ? '创建' : '保存') }}
         </button>
       </div>
     </div>
@@ -101,7 +141,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch } from 'vue'
 
 const props = defineProps<{
   mode: 'create' | 'edit'
@@ -113,13 +153,17 @@ const emit = defineEmits<{
   save: [data: any]
 }>()
 
+const saving = ref(false)
+const error = ref('')
+
 // 表单数据
 const formData = ref({
   username: '',
   email: '',
   password: '',
   role: 'user',
-  status: 'active'
+  status: 'active',
+  display_name: ''
 })
 
 // 监听用户数据变化（编辑模式）
@@ -130,25 +174,56 @@ watch(() => props.user, (newUser) => {
       email: newUser.email || '',
       password: '',
       role: newUser.role || 'user',
-      status: newUser.status || 'active'
+      status: newUser.status || 'active',
+      display_name: newUser.display_name || ''
     }
   }
 }, { immediate: true })
 
+// 重置密码
+const resetPassword = () => {
+  if (confirm('确定要重置该用户的密码吗？新密码将发送到用户邮箱。')) {
+    // 标记需要重置密码
+    formData.value.password = 'RESET'
+    alert('密码将在保存时重置')
+  }
+}
+
 // 提交表单
-const handleSubmit = () => {
-  const data: any = {
-    username: formData.value.username,
-    email: formData.value.email,
-    role: formData.value.role,
-    status: formData.value.status
+const handleSubmit = async () => {
+  error.value = ''
+
+  // 验证
+  if (!formData.value.username.trim()) {
+    error.value = '请输入用户名'
+    return
+  }
+  if (!formData.value.email.trim()) {
+    error.value = '请输入邮箱'
+    return
+  }
+  if (props.mode === 'create' && !formData.value.password) {
+    error.value = '请输入密码'
+    return
   }
 
-  // 仅新建时包含密码
+  const data: any = {
+    username: formData.value.username.trim(),
+    email: formData.value.email.trim(),
+    role: formData.value.role,
+    status: formData.value.status,
+    display_name: formData.value.display_name.trim() || undefined
+  }
+
+  // 密码处理
   if (props.mode === 'create') {
     data.password = formData.value.password
+  } else if (formData.value.password === 'RESET') {
+    data.reset_password = true
   }
 
+  saving.value = true
   emit('save', data)
+  saving.value = false
 }
 </script>
