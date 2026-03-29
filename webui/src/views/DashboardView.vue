@@ -78,6 +78,17 @@
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- 左侧 -->
         <div class="lg:col-span-2 space-y-6">
+          <!-- CPU & 内存趋势图表 -->
+          <CpuMemoryChart
+            :cpu-history="cpuHistory"
+            :memory-history="memoryHistory"
+            :cpu-percent="resources.cpu.usage_percent"
+            :memory-percent="resources.memory.usage_percent"
+            :cpu-load="`${resources.cpu.load_1m?.toFixed(2) || '-'} / ${resources.cpu.load_5m?.toFixed(2) || '-'} / ${resources.cpu.load_15m?.toFixed(2) || '-'}`"
+            :memory-used="formatBytes(resources.memory.used_bytes)"
+            :memory-total="formatBytes(resources.memory.total_bytes)"
+          />
+
           <!-- 网络流量图表 -->
           <NetworkChart
             :rx-history="rxHistory"
@@ -87,6 +98,27 @@
             :total-rx="networkStats.totalRx"
             :total-tx="networkStats.totalTx"
           />
+
+          <!-- 磁盘健康概览 -->
+          <div class="bg-white rounded-lg shadow-md p-4">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="font-semibold text-gray-900">磁盘健康状态</h3>
+              <router-link to="/storage" class="text-sm text-primary-600 hover:text-primary-700">查看详情</router-link>
+            </div>
+            <div v-if="disks.length === 0" class="text-center py-4 text-gray-500">暂无磁盘</div>
+            <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div v-for="disk in disks.slice(0, 8)" :key="disk.id" class="p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-sm font-medium text-gray-900">{{ disk.name }}</span>
+                  <span :class="getSmartClass(disk.smart_status)" class="w-2 h-2 rounded-full"></span>
+                </div>
+                <p class="text-xs text-gray-500">{{ formatBytes(disk.size_bytes) }}</p>
+                <p v-if="disk.temperature" class="text-xs mt-1" :class="disk.temperature > 50 ? 'text-red-600' : disk.temperature > 40 ? 'text-yellow-600' : 'text-green-600'">
+                  {{ disk.temperature }}°C
+                </p>
+              </div>
+            </div>
+          </div>
 
           <!-- 快速入口 -->
           <div>
@@ -260,6 +292,7 @@ import QuickLinkCard from '@/components/dashboard/QuickLinkCard.vue'
 import AlertsPanel from '@/components/dashboard/AlertsPanel.vue'
 import NetworkChart from '@/components/dashboard/NetworkChart.vue'
 import QuickActions from '@/components/dashboard/QuickActions.vue'
+import CpuMemoryChart from '@/components/dashboard/CpuMemoryChart.vue'
 import { api } from '@/utils/api'
 
 const router = useRouter()
@@ -293,6 +326,10 @@ const resources = ref({
 const rxHistory = ref<number[]>([])
 const txHistory = ref<number[]>([])
 const networkStats = ref({ totalRx: 0, totalTx: 0 })
+
+// CPU & 内存历史
+const cpuHistory = ref<number[]>([])
+const memoryHistory = ref<number[]>([])
 
 // 磁盘和存储
 const disks = ref<any[]>([])
@@ -380,10 +417,16 @@ const loadResources = async () => {
       rxHistory.value.push(data.network_io?.rx_bytes_sec || 0)
       txHistory.value.push(data.network_io?.tx_bytes_sec || 0)
       
+      // 更新 CPU & 内存历史
+      cpuHistory.value.push(data.cpu?.usage_percent || 0)
+      memoryHistory.value.push(data.memory?.usage_percent || 0)
+      
       // 保持最近 60 个数据点（30秒刷新 * 60 = 30分钟）
       if (rxHistory.value.length > 60) {
         rxHistory.value = rxHistory.value.slice(-60)
         txHistory.value = txHistory.value.slice(-60)
+        cpuHistory.value = cpuHistory.value.slice(-60)
+        memoryHistory.value = memoryHistory.value.slice(-60)
       }
       
       // 更新总计
@@ -512,6 +555,24 @@ const getLogLevelClass = (level: string) => {
     case 'warn': return 'bg-yellow-100 text-yellow-700'
     case 'info': return 'bg-blue-100 text-blue-700'
     default: return 'bg-gray-100 text-gray-700'
+  }
+}
+
+const getSmartClass = (status: string) => {
+  switch (status?.toLowerCase()) {
+    case 'healthy':
+    case 'good':
+    case 'passed':
+      return 'bg-green-500'
+    case 'warning':
+    case 'caution':
+      return 'bg-yellow-500'
+    case 'failed':
+    case 'bad':
+    case 'error':
+      return 'bg-red-500'
+    default:
+      return 'bg-gray-400'
   }
 }
 
