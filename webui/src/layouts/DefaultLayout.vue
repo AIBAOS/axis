@@ -26,8 +26,9 @@
             <router-link to="/backups" class="text-gray-600 hover:text-gray-900">备份</router-link>
             <router-link to="/logs" class="text-gray-600 hover:text-gray-900">日志</router-link>
             <router-link to="/settings" class="text-gray-600 hover:text-gray-900">设置</router-link>
-            <router-link to="/about" class="text-gray-600 hover:text-gray-900">关于</router-link>
-            <span v-if="authStore.isAuthenticated" class="text-gray-600">|</span>
+            <span class="text-gray-300">|</span>
+            <LanguageSwitcher />
+            <span v-if="authStore.isAuthenticated" class="text-gray-300">|</span>
             <button
               v-if="authStore.isAuthenticated"
               @click="handleLogout"
@@ -58,6 +59,7 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth'
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 
 const authStore = useAuthStore()
 const version = import.meta.env.VITE_APP_VERSION || '0.1.0'
