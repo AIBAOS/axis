@@ -111,6 +111,36 @@
             placeholder="可选，用于界面显示"
           />
         </div>
+
+        <!-- 文件夹权限 -->
+        <div v-if="mode === 'edit'">
+          <label class="block text-sm font-medium text-gray-700 mb-2">文件夹权限</label>
+          <div class="space-y-2 border rounded-lg p-3 max-h-40 overflow-y-auto">
+            <div v-for="folder in folderPermissions" :key="folder.path" class="flex items-center justify-between py-1">
+              <span class="text-sm text-gray-700">{{ folder.path }}</span>
+              <select v-model="folder.permission" class="text-xs px-2 py-1 border rounded">
+                <option value="none">无权限</option>
+                <option value="read">只读</option>
+                <option value="write">读写</option>
+                <option value="admin">完全控制</option>
+              </select>
+            </div>
+            <div v-if="folderPermissions.length === 0" class="text-sm text-gray-500 text-center py-2">
+              暂无共享文件夹
+            </div>
+          </div>
+        </div>
+
+        <!-- 应用权限 -->
+        <div v-if="mode === 'edit'">
+          <label class="block text-sm font-medium text-gray-700 mb-2">应用访问权限</label>
+          <div class="space-y-2 border rounded-lg p-3">
+            <label v-for="app in appPermissions" :key="app.id" class="flex items-center">
+              <input v-model="app.enabled" type="checkbox" class="h-4 w-4 rounded" />
+              <span class="ml-2 text-sm text-gray-700">{{ app.name }}</span>
+            </label>
+          </div>
+        </div>
       </form>
 
       <!-- 错误提示 -->
@@ -166,6 +196,22 @@ const formData = ref({
   display_name: ''
 })
 
+// 文件夹权限
+const folderPermissions = ref([
+  { path: '/shared/documents', permission: 'read' },
+  { path: '/shared/media', permission: 'read' },
+  { path: '/shared/backups', permission: 'none' }
+])
+
+// 应用权限
+const appPermissions = ref([
+  { id: 'files', name: '文件管理', enabled: true },
+  { id: 'downloads', name: '下载管理', enabled: true },
+  { id: 'printers', name: '打印服务', enabled: true },
+  { id: 'backups', name: '备份管理', enabled: false },
+  { id: 'settings', name: '系统设置', enabled: false }
+])
+
 // 监听用户数据变化（编辑模式）
 watch(() => props.user, (newUser) => {
   if (newUser && props.mode === 'edit') {
@@ -220,6 +266,15 @@ const handleSubmit = async () => {
     data.password = formData.value.password
   } else if (formData.value.password === 'RESET') {
     data.reset_password = true
+  }
+
+  // 权限数据（仅编辑模式）
+  if (props.mode === 'edit') {
+    data.folder_permissions = folderPermissions.value.map(f => ({
+      path: f.path,
+      permission: f.permission
+    }))
+    data.app_permissions = appPermissions.value.filter(a => a.enabled).map(a => a.id)
   }
 
   saving.value = true

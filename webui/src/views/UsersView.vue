@@ -131,6 +131,104 @@
         </div>
       </template>
 
+      <!-- 密码策略 -->
+      <template v-else-if="currentTab === 'policy'">
+        <div class="max-w-2xl space-y-6">
+          <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="font-semibold text-gray-900 mb-4">密码策略设置</h3>
+            <form @submit.prevent="savePasswordPolicy" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">最小密码长度</label>
+                <input v-model.number="passwordPolicy.minLength" type="number" min="6" max="32" class="w-32 px-3 py-2 border rounded-lg" />
+                <p class="text-xs text-gray-500 mt-1">建议至少 8 位</p>
+              </div>
+              
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">密码复杂度要求</label>
+                <div class="space-y-2">
+                  <label class="flex items-center">
+                    <input v-model="passwordPolicy.requireUppercase" type="checkbox" class="h-4 w-4 rounded" />
+                    <span class="ml-2 text-sm text-gray-700">必须包含大写字母 (A-Z)</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input v-model="passwordPolicy.requireLowercase" type="checkbox" class="h-4 w-4 rounded" />
+                    <span class="ml-2 text-sm text-gray-700">必须包含小写字母 (a-z)</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input v-model="passwordPolicy.requireNumbers" type="checkbox" class="h-4 w-4 rounded" />
+                    <span class="ml-2 text-sm text-gray-700">必须包含数字 (0-9)</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input v-model="passwordPolicy.requireSpecial" type="checkbox" class="h-4 w-4 rounded" />
+                    <span class="ml-2 text-sm text-gray-700">必须包含特殊字符 (!@#$%^&*)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">密码有效期（天）</label>
+                  <input v-model.number="passwordPolicy.maxAge" type="number" min="0" class="w-full px-3 py-2 border rounded-lg" />
+                  <p class="text-xs text-gray-500 mt-1">0 表示永不过期</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">密码历史记录</label>
+                  <input v-model.number="passwordPolicy.historyCount" type="number" min="0" max="24" class="w-full px-3 py-2 border rounded-lg" />
+                  <p class="text-xs text-gray-500 mt-1">不能重复使用最近 N 个密码</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">最大登录失败次数</label>
+                  <input v-model.number="passwordPolicy.maxFailedAttempts" type="number" min="0" max="10" class="w-full px-3 py-2 border rounded-lg" />
+                  <p class="text-xs text-gray-500 mt-1">超过后锁定账户</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">锁定时间（分钟）</label>
+                  <input v-model.number="passwordPolicy.lockoutDuration" type="number" min="5" class="w-full px-3 py-2 border rounded-lg" />
+                </div>
+              </div>
+
+              <div class="flex justify-end">
+                <button type="submit" :disabled="savingPolicy" class="btn-primary">
+                  {{ savingPolicy ? '保存中...' : '保存策略' }}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="font-semibold text-gray-900 mb-4">会话设置</h3>
+            <form @submit.prevent="saveSessionPolicy" class="space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">会话超时（分钟）</label>
+                  <input v-model.number="sessionPolicy.timeout" type="number" min="5" class="w-full px-3 py-2 border rounded-lg" />
+                  <p class="text-xs text-gray-500 mt-1">无操作自动登出时间</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">最大并发会话</label>
+                  <input v-model.number="sessionPolicy.maxConcurrent" type="number" min="1" max="10" class="w-full px-3 py-2 border rounded-lg" />
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">双因素认证</label>
+                  <p class="text-sm text-gray-500">要求用户启用 2FA</p>
+                </div>
+                <input v-model="sessionPolicy.require2FA" type="checkbox" class="h-5 w-5 rounded" />
+              </div>
+
+              <div class="flex justify-end">
+                <button type="submit" class="btn-primary">保存设置</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </template>
+
       <!-- 模态框 -->
       <UserModal v-if="showCreateModal || showEditModal" :mode="showEditModal ? 'edit' : 'create'" :user="editingUser" @close="closeModal" @save="handleSaveUser" />
 
@@ -168,7 +266,7 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import UserModal from '@/components/users/UserModal.vue'
 import { api } from '@/utils/api'
 
-const tabs = [{ id: 'users', name: '用户列表' }, { id: 'groups', name: '用户组' }, { id: 'permissions', name: '权限概览' }]
+const tabs = [{ id: 'users', name: '用户列表' }, { id: 'groups', name: '用户组' }, { id: 'permissions', name: '权限概览' }, { id: 'policy', name: '密码策略' }]
 const currentTab = ref('users')
 const loading = ref(true)
 const users = ref<any[]>([])
@@ -191,6 +289,26 @@ const deleting = ref(false)
 const showGroupModal = ref(false)
 const editingGroup = ref<any>(null)
 const groupForm = ref({ name: '', gid: 1000, description: '', admin: false })
+
+// 密码策略
+const savingPolicy = ref(false)
+const passwordPolicy = ref({
+  minLength: 8,
+  requireUppercase: true,
+  requireLowercase: true,
+  requireNumbers: true,
+  requireSpecial: false,
+  maxAge: 90,
+  historyCount: 5,
+  maxFailedAttempts: 5,
+  lockoutDuration: 30
+})
+
+const sessionPolicy = ref({
+  timeout: 30,
+  maxConcurrent: 3,
+  require2FA: false
+})
 
 const toast = ref({ show: false, type: 'success' as 'success' | 'error', message: '' })
 
@@ -233,6 +351,28 @@ const getStatusTextClass = (status: string) => ({ active: 'text-green-700', inac
 const getStatusLabel = (status: string) => ({ active: '正常', inactive: '离线', locked: '锁定', disabled: '禁用' }[status] || status)
 
 const showToast = (type: 'success' | 'error', msg: string) => { toast.value = { show: true, type, message: msg }; setTimeout(() => toast.value.show = false, 3000) }
+
+// 密码策略保存
+const savePasswordPolicy = async () => {
+  savingPolicy.value = true
+  try {
+    await api.settings.update({ password_policy: passwordPolicy.value })
+    showToast('success', '密码策略已保存')
+  } catch (e) {
+    showToast('error', '保存失败')
+  } finally {
+    savingPolicy.value = false
+  }
+}
+
+const saveSessionPolicy = async () => {
+  try {
+    await api.settings.update({ session_policy: sessionPolicy.value })
+    showToast('success', '会话设置已保存')
+  } catch (e) {
+    showToast('error', '保存失败')
+  }
+}
 
 onMounted(() => { loadUsers(); loadGroups() })
 </script>
