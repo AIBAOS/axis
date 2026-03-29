@@ -17,6 +17,7 @@
             <router-link to="/files" class="text-gray-600 hover:text-gray-900">文件</router-link>
             <router-link to="/shares" class="text-gray-600 hover:text-gray-900">共享</router-link>
             <router-link to="/storage" class="text-gray-600 hover:text-gray-900">存储</router-link>
+            <router-link to="/network" class="text-gray-600 hover:text-gray-900">网络</router-link>
             <router-link to="/printers" class="text-gray-600 hover:text-gray-900">打印机</router-link>
             <router-link to="/jobs" class="text-gray-600 hover:text-gray-900">任务</router-link>
             <router-link to="/users" class="text-gray-600 hover:text-gray-900">用户</router-link>
