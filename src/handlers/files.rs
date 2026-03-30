@@ -112,7 +112,7 @@ pub async fn upload_file(
     let file_size = fs::metadata(&file_path).map(|m| m.len()).unwrap_or(0);
     let uploaded_at = std::time::SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
+        .unwrap_or_default()
         .as_secs();
     
     let file_info = FileInfo {

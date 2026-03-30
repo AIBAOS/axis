@@ -176,7 +176,7 @@ pub async fn update_container(
         }));
     }
 
-    let container_index = container_index.unwrap();
+    let container_index = container_index.expect("Container index should exist");
 
     // 9. 验证名称唯一性（排除自身）
     if let Some(ref new_name) = payload.name {

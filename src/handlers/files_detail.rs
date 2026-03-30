@@ -120,7 +120,7 @@ pub async fn get_file_detail(
         }));
     }
 
-    let file = file.unwrap();
+    let file = file.expect("File should exist after check");
 
     // 5. 验证文件访问权限（admin 可以访问任意文件）
     if !current_user_is_admin && file.owner_id != current_user_id {

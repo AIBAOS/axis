@@ -118,7 +118,7 @@ pub async fn restart_container(
         }));
     }
 
-    let container_index = container_index.unwrap();
+    let container_index = container_index.expect("Container index should exist");
 
     // 6. 模拟重启容器（更新状态为 running）
     mock_containers[container_index].status = "running".to_string();

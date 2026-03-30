@@ -64,7 +64,7 @@ pub async fn create_share(
         Some(
             expiry
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_default()
                 .as_secs()
                 .to_string()
         )

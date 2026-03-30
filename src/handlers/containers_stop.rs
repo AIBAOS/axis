@@ -119,7 +119,7 @@ pub async fn stop_container(
         }));
     }
 
-    let container_index = container_index.unwrap();
+    let container_index = container_index.expect("Container index should exist");
     let container = &mock_containers[container_index];
 
     // 6. 验证容器当前状态（已停止则返回 409 Conflict）

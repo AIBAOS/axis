@@ -96,7 +96,7 @@ pub async fn get_container_logs(
 
     // 6. 模拟容器日志（实际实现中会调用 Docker API 获取日志）
     let mock_logs = vec![
-        format!("2026-03-27T06:00:00Z [INFO] Container {} started", container.unwrap().1),
+        format!("2026-03-27T06:00:00Z [INFO] Container {} started", container.expect("Container should exist").1),
         "2026-03-27T06:00:01Z [INFO] Initializing application...".to_string(),
         "2026-03-27T06:00:02Z [INFO] Loading configuration...".to_string(),
         "2026-03-27T06:00:03Z [INFO] Configuration loaded successfully".to_string(),

@@ -89,7 +89,7 @@ pub async fn get_container_stats(
         }));
     }
 
-    let container = container.unwrap();
+    let container = container.expect("Container should exist");
 
     // 6. 模拟容器统计信息（实际实现中会调用 Docker API 获取统计信息）
     let stats = if container.2 == "running" {

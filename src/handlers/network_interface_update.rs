@@ -183,7 +183,7 @@ pub async fn update_network_interface(
         }));
     }
 
-    let interface_index = interface_index.unwrap();
+    let interface_index = interface_index.expect("Interface index should exist after check");
 
     // 8. 更新接口配置
     let interface = &mut mock_interfaces[interface_index];

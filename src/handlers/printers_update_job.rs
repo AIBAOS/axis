@@ -164,7 +164,7 @@ pub async fn update_job(
                 if j.state == "completed" || j.state == "failed" || j.state == "canceled" {
                     let now = SystemTime::now()
                         .duration_since(UNIX_EPOCH)
-                        .unwrap()
+                        .unwrap_or_default()
                         .as_secs();
                     j.completed_at = Some(now);
                 }

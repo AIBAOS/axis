@@ -181,7 +181,7 @@ pub async fn browse_files(
                 .map(|p| format!("/{}", p.to_string_lossy()))
                 .unwrap_or_else(|_| "/".to_string());
             let modified_at = metadata.modified()
-                .map(|t| t.duration_since(std::time::UNIX_EPOCH).unwrap().as_secs())
+                .map(|t| t.duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs())
                 .unwrap_or(0);
 
             if metadata.is_dir() {

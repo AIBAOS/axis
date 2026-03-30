@@ -75,7 +75,7 @@ pub async fn delete_firewall_rule(
     }
 
     // 5. 模拟删除规则
-    mock_rules.remove(rule_index.unwrap());
+    mock_rules.remove(rule_index.expect("Rule index should exist after check"));
 
     // 6. 返回删除成功（204 No Content）
     Ok(HttpResponse::NoContent().finish())
