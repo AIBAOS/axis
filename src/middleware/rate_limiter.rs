@@ -26,6 +26,20 @@ impl RateLimiter {
         }
     }
 
+    /// 启动后台定期清理任务
+    /// 每 5 分钟清理一次超过 max_age_secs 未访问的 IP
+    pub fn start_cleanup_task(&self, interval_secs: u64, max_age_secs: u64) {
+        let limiter = self.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(interval_secs));
+            loop {
+                interval.tick().await;
+                limiter.cleanup_old_entries(max_age_secs);
+                debug!("RateLimiter periodic cleanup completed");
+            }
+        });
+    }
+
     // 检查 IP 是否被允许访问（true=允许，false=被限流）
     pub fn is_allowed(&self, ip: &IpAddr) -> bool {
         let now = Instant::now();
@@ -93,6 +107,28 @@ impl RateLimiter {
 
         self.cleanup_old_entries_internal(&mut requests, max_age_secs);
     }
+
+    /// 获取当前统计信息（用于监控）
+    pub fn get_stats(&self) -> RateLimiterStats {
+        let requests = match self.requests.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        
+        RateLimiterStats {
+            total_ips: requests.len(),
+            max_entries: self.max_entries,
+            max_requests_per_second: self.max_requests_per_second,
+        }
+    }
+}
+
+/// 限流器统计信息
+#[derive(Debug, Clone)]
+pub struct RateLimiterStats {
+    pub total_ips: usize,
+    pub max_entries: usize,
+    pub max_requests_per_second: usize,
 }
 
 // 默认配置：每秒 10 个请求

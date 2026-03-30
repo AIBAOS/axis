@@ -603,6 +603,15 @@
 - **建议优化:** 4 项
 - **报告位置:** docs/test_report_phase380.md
 
+### OPT-1: RateLimiter 定期清理任务
+
+- **实施时间:** 2026-03-30 23:30 UTC
+- **状态:** ✅ 已完成
+- **修改文件:**
+  - `src/middleware/rate_limiter.rs` - 添加 `start_cleanup_task()` 方法
+  - `src/main.rs` - 启动后台清理任务
+- **效果:** 每 5 分钟自动清理 60 秒未访问的 IP，防止内存无限增长
+
 ### 性能优化修复 (Bug #58, #60, #61, #62)
 
 | Bug | 描述 | 状态 |

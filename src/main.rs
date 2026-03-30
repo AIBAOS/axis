@@ -532,6 +532,10 @@ async fn main() -> std::io::Result<()> {
 
     // Bug #52 修复：创建 API 限流器（每秒最多 10 个请求/IP）
     let rate_limiter = RateLimiter::new(10);
+    
+    // OPT-1: 启动后台定期清理任务（每 5 分钟清理 60 秒未访问的 IP）
+    rate_limiter.start_cleanup_task(300, 60);
+    log::info!("RateLimiter cleanup task started (interval: 300s, max_age: 60s)");
 
     HttpServer::new(move || {
         App::new()
