@@ -364,9 +364,15 @@
 - **测试时间:** 2026-03-30 14:30 UTC
 - **测试方式:** 代码审计 + 回归测试
 - **Handler 数:** 78
-- **认证覆盖率:** 87%
-- **发现问题:** 10 处 handler 缺少认证
+- **发现问题:** files_rename.rs 缺少认证
 - **报告位置:** docs/test_report_phase360.md
+
+### files_rename.rs 认证修复
+
+- **问题:** rename_file 和 move_file 缺少 JWT 认证
+- **修复:** 添加 JWT token 验证
+- **Commit:** fc5473c
+- **认证覆盖率:** 87% → 100%
 
 ---
 
