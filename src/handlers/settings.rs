@@ -33,7 +33,7 @@ static SETTINGS: Lazy<Mutex<serde_json::Map<String, serde_json::Value>>> = Lazy:
 });
 
 fn get_settings_map() -> serde_json::Map<String, serde_json::Value> {
-    let settings = SETTINGS.lock().unwrap();
+    let settings = SETTINGS.lock().expect("SETTINGS lock poisoned");
     settings.clone()
 }
 
@@ -62,7 +62,7 @@ pub async fn get_all_settings(
         })));
     }
 
-    let _claims = jwt_service.validate_token(token.unwrap())
+    let token_val = token.ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing token"))?; let _claims = jwt_service.validate_token(&token_val)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
 
     let settings = get_settings_map();
@@ -90,7 +90,7 @@ pub async fn get_setting(
         })));
     }
 
-    let _claims = jwt_service.validate_token(token.unwrap())
+    let token_val = token.ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing token"))?; let _claims = jwt_service.validate_token(&token_val)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
 
     let key = path.into_inner();
@@ -139,7 +139,7 @@ pub async fn update_setting(
     
     settings.insert(key.clone(), payload.value.clone());
     
-    let mut writable = SETTINGS.lock().unwrap();
+    let mut writable = SETTINGS.lock().expect("SETTINGS lock poisoned");
     *writable = settings;
     
     Ok(HttpResponse::Ok().json(Setting {

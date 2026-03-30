@@ -84,11 +84,11 @@ pub async fn create_volume_snapshot(
         audience: "axis-users".to_string(),
         exp: (std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_default()
             .as_secs() + 3600),
         iat: std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_default()
             .as_secs(),
         roles: vec!["admin".to_string()],
         permissions: vec![],
@@ -135,7 +135,7 @@ pub async fn create_volume_snapshot(
         }));
     }
 
-    let (_, volume_name) = volume.unwrap();
+    let (_, volume_name) = volume.expect("Volume should exist after check");
 
     // 5. 模拟快照名称唯一性检查
     let existing_snapshots = vec![

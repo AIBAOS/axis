@@ -38,7 +38,7 @@ fn validate_auth(req: &HttpRequest, jwt_service: &web::Data<JwtService>) -> Resu
         })));
     }
 
-    jwt_service.validate_token(token.unwrap())
+    jwt_service.validate_token(&token.expect("Token should exist after check"))
         .map_err(|_| HttpResponse::Unauthorized().json(serde_json::json!({
             "success": false,
             "message": "Invalid token"
@@ -133,7 +133,7 @@ pub async fn get_file_audit_stats(
         *by_operation.entry(op.to_string()).or_insert(0) += 1;
     }
     
-    stats.insert("by_operation".to_string(), serde_json::to_value(by_operation).unwrap());
+    stats.insert("by_operation".to_string(), serde_json::to_value(by_operation).unwrap_or(serde_json::Value::Null));
     
     Ok(HttpResponse::Ok().json(serde_json::Value::Object(stats)))
 }
@@ -173,7 +173,7 @@ pub fn log_file_operation(
     ip_address: &str,
     details: Option<&str>,
 ) {
-    let mut logs = LOGS.lock().unwrap();
+    let mut logs = LOGS.lock().expect("LOGS lock poisoned");
     let id = logs.len() as u64 + 1;
     logs.push(FileAuditLog {
         id,
