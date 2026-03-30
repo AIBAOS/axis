@@ -1,7 +1,8 @@
-use actix_web::{web, HttpResponse, Result};
+use actix_web::{web, HttpRequest, HttpResponse, Result};
 use serde::Deserialize;
 
 use crate::models::file_audit::{FileAuditLog, FileOperation};
+use crate::services::jwt_service::JwtService;
 use chrono;
 
 #[derive(Debug, Deserialize)]
@@ -22,9 +23,41 @@ static LOGS: Lazy<Arc<Mutex<Vec<FileAuditLog>>>> = Lazy::new(|| {
     Arc::new(Mutex::new(Vec::new()))
 });
 
+/// JWT 认证辅助函数
+fn validate_auth(req: &HttpRequest, jwt_service: &web::Data<JwtService>) -> Result<crate::models::jwt::JwtClaims, HttpResponse> {
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if token.is_none() {
+        return Err(HttpResponse::Unauthorized().json(serde_json::json!({
+            "success": false,
+            "message": "Authentication required"
+        })));
+    }
+
+    jwt_service.validate_token(token.unwrap())
+        .map_err(|_| HttpResponse::Unauthorized().json(serde_json::json!({
+            "success": false,
+            "message": "Invalid token"
+        })))
+}
+
+/// 获取文件审计日志列表
+/// 需要登录用户访问
 pub async fn get_file_audit_logs(
+    http_req: HttpRequest,
     query: web::Query<QueryParams>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     let logs = LOGS.lock().map_err(|_| {
         actix_web::error::ErrorInternalServerError("Failed to acquire lock")
     })?;
@@ -42,9 +75,19 @@ pub async fn get_file_audit_logs(
     Ok(HttpResponse::Ok().json(filtered))
 }
 
+/// 获取单个审计日志
+/// 需要登录用户访问
 pub async fn get_file_audit_log_by_id(
+    http_req: HttpRequest,
     path: web::Path<u64>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     let logs = LOGS.lock().map_err(|_| {
         actix_web::error::ErrorInternalServerError("Failed to acquire lock")
     })?;
@@ -60,7 +103,18 @@ pub async fn get_file_audit_log_by_id(
     }
 }
 
-pub async fn get_file_audit_stats() -> Result<HttpResponse> {
+/// 获取审计统计
+/// 需要登录用户访问
+pub async fn get_file_audit_stats(
+    http_req: HttpRequest,
+    jwt_service: web::Data<JwtService>,
+) -> Result<HttpResponse> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     let logs = LOGS.lock().map_err(|_| {
         actix_web::error::ErrorInternalServerError("Failed to acquire lock")
     })?;
@@ -84,9 +138,19 @@ pub async fn get_file_audit_stats() -> Result<HttpResponse> {
     Ok(HttpResponse::Ok().json(serde_json::Value::Object(stats)))
 }
 
+/// 删除审计日志
+/// 需要登录用户访问
 pub async fn delete_file_audit_logs(
+    http_req: HttpRequest,
     query: web::Query<QueryParams>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     let mut logs = LOGS.lock().map_err(|_| {
         actix_web::error::ErrorInternalServerError("Failed to acquire lock")
     })?;
