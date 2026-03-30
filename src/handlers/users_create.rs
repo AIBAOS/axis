@@ -152,6 +152,24 @@ pub async fn create_user(
         }));
     }
 
+    // Bug #45 修复：添加用户名长度验证 (与 users.rs 保持一致)
+    if username.len() < 3 || username.len() > 50 {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "username must be between 3 and 50 characters".to_string(),
+            code: "INVALID_PARAMS".to_string(),
+        }));
+    }
+
+    // Bug #45 修复：验证用户名字符（只允许字母、数字、下划线、连字符）
+    if !username.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "username can only contain letters, numbers, underscores and hyphens".to_string(),
+            code: "INVALID_PARAMS".to_string(),
+        }));
+    }
+
     if password.is_empty() {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
             success: false,

@@ -89,6 +89,24 @@ pub async fn create_volume(
         }));
     }
 
+    // Bug #47 修复：添加卷名长度验证 (1-64 字符)
+    if req.name.len() > 64 {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "name must be 64 characters or less".to_string(),
+            code: "INVALID_PARAMS".to_string(),
+        }));
+    }
+
+    // Bug #47 修复：验证卷名字符（只允许字母、数字、下划线、连字符）
+    if !req.name.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "name can only contain letters, numbers, underscores and hyphens".to_string(),
+            code: "INVALID_PARAMS".to_string(),
+        }));
+    }
+
     if req.size_bytes == 0 {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
             success: false,

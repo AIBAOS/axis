@@ -120,6 +120,24 @@ pub async fn create_pool(
         }));
     }
 
+    // Bug #46 修复：验证名称字符（防止特殊字符）
+    if !payload.name.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-' || c == ' ') {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "name can only contain letters, numbers, spaces, underscores and hyphens".to_string(),
+            code: "INVALID_PARAMS".to_string(),
+        }));
+    }
+
+    // Bug #46 修复：禁止路径遍历字符
+    if payload.name.contains("..") || payload.name.contains('/') || payload.name.contains('\\') {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "name contains forbidden characters".to_string(),
+            code: "INVALID_PARAMS".to_string(),
+        }));
+    }
+
     if !is_valid_pool_type(&payload.pool_type) {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
             success: false,
