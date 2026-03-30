@@ -589,7 +589,7 @@ const isSelected = (id: number) => selectedUsers.value.includes(id)
 const toggleSelect = (id: number) => { const i = selectedUsers.value.indexOf(id); if (i >= 0) selectedUsers.value.splice(i, 1); else selectedUsers.value.push(id) }
 const toggleSelectAll = () => { if (allSelected.value) selectedUsers.value = []; else selectedUsers.value = filteredUsers.value.map(u => u.id) }
 
-const loadUsers = async () => { loading.value = true; try { const r = await api.users.list(); users.value = r.data.data || r.data || [] } catch (e) {} finally { loading.value = false } }
+const loadUsers = async () => { loading.value = true; try { const r = await api.users.list(); users.value = r.data.data || r.data || [] } catch (e) { showToast('error', '加载用户列表失败') } finally { loading.value = false } }
 const loadGroups = async () => { groups.value = [{ id: 1, name: 'admin', gid: 1000, description: '系统管理员', admin: true, members: [1] }, { id: 2, name: 'users', gid: 100, description: '普通用户', admin: false, members: [2, 3] }, { id: 3, name: 'developers', gid: 1001, description: '开发团队', admin: false, members: [] }] }
 
 const openEditModal = (u: any) => { editingUser.value = u; showEditModal.value = true }
@@ -603,7 +603,7 @@ const executeDelete = async () => { if (!deleteTarget.value) return; const delet
 
 const batchEnable = async () => { for (const id of selectedUsers.value) { const u = users.value.find(x => x.id === id); if (u && u.status !== 'active') await toggleUserStatus(u) } selectedUsers.value = [] }
 const batchDisable = async () => { for (const id of selectedUsers.value) { const u = users.value.find(x => x.id === id); if (u && u.status !== 'disabled') await toggleUserStatus(u) } selectedUsers.value = [] }
-const batchDelete = async () => { if (!confirm(`确定删除选中的 ${selectedUsers.value.length} 个用户吗？`)) return; for (const id of selectedUsers.value) { try { await api.users.delete(id) } catch (e) {} } showToast('success', '批量删除完成'); selectedUsers.value = []; loadUsers() }
+const batchDelete = async () => { if (!confirm(`确定删除选中的 ${selectedUsers.value.length} 个用户吗？`)) return; let failed = 0; for (const id of selectedUsers.value) { try { await api.users.delete(id) } catch (e) { failed++ } }; if (failed > 0) { showToast('error', `删除失败 ${failed} 个用户`) } else { showToast('success', '批量删除完成') }; selectedUsers.value = []; loadUsers() }
 
 // 用户组
 const saveGroup = async () => { if (!groupForm.value.name) return; if (editingGroup.value) { const i = groups.value.findIndex(g => g.id === editingGroup.value.id); if (i >= 0) groups.value[i] = { ...editingGroup.value, ...groupForm.value }; showToast('success', '用户组已更新') } else { groups.value.push({ id: Date.now(), ...groupForm.value, members: [] }); showToast('success', '用户组已创建') } showGroupModal.value = false; editingGroup.value = null; groupForm.value = { name: '', gid: 1000, description: '', admin: false } }

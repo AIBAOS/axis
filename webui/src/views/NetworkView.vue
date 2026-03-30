@@ -401,9 +401,9 @@ const vpnConfig = ref({
 const onlineCount = computed(() => interfaces.value.filter(i => i.status === 'up').length)
 
 // 加载数据
-const loadInterfaces = async () => { try { const r = await api.network.listInterfaces(); interfaces.value = r.data.data || r.data || [] } catch (e) {} }
-const loadConfig = async () => { try { const r = await api.network.listConfig(); const configs = r.data.data || r.data || []; if (configs.length > 0) { dnsConfig.value = { primary: configs[0].dns_primary || '8.8.8.8', secondary: configs[0].dns_secondary || '8.8.4.4' }; gatewayConfig.value = { gateway: configs[0].gateway || '', hostname: '' } } } catch (e) {} }
-const loadStats = async () => { try { const r = await api.system.resources(); networkStats.value = r.data.data?.network_io || r.data.network_io || { rx_bytes_sec: 0, tx_bytes_sec: 0 } } catch (e) {} }
+const loadInterfaces = async () => { try { const r = await api.network.listInterfaces(); interfaces.value = r.data.data || r.data || [] } catch (e) { showToast('error', '加载网络接口失败') } }
+const loadConfig = async () => { try { const r = await api.network.listConfig(); const configs = r.data.data || r.data || []; if (configs.length > 0) { dnsConfig.value = { primary: configs[0].dns_primary || '8.8.8.8', secondary: configs[0].dns_secondary || '8.8.4.4' }; gatewayConfig.value = { gateway: configs[0].gateway || '', hostname: '' } } } catch (e) { showToast('error', '加载网络配置失败') } }
+const loadStats = async () => { try { const r = await api.system.resources(); networkStats.value = r.data.data?.network_io || r.data.network_io || { rx_bytes_sec: 0, tx_bytes_sec: 0 } } catch (e) { /* 统计数据加载失败不影响用户体验 */ } }
 const refreshAll = async () => { loading.value = true; await Promise.all([loadInterfaces(), loadConfig(), loadStats()]); loading.value = false }
 
 // 编辑

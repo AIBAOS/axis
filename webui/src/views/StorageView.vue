@@ -401,10 +401,10 @@ const getTabCount = (id: string) => id === 'disks' ? disks.value.length : id ===
 
 const refreshAll = async () => { loading.value = true; await Promise.all([loadDisks(), loadPools(), loadVolumes(), loadShares(), loadSnapshots()]); loading.value = false }
 
-const loadDisks = async () => { try { const r = await api.storage.getDisks(); disks.value = r.data.disks || r.data || [] } catch (e) {} }
-const loadPools = async () => { try { const r = await api.storage.getPools(); pools.value = r.data.pools || r.data || [] } catch (e) {} }
-const loadShares = async () => { try { const r = await api.storage.getUsage(); storageUsage.value = r.data.data || r.data || { total_bytes: 0, used_bytes: 0, available_bytes: 0 } } catch (e) {} }
-const loadVolumes = async () => { try { const r = await api.storage.getVolumes?.(); volumes.value = r.data.volumes || r.data || [] } catch (e) {} }
+const loadDisks = async () => { try { const r = await api.storage.getDisks(); disks.value = r.data.disks || r.data || [] } catch (e) { showToast('error', '加载磁盘列表失败') } }
+const loadPools = async () => { try { const r = await api.storage.getPools(); pools.value = r.data.pools || r.data || [] } catch (e) { showToast('error', '加载存储池失败') } }
+const loadShares = async () => { try { const r = await api.storage.getUsage(); storageUsage.value = r.data.data || r.data || { total_bytes: 0, used_bytes: 0, available_bytes: 0 } } catch (e) { /* 存储使用率加载失败不影响主要功能 */ } }
+const loadVolumes = async () => { try { const r = await api.storage.getVolumes?.(); volumes.value = r.data.volumes || r.data || [] } catch (e) { showToast('error', '加载卷列表失败') } }
 
 const showSmartDetails = (d: any) => { selectedDisk.value = d }
 const showDiskDetail = (d: any) => { selectedDisk.value = d }

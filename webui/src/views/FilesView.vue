@@ -583,10 +583,15 @@ const executeDelete = async () => {
 
 const batchDelete = async () => {
   if (!confirm(`确定删除选中的 ${selectedItems.value.length} 项吗？`)) return
+  let failed = 0
   for (const item of selectedItems.value) {
-    try { await api.files.delete(item.path) } catch (e) {}
+    try { await api.files.delete(item.path) } catch (e) { failed++ }
   }
-  showToast('success', '批量删除完成')
+  if (failed > 0) {
+    showToast('error', `删除失败 ${failed} 项`)
+  } else {
+    showToast('success', '批量删除完成')
+  }
   selectedItems.value = []
   loadFiles()
 }
