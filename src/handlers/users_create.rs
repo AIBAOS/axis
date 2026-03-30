@@ -66,6 +66,40 @@ fn validate_email(email: &str) -> bool {
     email_regex.is_match(email)
 }
 
+/// 验证密码强度（Bug #21 修复）
+/// 要求：
+/// - 至少 8 个字符
+/// - 至少一个大写字母
+/// - 至少一个小写字母
+/// - 至少一个数字
+fn validate_password_strength(password: &str) -> Result<(), String> {
+    if password.len() < 8 {
+        return Err("Password must be at least 8 characters long".to_string());
+    }
+    
+    if password.len() > 128 {
+        return Err("Password must be at most 128 characters long".to_string());
+    }
+    
+    let has_uppercase = password.chars().any(|c| c.is_uppercase());
+    let has_lowercase = password.chars().any(|c| c.is_lowercase());
+    let has_digit = password.chars().any(|c| c.is_ascii_digit());
+    
+    if !has_uppercase {
+        return Err("Password must contain at least one uppercase letter".to_string());
+    }
+    
+    if !has_lowercase {
+        return Err("Password must contain at least one lowercase letter".to_string());
+    }
+    
+    if !has_digit {
+        return Err("Password must contain at least one digit".to_string());
+    }
+    
+    Ok(())
+}
+
 /// 创建用户（Phase 102）
 /// - JWT 认证，仅 admin 角色可访问
 /// - 验证用户名唯一性（409 Conflict）
@@ -134,11 +168,11 @@ pub async fn create_user(
         }));
     }
 
-    // 4. 验证密码强度（至少 8 位）
-    if password.len() < 8 {
+    // 4. 验证密码强度（Bug #21 修复：增强复杂度要求）
+    if let Err(msg) = validate_password_strength(password) {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
             success: false,
-            error: "password must be at least 8 characters long".to_string(),
+            error: msg,
             code: "WEAK_PASSWORD".to_string(),
         }));
     }
