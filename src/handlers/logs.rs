@@ -1,5 +1,7 @@
-use actix_web::{web, HttpResponse, Result};
+use actix_web::{web, HttpRequest, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
+
+use crate::services::jwt_service::JwtService;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum LogLevel {
@@ -26,9 +28,30 @@ pub struct QueryParams {
     pub until: Option<String>,
 }
 
+/// GET /api/v1/logs — 获取系统日志
+/// 需要登录用户访问（日志包含敏感信息）
 pub async fn get_logs(
+    req: HttpRequest,
     query: web::Query<QueryParams>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if token.is_none() {
+        return Ok(HttpResponse::Unauthorized().json(serde_json::json!({
+            "success": false,
+            "message": "Authentication required"
+        })));
+    }
+
+    let _claims = jwt_service.validate_token(token.unwrap())
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
+
     let level_filter = query.level.as_ref().and_then(|s| {
         match s.as_str() {
             "info" => Some(LogLevel::Info),
