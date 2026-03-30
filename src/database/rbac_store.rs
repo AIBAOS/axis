@@ -174,6 +174,20 @@ impl RbacRepository for SqliteRbacRepository {
         Ok(id as u64)
     }
 
+    /// 删除用户的所有角色关联 (Bug #45 修复)
+    /// 在删除用户时调用，确保数据一致性
+    pub fn remove_user_roles(&self, user_id: u64) -> Result<(), String> {
+        let conn = self.get_connection()?;
+        
+        conn.execute(
+            "DELETE FROM user_roles WHERE user_id = ?1",
+            params![user_id],
+        ).map_err(|e| format!("Delete user_roles failed: {}", e))?;
+
+        log::info!("Removed all role assignments for user {}", user_id);
+        Ok(())
+    }
+
     fn get_role(&self, role_id: u64) -> Option<Role> {
         let conn = self.get_connection().ok()?;
         let mut stmt = conn.prepare(

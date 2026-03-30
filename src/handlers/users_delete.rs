@@ -29,11 +29,13 @@ pub struct ErrorResponse {
 /// - 用户不存在返回 404 Not Found
 /// - 非 admin 访问返回 403 Forbidden
 /// - 不能删除自己（返回 400 Bad Request）
+/// - Bug #45 修复：删除用户时清理角色关联
 /// - 删除成功后返回 200 OK + { success: true, message: "User deleted" }
 pub async fn delete_user(
     req: HttpRequest,
     path: web::Path<u64>,
     user_repo: web::Data<SqliteUserRepository>,
+    rbac_repo: web::Data<SqliteRbacRepository>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
     // 1. JWT 认证 - 提取并验证 token
@@ -90,7 +92,13 @@ pub async fn delete_user(
         }
     };
 
-    // 5. 删除用户
+    // 5. Bug #45 修复：清理用户的角色关联
+    if let Err(e) = rbac_repo.get_ref().remove_user_roles(target_user_id) {
+        log::warn!("Failed to remove user roles for {}: {}", target_user_id, e);
+        // 继续执行删除用户，但记录警告
+    }
+
+    // 6. 删除用户
     user_repo.get_ref().delete(target_user_id)
         .map_err(|e| {
             log::error!("Failed to delete user {}: {}", target_user_id, e);
@@ -99,7 +107,7 @@ pub async fn delete_user(
 
     log::info!("User {} ({}) deleted by admin", target_user_id, user.username);
 
-    // 6. 返回 200 OK + 删除成功消息
+    // 7. 返回 200 OK + 删除成功消息
     Ok(HttpResponse::Ok().json(DeleteUserResponse {
         success: true,
         message: "User deleted".to_string(),
