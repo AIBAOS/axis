@@ -136,7 +136,17 @@ pub async fn login(
     };
 
     // 6. 返回登录成功响应
-    let token_data = token_response.data.unwrap();
+    let token_data = match token_response.data {
+        Some(data) => data,
+        None => {
+            log::error!("Token generation returned no data");
+            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: "Token generation failed".to_string(),
+                code: "INTERNAL_ERROR".to_string(),
+            }));
+        }
+    };
     
     Ok(HttpResponse::Ok().json(LoginResponse {
         success: true,

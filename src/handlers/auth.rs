@@ -109,7 +109,18 @@ pub async fn login(
     // 3. 生成 JWT Token
     match jwt_service.generate_token(user.id, &user.username, user.roles.clone(), user.permissions.clone()) {
         Ok(token_response) => {
-            let token_data = token_response.data.unwrap();
+            let token_data = match token_response.data {
+                Some(data) => data,
+                None => {
+                    log::error!("Token generation returned no data");
+                    let response = LoginResponseV2 {
+                        success: false,
+                        message: "Token generation failed".to_string(),
+                        data: None,
+                    };
+                    return HttpResponse::InternalServerError().json(response);
+                }
+            };
             let response = LoginResponseV2 {
                 success: true,
                 message: "登录成功".to_string(),
@@ -172,7 +183,18 @@ pub async fn refresh_token(
 
         match new_token {
             Ok(token_response) => {
-                let token_data = token_response.data.unwrap();
+                let token_data = match token_response.data {
+                    Some(data) => data,
+                    None => {
+                        log::error!("Token refresh returned no data");
+                        let response = LoginResponseV2 {
+                            success: false,
+                            message: "Token refresh failed".to_string(),
+                            data: None,
+                        };
+                        return HttpResponse::InternalServerError().json(response);
+                    }
+                };
                 let response = LoginResponseV2 {
                     success: true,
                     message: "Token 刷新成功".to_string(),
