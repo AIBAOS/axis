@@ -1,11 +1,13 @@
 // 系统更新/固件管理处理器
 // 包含：检查更新、下载、安装、取消等操作
 
-use actix_web::{web, HttpResponse, Result};
+use actix_web::{web, HttpRequest, HttpResponse, Result};
 use actix_web::web::Json;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Mutex;
+
+use crate::services::jwt_service::JwtService;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UpdateInfo {
@@ -71,12 +73,34 @@ static UPDATE_STATUS: Mutex<UpdateStatus> = Mutex::new(UpdateStatus {
     last_install: None,
 });
 
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    Ok(())
+/// 检查是否为管理员
+fn is_admin(claims: &crate::models::jwt::JwtClaims) -> bool {
+    claims.roles.iter().any(|r| r.to_lowercase() == "admin")
 }
 
-pub async fn check_update() -> Result<HttpResponse> {
+/// GET /api/v1/system/updates/check — 检查更新
+/// 需要登录用户访问
+pub async fn check_update(
+    req: HttpRequest,
+    jwt_service: web::Data<JwtService>,
+) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if token.is_none() {
+        return Ok(HttpResponse::Unauthorized().json(json!({
+            "success": false,
+            "message": "Authentication required"
+        })));
+    }
+
+    let _claims = jwt_service.validate_token(token.unwrap())
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
+
     let now = chrono::Utc::now().to_rfc3339();
     let mut status = UPDATE_STATUS.lock().unwrap();
     status.last_check = Some("2026-03-19T11:55:00Z");
@@ -115,7 +139,29 @@ pub async fn check_update() -> Result<HttpResponse> {
     }))
 }
 
-pub async fn get_update_info() -> Result<HttpResponse> {
+/// GET /api/v1/system/updates/info — 获取更新信息
+/// 需要登录用户访问
+pub async fn get_update_info(
+    req: HttpRequest,
+    jwt_service: web::Data<JwtService>,
+) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if token.is_none() {
+        return Ok(HttpResponse::Unauthorized().json(json!({
+            "success": false,
+            "message": "Authentication required"
+        })));
+    }
+
+    let _claims = jwt_service.validate_token(token.unwrap())
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
+
     let _status = UPDATE_STATUS.lock().unwrap();
     
     Ok(HttpResponse::Ok().json(json!({
@@ -132,9 +178,32 @@ pub async fn get_update_info() -> Result<HttpResponse> {
     })))
 }
 
+/// POST /api/v1/system/updates/download — 下载更新
+/// 仅管理员可执行
 pub async fn download_update(
+    req: HttpRequest,
+    jwt_service: web::Data<JwtService>,
     Json(_payload): web::Json<DownloadRequest>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing Authorization header"))?;
+
+    let claims = jwt_service.validate_token(token)
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
+
+    // 仅管理员可下载更新
+    if !is_admin(&claims) {
+        return Ok(HttpResponse::Forbidden().json(json!({
+            "success": false,
+            "message": "Only admin users can download system updates"
+        })));
+    }
+
     let mut status = UPDATE_STATUS.lock().unwrap();
     
     if status.current_status != "idle" && status.current_status != "downloaded" {
@@ -157,9 +226,32 @@ pub async fn download_update(
     })))
 }
 
+/// POST /api/v1/system/updates/install — 安装更新
+/// 仅管理员可执行
 pub async fn install_update(
+    req: HttpRequest,
+    jwt_service: web::Data<JwtService>,
     Json(_payload): web::Json<InstallRequest>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing Authorization header"))?;
+
+    let claims = jwt_service.validate_token(token)
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
+
+    // 仅管理员可安装更新
+    if !is_admin(&claims) {
+        return Ok(HttpResponse::Forbidden().json(json!({
+            "success": false,
+            "message": "Only admin users can install system updates"
+        })));
+    }
+
     let mut status = UPDATE_STATUS.lock().unwrap();
     
     if status.current_status != "downloaded" && status.progress < 100 {
@@ -179,13 +271,59 @@ pub async fn install_update(
     }))
 }
 
-pub async fn get_update_status() -> Result<HttpResponse> {
+/// GET /api/v1/system/updates/status — 获取更新状态
+/// 需要登录用户访问
+pub async fn get_update_status(
+    req: HttpRequest,
+    jwt_service: web::Data<JwtService>,
+) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if token.is_none() {
+        return Ok(HttpResponse::Unauthorized().json(json!({
+            "success": false,
+            "message": "Authentication required"
+        })));
+    }
+
+    let _claims = jwt_service.validate_token(token.unwrap())
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
+
     let status = UPDATE_STATUS.lock().unwrap();
     
     Ok(HttpResponse::Ok().json(status.clone()))
 }
 
-pub async fn cancel_update() -> Result<HttpResponse> {
+/// POST /api/v1/system/updates/cancel — 取消更新
+/// 仅管理员可执行
+pub async fn cancel_update(
+    req: HttpRequest,
+    jwt_service: web::Data<JwtService>,
+) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing Authorization header"))?;
+
+    let claims = jwt_service.validate_token(token)
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
+
+    // 仅管理员可取消更新
+    if !is_admin(&claims) {
+        return Ok(HttpResponse::Forbidden().json(json!({
+            "success": false,
+            "message": "Only admin users can cancel system updates"
+        })));
+    }
+
     let mut status = UPDATE_STATUS.lock().unwrap();
     
     if status.current_status == "idle" || status.current_status == "downloaded" {
