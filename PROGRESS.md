@@ -269,6 +269,38 @@
 
 ---
 
+### Phase 354: 表单输入验证优化
+
+- **Commit:** d889f25
+- 创建 utils/validators.ts 通用验证工具
+- UserModal.vue 实时验证用户名/邮箱/密码
+- StorageView.vue Pool/Volume 名称验证
+- FilesView.vue 文件夹/重命名验证
+- ShareModal.vue 共享名称验证
+- 与后端 Bug #45-#47 修复保持一致
+
+### Bug #50: 后端文件名长度限制
+
+- **严重度:** 🟠 中等
+- **问题:** files_upload.rs 缺少文件名长度限制
+- **修复:** 添加 255 字符限制
+- **Commit:** bcbaa71
+
+---
+
+## 🧪 测试报告
+
+### Phase 354 表单验证联调测试
+
+- **测试时间:** 2026-03-30 11:02 UTC
+- **测试方式:** 代码审计 + 前后端对比
+- **测试结果:** ✅ 通过
+- **前后端一致性:** 95%
+- **发现问题:** Bug #50 (已修复)
+- **报告位置:** docs/test_report_phase354.md
+
+---
+
 ### Phase 353: 统一 Toast 系统
 
 - **Commit:** 61fd9d6
