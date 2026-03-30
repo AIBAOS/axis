@@ -44,7 +44,7 @@ pub async fn create_share(
         }));
     }
 
-    let _claims = match jwt_service.validate_token(token.unwrap()) {
+    let _claims = match jwt_service.validate_token(&token.expect("Token should exist")) {
         Ok(c) => c,
         Err(_) => {
             return HttpResponse::Unauthorized().json(serde_json::json!({

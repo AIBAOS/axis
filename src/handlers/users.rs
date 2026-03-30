@@ -388,7 +388,7 @@ pub async fn create_user(
             code: "INVALID_ROLE".to_string(),
         }));
     }
-    let role = role.unwrap();
+    let role = role.expect("Role should exist after check");
 
     // 5. bcrypt 密码加密
     let password_hash = bcrypt::hash(&payload.password, bcrypt::DEFAULT_COST)
@@ -400,7 +400,7 @@ pub async fn create_user(
     // 6. 创建用户记录
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
+        .unwrap_or_default()
         .as_secs();
 
     let mut new_user = crate::models::user::User {

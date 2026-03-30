@@ -61,7 +61,7 @@ pub async fn get_apps(
         })));
     }
 
-    let _claims = jwt_service.validate_token(token.unwrap())
+    let _claims = jwt_service.validate_token(&token.expect("Token should exist"))
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
 
     let page = query.page.unwrap_or(1).max(1);
@@ -117,7 +117,7 @@ pub async fn get_app(
         })));
     }
 
-    let _claims = jwt_service.validate_token(token.unwrap())
+    let _claims = jwt_service.validate_token(&token.expect("Token should exist"))
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
 
     let id = path.into_inner();

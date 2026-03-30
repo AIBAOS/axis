@@ -96,7 +96,7 @@ fn validate_auth(req: &HttpRequest, jwt_service: &web::Data<JwtService>) -> Resu
         })));
     }
 
-    jwt_service.validate_token(token.unwrap())
+    jwt_service.validate_token(&token.expect("Token should exist"))
         .map_err(|_| HttpResponse::Unauthorized().json(serde_json::json!({
             "success": false,
             "message": "Invalid token"
@@ -215,7 +215,7 @@ pub async fn get_downloads(
 
     // 状态过滤（支持 all）
     if status_filter != Some("all") && status_filter.is_some() {
-        all_tasks.retain(|t| t.status == status_filter.unwrap());
+        all_tasks.retain(|t| t.status == status_filter.unwrap_or("all"));
     }
 
     // 排序
