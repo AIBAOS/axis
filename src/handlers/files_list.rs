@@ -1,11 +1,13 @@
 // Phase 38 文件列表 API
 // 返回指定目录下的文件/文件夹列表
 
-use actix_web::{web, HttpResponse, Error};
+use actix_web::{web, HttpRequest, HttpResponse, Error};
 use serde::Deserialize;
 use std::path::PathBuf;
 use std::fs;
 use std::time::UNIX_EPOCH;
+
+use crate::services::jwt_service::JwtService;
 
 /// 文件信息
 #[derive(serde::Serialize)]
@@ -23,10 +25,41 @@ pub struct FilesQuery {
     pub path: Option<String>,
 }
 
+/// JWT 认证辅助函数
+fn validate_auth(req: &HttpRequest, jwt_service: &web::Data<JwtService>) -> Result<crate::models::jwt::JwtClaims, HttpResponse> {
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if token.is_none() {
+        return Err(HttpResponse::Unauthorized().json(serde_json::json!({
+            "success": false,
+            "message": "Authentication required"
+        })));
+    }
+
+    jwt_service.validate_token(token.unwrap())
+        .map_err(|_| HttpResponse::Unauthorized().json(serde_json::json!({
+            "success": false,
+            "message": "Invalid token"
+        })))
+}
+
 /// 获取文件列表
+/// 需要登录用户访问
 pub async fn list_files(
+    http_req: HttpRequest,
     query: web::Query<FilesQuery>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     // 获取文件根目录
     let root_dir = PathBuf::from("/data/uploads");
 
