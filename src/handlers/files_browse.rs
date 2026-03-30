@@ -124,12 +124,46 @@ pub async fn browse_files(
     let page = query.page.unwrap_or(1);
     let limit = query.limit.unwrap_or(50).min(200);
 
+    // Bug #51 修复：路径遍历验证
+    // 禁止 .. 路径遍历
+    if path.contains("..") {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "Path contains forbidden sequence '..'".to_string(),
+            code: "PATH_TRAVERSAL".to_string(),
+        }));
+    }
+
+    // 禁止 null 字节
+    if path.contains('\0') {
+        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+            success: false,
+            error: "Path contains invalid null byte".to_string(),
+            code: "INVALID_PATH".to_string(),
+        }));
+    }
+
     // 3. 构建文件系统路径
     let base_dir = PathBuf::from("/data/files");
     let target_path = if path == "/" {
         base_dir.clone()
     } else {
         base_dir.join(path.trim_start_matches('/'))
+    };
+
+    // Bug #51 修复：验证路径仍在 base_dir 内
+    // 使用 canonicalize 防止符号链接逃逸
+    if target_path.exists() {
+        if let (Ok(canonical_target), Ok(canonical_base)) = 
+            (std::fs::canonicalize(&target_path), std::fs::canonicalize(&base_dir)) {
+            if !canonical_target.starts_with(&canonical_base) {
+                return Ok(HttpResponse::Forbidden().json(ErrorResponse {
+                    success: false,
+                    error: "Access denied: path outside allowed directory".to_string(),
+                    code: "FORBIDDEN".to_string(),
+                }));
+            }
+        }
     };
 
     // 4. 验证路径存在
