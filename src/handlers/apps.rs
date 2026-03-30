@@ -1,12 +1,13 @@
 // 应用/插件管理处理器（SQLite 持久化版）
 // 包含：列表、详情、安装、卸载
 
-use actix_web::{web, HttpResponse, Result};
+use actix_web::{web, HttpRequest, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 
 use crate::database::app_store::SqliteAppRepository;
+use crate::services::jwt_service::JwtService;
 
 /// 查询参数
 #[derive(Debug, Deserialize)]
@@ -33,11 +34,36 @@ pub struct InstallAppRequest {
 
 fn default_category() -> String { "other".to_string() }
 
+/// 检查是否为管理员
+fn is_admin(claims: &crate::models::jwt::JwtClaims) -> bool {
+    claims.roles.iter().any(|r| r.to_lowercase() == "admin")
+}
+
 /// GET /api/v1/apps — 应用列表（分页 + 筛选）
+/// 需要登录用户访问
 pub async fn get_apps(
+    req: HttpRequest,
     query: web::Query<AppQuery>,
     repo: web::Data<Arc<SqliteAppRepository>>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if token.is_none() {
+        return Ok(HttpResponse::Unauthorized().json(json!({
+            "success": false,
+            "message": "Authentication required"
+        })));
+    }
+
+    let _claims = jwt_service.validate_token(token.unwrap())
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
+
     let page = query.page.unwrap_or(1).max(1);
     let per_page = std::cmp::min(query.per_page.unwrap_or(20), 100);
 
@@ -70,10 +96,30 @@ pub async fn get_apps(
 }
 
 /// GET /api/v1/apps/{id} — 应用详情
+/// 需要登录用户访问
 pub async fn get_app(
+    req: HttpRequest,
     path: web::Path<i64>,
     repo: web::Data<Arc<SqliteAppRepository>>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if token.is_none() {
+        return Ok(HttpResponse::Unauthorized().json(json!({
+            "success": false,
+            "message": "Authentication required"
+        })));
+    }
+
+    let _claims = jwt_service.validate_token(token.unwrap())
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
+
     let id = path.into_inner();
     match repo.get_app_by_id(id) {
         Ok(Some(app)) => Ok(HttpResponse::Ok().json(app)),
@@ -89,10 +135,32 @@ pub async fn get_app(
 }
 
 /// POST /api/v1/apps — 安装应用
+/// 仅管理员可访问
 pub async fn install_app(
+    req: HttpRequest,
     payload: web::Json<InstallAppRequest>,
     repo: web::Data<Arc<SqliteAppRepository>>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing Authorization header"))?;
+
+    let claims = jwt_service.validate_token(token)
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
+
+    // 仅管理员可安装应用
+    if !is_admin(&claims) {
+        return Ok(HttpResponse::Forbidden().json(json!({
+            "success": false,
+            "message": "Only admin users can install applications"
+        })));
+    }
+
     match repo.install_app(
         &payload.name,
         &payload.version,
@@ -110,10 +178,32 @@ pub async fn install_app(
 }
 
 /// DELETE /api/v1/apps/{id} — 卸载应用
+/// 仅管理员可访问
 pub async fn uninstall_app(
+    req: HttpRequest,
     path: web::Path<i64>,
     repo: web::Data<Arc<SqliteAppRepository>>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing Authorization header"))?;
+
+    let claims = jwt_service.validate_token(token)
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
+
+    // 仅管理员可卸载应用
+    if !is_admin(&claims) {
+        return Ok(HttpResponse::Forbidden().json(json!({
+            "success": false,
+            "message": "Only admin users can uninstall applications"
+        })));
+    }
+
     let id = path.into_inner();
     match repo.uninstall_app(id) {
         Ok(true) => Ok(HttpResponse::Ok().json(json!({
