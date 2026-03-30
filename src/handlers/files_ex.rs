@@ -227,12 +227,12 @@ pub async fn list_files(
                 created_at: metadata.created()
                     .unwrap_or(std::time::SystemTime::now())
                     .duration_since(UNIX_EPOCH)
-                    .unwrap()
+                    .unwrap_or_default()
                     .as_secs(),
                 updated_at: metadata.modified()
                     .unwrap_or(std::time::SystemTime::now())
                     .duration_since(UNIX_EPOCH)
-                    .unwrap()
+                    .unwrap_or_default()
                     .as_secs(),
                 mime_type: mime_type.to_string(),
             });
@@ -355,11 +355,11 @@ pub async fn create_folder(
             is_dir: true,
             created_at: std::time::SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_default()
                 .as_secs(),
             updated_at: std::time::SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_default()
                 .as_secs(),
             mime_type: "directory".to_string(),
         }),
@@ -407,11 +407,11 @@ pub async fn rename_file(
             is_dir: new_path.is_dir(),
             created_at: std::time::SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_default()
                 .as_secs(),
             updated_at: std::time::SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_default()
                 .as_secs(),
             mime_type: if new_path.is_dir() { "directory" } else { "application/octet-stream" }.to_string(),
         }),

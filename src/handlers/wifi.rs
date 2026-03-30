@@ -82,7 +82,7 @@ pub async fn scan_wifi(
         })));
     }
 
-    let _claims = jwt_service.validate_token(token.unwrap())
+    let token_val = token.ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing token"))?; let _claims = jwt_service.validate_token(&token_val)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
 
     let frequency_filter = query.frequency.as_deref();
@@ -272,7 +272,7 @@ pub async fn get_wifi_status(
         })));
     }
 
-    let _claims = jwt_service.validate_token(token.unwrap())
+    let token_val = token.ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing token"))?; let _claims = jwt_service.validate_token(&token_val)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
@@ -306,7 +306,7 @@ pub async fn list_wifi_interfaces(
         })));
     }
 
-    let _claims = jwt_service.validate_token(token.unwrap())
+    let token_val = token.ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing token"))?; let _claims = jwt_service.validate_token(&token_val)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
 
     Ok(HttpResponse::Ok().json(vec![
@@ -387,7 +387,7 @@ pub async fn list_saved_wifi(
         })));
     }
 
-    let _claims = jwt_service.validate_token(token.unwrap())
+    let token_val = token.ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing token"))?; let _claims = jwt_service.validate_token(&token_val)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
 
     Ok(HttpResponse::Ok().json(vec![
