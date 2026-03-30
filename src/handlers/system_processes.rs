@@ -210,16 +210,16 @@ pub async fn get_system_processes(
     match sort_field.as_str() {
         "cpu" => all_processes.sort_by(|a, b| {
             if order_desc {
-                b.cpu_percent.partial_cmp(&a.cpu_percent).unwrap()
+                b.cpu_percent.partial_cmp(&a.cpu_percent).unwrap_or(std::cmp::Ordering::Equal)
             } else {
-                a.cpu_percent.partial_cmp(&b.cpu_percent).unwrap()
+                a.cpu_percent.partial_cmp(&b.cpu_percent).unwrap_or(std::cmp::Ordering::Equal)
             }
         }),
         "memory" => all_processes.sort_by(|a, b| {
             if order_desc {
-                b.memory_percent.partial_cmp(&a.memory_percent).unwrap()
+                b.memory_percent.partial_cmp(&a.memory_percent).unwrap_or(std::cmp::Ordering::Equal)
             } else {
-                a.memory_percent.partial_cmp(&b.memory_percent).unwrap()
+                a.memory_percent.partial_cmp(&b.memory_percent).unwrap_or(std::cmp::Ordering::Equal)
             }
         }),
         _ => all_processes.sort_by(|a, b| {
