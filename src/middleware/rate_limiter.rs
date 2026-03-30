@@ -14,6 +14,7 @@ use tracing::debug;
 pub struct RateLimiter {
     requests: Arc<Mutex<HashMap<IpAddr, Vec<Instant>>>>,
     max_requests_per_second: usize,
+    max_entries: usize, // 最大 IP 条目数，防止内存无限增长
 }
 
 impl RateLimiter {
@@ -21,6 +22,7 @@ impl RateLimiter {
         Self {
             requests: Arc::new(Mutex::new(HashMap::new())),
             max_requests_per_second,
+            max_entries: 10000, // 默认最大 10000 个 IP
         }
     }
 
@@ -42,23 +44,20 @@ impl RateLimiter {
 
         if entry.len() < self.max_requests_per_second {
             entry.push(now);
+            
+            // 防止内存无限增长：如果条目数超过阈值，清理最老的条目
+            if requests.len() > self.max_entries {
+                self.cleanup_old_entries_internal(&mut requests, 60);
+            }
             true
         } else {
             false
         }
     }
 
-    // 清理过期条目（默认 60 秒内未访问即删除）
-    pub fn cleanup_old_entries(&self, max_age_secs: u64) {
+    // 内部清理方法，避免重复获取锁
+    fn cleanup_old_entries_internal(&self, requests: &mut HashMap<IpAddr, Vec<Instant>>, max_age_secs: u64) {
         let now = Instant::now();
-        let mut requests = match self.requests.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => {
-                debug!("RateLimiter cleanup mutex poisoned, recovering");
-                poisoned.into_inner()
-            }
-        };
-
         let old_keys: Vec<IpAddr> = requests
             .iter()
             .filter_map(|(ip, timestamps)| {
@@ -80,6 +79,19 @@ impl RateLimiter {
         }
 
         debug!("RateLimiter cleaned {} stale entries", old_keys.len());
+    }
+
+    // 清理过期条目（默认 60 秒内未访问即删除）
+    pub fn cleanup_old_entries(&self, max_age_secs: u64) {
+        let mut requests = match self.requests.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                debug!("RateLimiter cleanup mutex poisoned, recovering");
+                poisoned.into_inner()
+            }
+        };
+
+        self.cleanup_old_entries_internal(&mut requests, max_age_secs);
     }
 }
 

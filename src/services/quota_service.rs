@@ -18,27 +18,38 @@ impl QuotaService {
         }
     }
 
+    /// 安全获取仓库锁，处理 mutex poison
+    fn get_repo(&self) -> std::sync::MutexGuard<'_, SqliteQuotaRepository> {
+        match self.repository.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                eprintln!("QuotaService mutex poisoned, recovering");
+                poisoned.into_inner()
+            }
+        }
+    }
+
     /// 获取用户配额
     pub fn get_quota(&self, user_id: u64) -> Option<UserQuota> {
-        let repo = self.repository.lock().unwrap();
+        let repo = self.get_repo();
         repo.get_quota(user_id).ok().flatten()
     }
 
     /// 设置用户配额
     pub fn set_quota(&self, user_id: u64, quota_bytes: u64) -> Result<(), String> {
-        let repo = self.repository.lock().unwrap();
+        let repo = self.get_repo();
         repo.set_quota(user_id, quota_bytes)
     }
 
     /// 更新已用空间
     pub fn update_used(&self, user_id: u64, delta: i64) -> Result<UserQuota, String> {
-        let repo = self.repository.lock().unwrap();
+        let repo = self.get_repo();
         repo.update_used(user_id, delta)
     }
 
     /// 列出所有配额
     pub fn list_quotas(&self, page: u64, page_size: u64) -> Vec<UserQuota> {
-        let repo = self.repository.lock().unwrap();
+        let repo = self.get_repo();
         match repo.list_quotas(page, page_size) {
             Ok(quotas) => quotas,
             Err(_) => Vec::new(),

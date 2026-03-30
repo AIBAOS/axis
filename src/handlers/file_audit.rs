@@ -23,6 +23,9 @@ static LOGS: Lazy<Arc<Mutex<Vec<FileAuditLog>>>> = Lazy::new(|| {
     Arc::new(Mutex::new(Vec::new()))
 });
 
+// 最大日志条目数，防止内存无限增长
+const MAX_LOG_ENTRIES: usize = 100000;
+
 /// JWT 认证辅助函数
 fn validate_auth(req: &HttpRequest, jwt_service: &web::Data<JwtService>) -> Result<crate::models::jwt::JwtClaims, HttpResponse> {
     let token = req
@@ -174,6 +177,13 @@ pub fn log_file_operation(
     details: Option<&str>,
 ) {
     let mut logs = LOGS.lock().expect("LOGS lock poisoned");
+    
+    // 防止内存无限增长：超过最大条目数时删除最老的 10%
+    if logs.len() >= MAX_LOG_ENTRIES {
+        let remove_count = MAX_LOG_ENTRIES / 10;
+        logs.drain(0..remove_count);
+    }
+    
     let id = logs.len() as u64 + 1;
     logs.push(FileAuditLog {
         id,

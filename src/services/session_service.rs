@@ -51,7 +51,13 @@ impl SessionService {
             last_activity: now,
         };
 
-        let repo = self.sessions.lock().unwrap();
+        let repo = match self.sessions.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                eprintln!("SessionService mutex poisoned, recovering");
+                poisoned.into_inner()
+            }
+        };
         if let Err(e) = repo.create_session(&session) {
             eprintln!("Failed to create session: {}", e);
         }
@@ -61,32 +67,62 @@ impl SessionService {
 
     /// 获取会话
     pub fn get_session(&self, session_id: &str) -> Option<Session> {
-        let repo = self.sessions.lock().unwrap();
+        let repo = match self.sessions.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                eprintln!("SessionService mutex poisoned, recovering");
+                poisoned.into_inner()
+            }
+        };
         repo.get_session(session_id).ok().flatten()
     }
 
     /// 更新最后活动时间
     pub fn update_activity(&self, session_id: &str) -> bool {
-        let repo = self.sessions.lock().unwrap();
+        let repo = match self.sessions.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                eprintln!("SessionService mutex poisoned, recovering");
+                poisoned.into_inner()
+            }
+        };
         repo.update_activity(session_id).unwrap_or(false)
     }
 
     /// 删除会话
     pub fn delete_session(&self, session_id: &str) -> bool {
-        let repo = self.sessions.lock().unwrap();
+        let repo = match self.sessions.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                eprintln!("SessionService mutex poisoned, recovering");
+                poisoned.into_inner()
+            }
+        };
         repo.delete_session(session_id).unwrap_or(false)
     }
 
     /// 列出会话
     pub fn list_sessions(&self) -> Vec<Session> {
-        let _repo = self.sessions.lock().unwrap();
+        let _repo = match self.sessions.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                eprintln!("SessionService mutex poisoned, recovering");
+                poisoned.into_inner()
+            }
+        };
         // TODO: 从数据库查询所有会话
         Vec::new()
     }
 
     /// 根据用户ID获取会话
     pub fn get_sessions_by_user(&self, user_id: u64) -> Vec<Session> {
-        let repo = self.sessions.lock().unwrap();
+        let repo = match self.sessions.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                eprintln!("SessionService mutex poisoned, recovering");
+                poisoned.into_inner()
+            }
+        };
         repo.get_sessions_by_user(user_id).unwrap_or_default()
     }
 }
