@@ -1,9 +1,10 @@
 // 配额管理处理器
 // 包含：获取/设置/查询用户配额
 
-use actix_web::{web, HttpResponse, Error, Result};
+use actix_web::{web, HttpRequest, HttpResponse, Error, Result};
 use serde::{Deserialize, Serialize};
 
+use crate::services::jwt_service::JwtService;
 use crate::services::quota_service::QuotaService;
 
 /// 设置配额请求
@@ -29,11 +30,42 @@ pub struct QuotaData {
     pub remaining_bytes: u64,
 }
 
+/// JWT 认证辅助函数
+fn validate_auth(req: &HttpRequest, jwt_service: &web::Data<JwtService>) -> Result<crate::models::jwt::JwtClaims, HttpResponse> {
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if token.is_none() {
+        return Err(HttpResponse::Unauthorized().json(serde_json::json!({
+            "success": false,
+            "message": "Authentication required"
+        })));
+    }
+
+    jwt_service.validate_token(token.unwrap())
+        .map_err(|_| HttpResponse::Unauthorized().json(serde_json::json!({
+            "success": false,
+            "message": "Invalid token"
+        })))
+}
+
 /// 获取用户配额
+/// 需要登录用户访问
 pub async fn get_quota(
+    http_req: HttpRequest,
     path: web::Path<u64>,
     quota_service: web::Data<QuotaService>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     let user_id = path.into_inner();
     
     match quota_service.get_quota(user_id) {
@@ -60,11 +92,20 @@ pub async fn get_quota(
 }
 
 /// 设置用户配额
+/// 需要登录用户访问
 pub async fn set_quota(
+    http_req: HttpRequest,
     path: web::Path<u64>,
     req: web::Json<SetQuotaRequest>,
     quota_service: web::Data<QuotaService>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     let user_id = path.into_inner();
     let quota_bytes = req.into_inner().quota_bytes;
     
@@ -94,10 +135,19 @@ pub async fn set_quota(
 }
 
 /// 配额列表（支持分页）
+/// 需要登录用户访问
 pub async fn list_quotas(
+    http_req: HttpRequest,
     query: web::Query<serde_json::Value>,
     quota_service: web::Data<QuotaService>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     let page = query.get("page").and_then(|v| v.as_u64()).unwrap_or(1);
     let page_size = query.get("page_size").and_then(|v| v.as_u64()).unwrap_or(10);
     
@@ -114,10 +164,19 @@ pub async fn list_quotas(
 }
 
 /// 获取用户配额使用情况
+/// 需要登录用户访问
 pub async fn get_quota_usage(
+    http_req: HttpRequest,
     path: web::Path<u64>,
     quota_service: web::Data<QuotaService>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     let user_id = path.into_inner();
     
  match quota_service.get_quota_usage(user_id) {
