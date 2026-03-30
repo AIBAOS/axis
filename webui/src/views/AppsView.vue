@@ -320,6 +320,9 @@
 import { ref, computed, onMounted } from 'vue'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import { api } from '@/utils/api'
+import { useToast } from '@/composables/useToast'
+
+const { showToast } = useToast()
 
 const loading = ref(true)
 const apps = ref<any[]>([])
@@ -337,7 +340,7 @@ const uninstallTarget = ref<any>(null)
 const uninstalling = ref(false)
 
 // Toast
-const toast = ref({ show: false, type: 'success' as 'success' | 'error', message: '' })
+
 
 // 统计
 const stats = computed(() => ({
@@ -544,12 +547,6 @@ const formatSize = (bytes: number) => {
 const formatDate = (timestamp: string) => {
   if (!timestamp) return '-'
   return new Date(timestamp).toLocaleDateString('zh-CN')
-}
-
-// Toast
-const showToast = (type: 'success' | 'error', message: string) => {
-  toast.value = { show: true, type, message }
-  setTimeout(() => toast.value.show = false, 3000)
 }
 
 onMounted(() => loadApps())

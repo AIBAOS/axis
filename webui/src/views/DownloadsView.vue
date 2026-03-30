@@ -302,6 +302,9 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import { api } from '@/utils/api'
+import { useToast } from '@/composables/useToast'
+
+const { showToast } = useToast()
 
 const loading = ref(true)
 const tasks = ref<any[]>([])
@@ -318,7 +321,7 @@ const createError = ref('')
 const deleteTarget = ref<any>(null)
 
 // Toast
-const toast = ref({ show: false, type: 'success' as 'success' | 'error', message: '' })
+
 
 // 自动刷新
 let refreshTimer: ReturnType<typeof setInterval> | null = null
@@ -498,11 +501,6 @@ const getProgressClass = (status: string) => {
   if (status === 'failed') return 'bg-red-500'
   if (status === 'completed') return 'bg-green-500'
   return 'bg-blue-500'
-}
-
-const showToast = (type: 'success' | 'error', message: string) => {
-  toast.value = { show: true, type, message }
-  setTimeout(() => toast.value.show = false, 3000)
 }
 
 // 带宽限制

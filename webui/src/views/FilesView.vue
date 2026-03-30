@@ -402,6 +402,9 @@
 import { ref, computed, onMounted } from 'vue'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import { api } from '@/utils/api'
+import { useToast } from '@/composables/useToast'
+
+const { showToast } = useToast()
 
 const loading = ref(true)
 const currentPath = ref('/')
@@ -438,7 +441,7 @@ const sharePassword = ref(false)
 const sharePasswordValue = ref('')
 
 // Toast
-const toast = ref({ show: false, type: 'success' as 'success' | 'error', message: '' })
+
 
 const pathSegments = computed(() => currentPath.value.split('/').filter(Boolean))
 const filteredFolders = computed(() => { if (!searchQuery.value) return folders.value; const q = searchQuery.value.toLowerCase(); return folders.value.filter(f => f.name.toLowerCase().includes(q)) })
@@ -666,11 +669,6 @@ const previewFile = async (file: any) => {
 
 const isImage = (file: any) => file.mime_type?.startsWith('image/')
 const isText = (file: any) => file.mime_type?.startsWith('text/') || file.mime_type === 'application/json' || file.name.endsWith('.md') || file.name.endsWith('.txt') || file.name.endsWith('.json') || file.name.endsWith('.yaml') || file.name.endsWith('.yml')
-
-const showToast = (type: 'success' | 'error', message: string) => {
-  toast.value = { show: true, type, message }
-  setTimeout(() => { toast.value.show = false }, 3000)
-}
 
 const formatSize = (bytes: number) => { if (!bytes) return '0 B'; const k = 1024; const sizes = ['B', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(bytes) / Math.log(k)); return (bytes / Math.pow(k, i)).toFixed(1) + ' ' + sizes[i] }
 const formatDate = (ts: number) => { if (!ts) return '-'; return new Date(ts * 1000).toLocaleDateString('zh-CN') }

@@ -211,6 +211,9 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import { api } from '@/utils/api'
+import { useToast } from '@/composables/useToast'
+
+const { showToast } = useToast()
 
 // 状态
 const loading = ref(true)
@@ -245,7 +248,7 @@ let liveStreamTimer: ReturnType<typeof setInterval> | null = null
 const expandedLogs = ref<number[]>([])
 
 // Toast
-const toast = ref({ show: false, type: 'success' as 'success' | 'error', message: '' })
+
 
 // 统计
 const stats = computed(() => {
@@ -331,12 +334,6 @@ const getLevelBgClass = (level: string) => {
 const formatTime = (ts: number) => {
   if (!ts) return '-'
   return new Date(ts * 1000).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
-}
-
-// Toast
-const showToast = (type: 'success' | 'error', msg: string) => {
-  toast.value = { show: true, type, message: msg }
-  setTimeout(() => toast.value.show = false, 3000)
 }
 
 // 清空日志

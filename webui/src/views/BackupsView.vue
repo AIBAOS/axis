@@ -202,13 +202,16 @@
 import { ref, computed, onMounted } from 'vue'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import { api } from '@/utils/api'
+import { useToast } from '@/composables/useToast'
+
+const { showToast } = useToast()
 
 const loading = ref(true)
 const backups = ref<any[]>([])
 const searchQuery = ref('')
 const statusFilter = ref('all')
 const showHistoryModal = ref(false)
-const toast = ref({ show: false, type: 'success' as 'success' | 'error', message: '' })
+
 
 const stats = ref({ total: 0, active: 0, running: 0, totalSize: 0, lastBackup: '' })
 const runningBackups = ref<any[]>([])
@@ -275,10 +278,5 @@ const deleteBackup = (backup: any) => {
   backups.value = backups.value.filter(b => b.id !== backup.id)
   showToast('success', '备份任务已删除')
 }
-const showToast = (type: 'success' | 'error' | 'info', message: string) => {
-  toast.value = { show: true, type: type === 'info' ? 'success' : type, message }
-  setTimeout(() => toast.value.show = false, 3000)
-}
-
 onMounted(() => loadBackups())
 </script>

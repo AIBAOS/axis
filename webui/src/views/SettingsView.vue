@@ -748,6 +748,9 @@
 import { ref, computed, onMounted } from 'vue'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import { api } from '@/utils/api'
+import { useToast } from '@/composables/useToast'
+
+const { showToast } = useToast()
 
 // 选项卡
 const tabs = [
@@ -764,9 +767,6 @@ const currentTab = ref('system')
 const loading = ref(true)
 const saving = ref(false)
 const networkLoading = ref(false)
-
-// Toast
-const toast = ref({ show: false, type: 'success' as 'success' | 'error', message: '' })
 
 // 系统操作
 const checkingUpdates = ref(false)
@@ -1101,12 +1101,6 @@ const formatBytes = (bytes: number) => {
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
-}
-
-// Toast
-const showToast = (type: 'success' | 'error', message: string) => {
-  toast.value = { show: true, type, message }
-  setTimeout(() => { toast.value.show = false }, 3000)
 }
 
 // 检查更新

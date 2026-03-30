@@ -516,6 +516,9 @@ import { ref, computed, onMounted } from 'vue'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import UserModal from '@/components/users/UserModal.vue'
 import { api } from '@/utils/api'
+import { useToast } from '@/composables/useToast'
+
+const { showToast } = useToast()
 
 const tabs = [{ id: 'users', name: '用户列表' }, { id: 'groups', name: '用户组' }, { id: 'roles', name: '角色管理' }, { id: 'permissions', name: '权限概览' }, { id: 'quotas', name: '配额管理' }, { id: 'policy', name: '密码策略' }]
 const currentTab = ref('users')
@@ -576,7 +579,7 @@ const permissionModules = ref([
   { id: 'apps', name: '应用管理', user: false, guest: false }
 ])
 
-const toast = ref({ show: false, type: 'success' as 'success' | 'error', message: '' })
+
 
 const statusCounts = computed(() => { const c: Record<string, number> = { active: 0, inactive: 0, locked: 0, disabled: 0 }; users.value.forEach(u => { if (c[u.status] !== undefined) c[u.status]++ }); return c })
 const roleCounts = computed(() => { const c: Record<string, number> = { admin: 0, user: 0, guest: 0 }; users.value.forEach(u => { if (c[u.role] !== undefined) c[u.role]++ }); return c })
@@ -616,7 +619,7 @@ const getStatusDotClass = (status: string) => ({ active: 'bg-green-500', inactiv
 const getStatusTextClass = (status: string) => ({ active: 'text-green-700', inactive: 'text-gray-600', locked: 'text-yellow-700', disabled: 'text-red-700' }[status] || 'text-gray-600')
 const getStatusLabel = (status: string) => ({ active: '正常', inactive: '离线', locked: '锁定', disabled: '禁用' }[status] || status)
 
-const showToast = (type: 'success' | 'error', msg: string) => { toast.value = { show: true, type, message: msg }; setTimeout(() => toast.value.show = false, 3000) }
+
 
 // 密码策略保存
 const savePasswordPolicy = async () => {

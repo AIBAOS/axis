@@ -333,6 +333,9 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import NetworkInterfaceCard from '@/components/network/NetworkInterfaceCard.vue'
 import { api } from '@/utils/api'
+import { useToast } from '@/composables/useToast'
+
+const { showToast } = useToast()
 
 const tabs = [
   { id: 'interfaces', name: '网络接口' },
@@ -393,7 +396,7 @@ const vpnConfig = ref({
   wireguard: { public_key: 'aBcDeFgHiJkLmNoPqRsTuVwXyZ123456789=', port: 51820, address: '10.0.0.1/24', peers: 0 }
 })
 
-const toast = ref({ show: false, type: 'success' as 'success' | 'error', message: '' })
+
 
 const onlineCount = computed(() => interfaces.value.filter(i => i.status === 'up').length)
 
@@ -420,7 +423,7 @@ const runDnsResolve = async () => { if (!dnsHost.value) return; testing.value = 
 
 // 工具
 const formatSpeed = (bps: number) => { if (!bps) return '0 B/s'; const k = 1024; const s = ['B/s', 'KB/s', 'MB/s']; const i = Math.floor(Math.log(bps) / Math.log(k)); return (bps / Math.pow(k, i)).toFixed(1) + ' ' + s[i] }
-const showToast = (type: 'success' | 'error', msg: string) => { toast.value = { show: true, type, message: msg }; setTimeout(() => toast.value.show = false, 3000) }
+
 
 // 端口管理
 const togglePort = (port: any) => { port.enabled = !port.enabled; showToast('success', `${port.name} 已${port.enabled ? '启用' : '禁用'}`) }

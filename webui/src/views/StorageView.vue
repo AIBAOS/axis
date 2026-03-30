@@ -351,6 +351,9 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import DiskCard from '@/components/storage/DiskCard.vue'
 import StoragePoolCard from '@/components/storage/StoragePoolCard.vue'
 import { api } from '@/utils/api'
+import { useToast } from '@/composables/useToast'
+
+const { showToast } = useToast()
 
 const tabs = [{ id: 'disks', name: '物理磁盘' }, { id: 'pools', name: '存储池' }, { id: 'volumes', name: '卷管理' }, { id: 'snapshots', name: '快照' }, { id: 'shares', name: '共享文件夹' }]
 const currentTab = ref('disks')
@@ -380,7 +383,7 @@ const volumeForm = ref({ name: '', pool_id: 0, size_gb: 100, filesystem: 'ext4' 
 const showSnapshotModal = ref(false)
 const snapshotForm = ref({ name: '', volume_id: 0, description: '', is_protected: false })
 
-const toast = ref({ show: false, type: 'success' as 'success' | 'error', message: '' })
+
 
 const usagePercent = computed(() => storageUsage.value.total_bytes > 0 ? Math.round(storageUsage.value.used_bytes / storageUsage.value.total_bytes * 100) : 0)
 const availableDisks = computed(() => disks.value.filter(d => !d.pool_id))
@@ -537,7 +540,7 @@ const getSmartLabel = (s: string) => ['healthy', 'good'].includes(s?.toLowerCase
 const formatPowerOnHours = (h: number) => { if (!h) return '-'; const d = Math.floor(h / 24); return d > 365 ? `${Math.floor(d / 365)} 年 ${d % 365} 天` : d > 0 ? `${d} 天` : `${h} 小时` }
 const getProtocolClass = (p: string) => p === 'smb' ? 'bg-blue-100 text-blue-700' : p === 'nfs' ? 'bg-green-100 text-green-700' : p === 'webdav' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
 
-const showToast = (type: 'success' | 'error', msg: string) => { toast.value = { show: true, type, message: msg }; setTimeout(() => toast.value.show = false, 3000) }
+
 
 onMounted(() => refreshAll())
 </script>

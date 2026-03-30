@@ -1,5 +1,8 @@
 <template>
   <div class="min-h-screen bg-gray-50">
+    <!-- Toast 全局提示 -->
+    <ToastContainer />
+
     <!-- 顶部导航栏 -->
     <header class="bg-white shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -60,6 +63,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
+import ToastContainer from '@/components/ToastContainer.vue'
 
 const authStore = useAuthStore()
 const version = import.meta.env.VITE_APP_VERSION || '0.1.0'

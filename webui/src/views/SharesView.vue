@@ -161,6 +161,9 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import ShareCard from '@/components/shares/ShareCard.vue'
 import ShareModal from '@/components/shares/ShareModal.vue'
 import { api } from '@/utils/api'
+import { useToast } from '@/composables/useToast'
+
+const { showToast } = useToast()
 
 // 选项卡
 const tabs = [
@@ -190,13 +193,6 @@ const editingShare = ref<any>(null)
 const showDeleteConfirm = ref(false)
 const deletingShare = ref<any>(null)
 const deleting = ref(false)
-
-// Toast 提示
-const toast = ref({
-  show: false,
-  type: 'success' as 'success' | 'error',
-  message: ''
-})
 
 // 当前选项卡名称
 const currentTabLabel = computed(() => {
@@ -244,13 +240,7 @@ const toastClass = computed(() => {
     : 'bg-red-500 text-white'
 })
 
-// 显示 Toast
-const showToast = (type: 'success' | 'error', message: string) => {
-  toast.value = { show: true, type, message }
-  setTimeout(() => {
-    toast.value.show = false
-  }, 3000)
-}
+
 
 // 加载各类型共享
 const loadShares = async () => {

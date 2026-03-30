@@ -339,6 +339,9 @@ import { ref, computed, onMounted } from 'vue'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import JobCard from '@/components/jobs/JobCard.vue'
 import { api } from '@/utils/api'
+import { useToast } from '@/composables/useToast'
+
+const { showToast } = useToast()
 
 // 选项卡
 const tabs = [
@@ -357,7 +360,7 @@ const printJobs = ref<any[]>([])
 const cronJobs = ref<any[]>([])
 
 // Toast
-const toast = ref({ show: false, type: 'success' as 'success' | 'error', message: '' })
+
 
 // 总任务数
 const totalJobs = computed(() => printJobs.value.length + cronJobs.value.length)
@@ -529,12 +532,6 @@ const getStatusClass = (status: string) => {
     default:
       return 'bg-gray-100 text-gray-700'
   }
-}
-
-// Toast
-const showToast = (type: 'success' | 'error', message: string) => {
-  toast.value = { show: true, type, message }
-  setTimeout(() => { toast.value.show = false }, 3000)
 }
 
 // 计划任务管理

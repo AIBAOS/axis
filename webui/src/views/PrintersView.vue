@@ -164,6 +164,9 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import PrinterCard from '@/components/printers/PrinterCard.vue'
 import PrinterModal from '@/components/printers/PrinterModal.vue'
 import { api } from '@/utils/api'
+import { useToast } from '@/composables/useToast'
+
+const { showToast } = useToast()
 
 const tabs = [{ id: 'printers', name: '打印机' }, { id: 'queue', name: '打印队列' }, { id: 'history', name: '历史记录' }]
 const currentTab = ref('printers')
@@ -187,7 +190,7 @@ const printJobs = ref<any[]>([])
 const printHistory = ref<any[]>([])
 const historyFilter = ref('all')
 
-const toast = ref({ show: false, type: 'success' as 'success' | 'error', message: '' })
+
 
 const statusCounts = computed(() => { const c: Record<string, number> = { idle: 0, printing: 0, error: 0, offline: 0, warning: 0, out_of_paper: 0, paper_jam: 0 }; printers.value.forEach(p => { if (c[p.status] !== undefined) c[p.status]++ }); return c })
 const filteredPrinters = computed(() => { let r = printers.value; if (statusFilter.value !== 'all') r = r.filter(p => p.status === statusFilter.value); if (searchQuery.value) { const q = searchQuery.value.toLowerCase(); r = r.filter(p => p.name?.toLowerCase().includes(q) || p.ip_address?.toLowerCase().includes(q)) } return r })
@@ -225,7 +228,7 @@ const getJobStatusClass = (s: string) => ({ pending: 'bg-gray-100 text-gray-700'
 const getJobStatusLabel = (s: string) => ({ pending: '等待中', printing: '打印中', paused: '已暂停', completed: '已完成', cancelled: '已取消', error: '错误' }[s] || s)
 const formatTime = (ts: number) => ts ? new Date(ts * 1000).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'
 
-const showToast = (type: 'success' | 'error', msg: string) => { toast.value = { show: true, type, message: msg }; setTimeout(() => toast.value.show = false, 3000) }
+
 
 onMounted(() => { loadPrinters().then(() => { loadPrintJobs(); loadPrintHistory() }) })
 </script>
