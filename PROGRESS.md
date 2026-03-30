@@ -1,20 +1,63 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-03-30 02:45 UTC
+> 最后更新：2026-03-30 03:10 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|------|
-| 最新 commit | 8e10082 |
-| 提交时间 | 2026-03-30 02:45 UTC |
-| 当前阶段 | Phase 326 快照管理界面完成 |
-| 状态 | ✅ 已完成 |
+| 最新 commit | 8e5b1f8 |
+| 提交时间 | 2026-03-30 03:10 UTC |
+| 当前阶段 | 第四轮主动测试进行中 |
+| 状态 | 🔄 进行中 |
 | 阻塞项 | 无 |
 
 ---
 
 ## 🔒 安全修复记录
+
+| Bug | 描述 | CVSS | Commit | 时间 |
+|-----|------|------|--------|------|
+| Bug #15 | 硬编码 JWT 密钥 → 强制环境变量 | 9.8 | 04a3133 | 2026-03-29 22:55 |
+| Bug #16 | 文件上传路径遍历漏洞 | 7.5 | f4991a6 | 2026-03-29 23:45 |
+| Bug #17 | 文件名特殊字符未过滤 | 7.5 | f4991a6 | 2026-03-29 23:45 |
+| Bug #18 | 空文件可上传 | 5.0 | f4991a6 | 2026-03-29 23:45 |
+| Bug #19 | 邮箱验证太弱 | 5.0 | e7b8b59 | 2026-03-29 23:50 |
+| Bug #20 | 用户名唯一性 Mock | 5.0 | c6fb817 | 2026-03-29 23:55 |
+| Bug #21 | 密码强度验证弱 | 5.0 | 817844e | 2026-03-29 23:56 |
+| Bug #22 | unwrap() 可能 panic | 5.0 | 20f63fa | 2026-03-29 23:57 |
+| Bug #23 | 无 IP 格式验证 | 5.0 | 8cf3b78 | 2026-03-29 23:58 |
+| Bug #25 | 重复路由 downloads | 3.0 | 02b8ce0 | 2026-03-30 00:30 |
+| Bug #26 | 重复路由 printers | 3.0 | 02b8ce0 | 2026-03-30 00:30 |
+| Bug #27 | apps.rs 无认证检查 | 9.1 | 0a951bb | 2026-03-30 02:25 |
+| Bug #28 | cache.rs 无认证检查 | 5.3 | 0a951bb | 2026-03-30 02:25 |
+| Bug #29 | database.rs 无认证检查 | 7.5 | 0a951bb | 2026-03-30 02:25 |
+| Bug #30 | power.rs 无认证检查 | 9.1 | 8e5b1f8 | 2026-03-30 03:10 |
+| Bug #31 | settings.rs 无认证检查 | 7.5 | 8e5b1f8 | 2026-03-30 03:10 |
+| Bug #32 | disks.rs 无认证检查 | 5.3 | 8e5b1f8 | 2026-03-30 03:10 |
+
+---
+
+## 🧪 第四轮主动测试发现（2026-03-30 03:05）
+
+### 🔴 严重安全漏洞（已修复）
+
+| Bug | 文件 | 问题 | 风险 | 状态 |
+|-----|------|------|------|------|
+| **#30** | `power.rs` | execute_power_action 无认证 | 任何人可关机/重启！ | ✅ 已修复 |
+| **#31** | `settings.rs` | get/update_setting 无认证 | 任何人可修改系统设置 | ✅ 已修复 |
+| **#32** | `disks.rs` | list/get_disk 无认证 | 任何人可查看磁盘信息 | ✅ 已修复 |
+
+### ⚠️ 其他待检查的 handler
+
+以下 handler 也缺少认证检查，需进一步评估：
+- backups_archive.rs, backups_delete.rs, backups_detail.rs
+- downloads.rs, file_audit.rs, files_list.rs
+- logs.rs, notifications.rs, quotas.rs
+- share.rs, shares.rs, tasks.rs
+- usb_devices.rs, wifi.rs, system_update.rs
+
+---
 
 | Bug | 描述 | CVSS | Commit | 时间 |
 |-----|------|------|--------|------|
@@ -58,6 +101,27 @@
 | **#24** | 多 handlers | 105 处 `unwrap()` 在 Mock 数据上 | ⏳ 待修复 |
 | **#25** | main.rs | 重复路由：downloads 出现两次 | ✅ 已修复 |
 | **#26** | main.rs | 重复路由：create_printer/update_printer 重复 | ✅ 已修复 |
+
+---
+
+## 🧪 第四轮主动测试发现（2026-03-30 03:05）
+
+### 🔴 严重安全漏洞（认证缺失）
+
+| Bug | 文件 | 问题 | 风险 | 状态 |
+|-----|------|------|------|------|
+| **#30** | `power.rs` | execute_power_action 无认证 | 任何人可关机/重启！ | ⏳ 待修复 |
+| **#31** | `settings.rs` | get/update_setting 无认证 | 任何人可修改系统设置 | ⏳ 待修复 |
+| **#32** | `disks.rs` | list/get_disk 无认证 | 任何人可查看磁盘信息 | ⏳ 待修复 |
+
+### 其他缺少认证的 handler
+
+以下 handler 也缺少认证检查：
+- backups_archive.rs, backups_delete.rs, backups_detail.rs
+- downloads.rs, file_audit.rs, files_list.rs
+- logs.rs, notifications.rs, quotas.rs
+- share.rs, shares.rs, tasks.rs
+- usb_devices.rs, wifi.rs, system_update.rs
 
 ---
 
