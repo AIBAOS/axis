@@ -3,6 +3,7 @@
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::{Deserialize, Serialize};
+use regex::Regex;
 
 use crate::database::rbac_store::SqliteRbacRepository;
 use crate::models::rbac::RbacRepository;
@@ -42,6 +43,25 @@ pub struct ErrorResponse {
     pub success: bool,
     pub error: String,
     pub code: String,
+}
+
+/// 验证邮箱格式（Bug #19 修复）
+/// 使用正则表达式验证标准邮箱格式
+fn validate_email(email: &str) -> bool {
+    // 长度检查（RFC 5321 最大 254 字符）
+    if email.len() > 254 || email.len() < 5 {
+        return false;
+    }
+    
+    // 正则表达式验证邮箱格式
+    // 规则：local@domain.tld
+    // - local: 字母、数字、._%+-（不能以.开头或结尾）
+    // - domain: 字母、数字、.-（必须包含至少一个.）
+    let email_regex = Regex::new(
+        r"^[a-zA-Z0-9]([a-zA-Z0-9._%+-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$"
+    ).unwrap();
+    
+    email_regex.is_match(email)
 }
 
 /// 创建用户（Phase 102）
@@ -120,11 +140,11 @@ pub async fn create_user(
         }));
     }
 
-    // 5. 验证邮箱格式
-    if !email.contains('@') || !email.contains('.') {
+    // 5. 验证邮箱格式（Bug #19 修复：使用正则验证）
+    if !validate_email(email) {
         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
             success: false,
-            error: "invalid email format".to_string(),
+            error: "invalid email format. expected format: user@domain.tld".to_string(),
             code: "INVALID_EMAIL".to_string(),
         }));
     }
