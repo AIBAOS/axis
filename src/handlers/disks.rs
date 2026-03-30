@@ -1,12 +1,13 @@
 // 磁盘管理处理器（SQLite 持久化版）
 // 包含：列表、详情、健康状态、使用量汇总
 
-use actix_web::{web, HttpResponse, Result};
+use actix_web::{web, HttpRequest, HttpResponse, Result};
 use serde::Deserialize;
 use serde_json::json;
 use std::sync::Arc;
 
 use crate::database::disk_store::SqliteDiskRepository;
+use crate::services::jwt_service::JwtService;
 
 /// 查询参数
 #[derive(Debug, Deserialize)]
@@ -18,10 +19,30 @@ pub struct DiskQuery {
 }
 
 /// GET /api/v1/disks — 磁盘列表（分页 + smart_status/disk_type 筛选）
+/// 需要登录用户访问
 pub async fn list_disks(
+    req: HttpRequest,
     query: web::Query<DiskQuery>,
     repo: web::Data<Arc<SqliteDiskRepository>>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if token.is_none() {
+        return Ok(HttpResponse::Unauthorized().json(json!({
+            "success": false,
+            "message": "Authentication required"
+        })));
+    }
+
+    let _claims = jwt_service.validate_token(token.unwrap())
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
+
     let page = query.page.unwrap_or(1).max(1);
     let per_page = std::cmp::min(query.per_page.unwrap_or(20), 100);
 
