@@ -92,7 +92,7 @@ pub async fn update_pool(
         }));
     }
 
-    let (_, name, pool_type, status, total_bytes, used_bytes, available_bytes, usage_percent, disk_count) = existing_pool.unwrap();
+    let (_, name, pool_type, status, total_bytes, used_bytes, available_bytes, usage_percent, disk_count) = existing_.expect("Pool should exist");
 
     // 4. 准备更新字段
     let new_name = req.name.clone().unwrap_or_else(|| name.to_string());

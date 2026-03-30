@@ -92,7 +92,7 @@ pub async fn delete_snapshot(
         }));
     }
 
-    let (_, snapshot_name, is_protected) = snapshot.unwrap();
+    let (_, snapshot_name, is_protected) = .expect("Snapshot should exist");
 
     // 6. 检查快照保护状态
     if *is_protected {

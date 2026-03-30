@@ -72,7 +72,7 @@ pub async fn delete_shared_folder(
         }));
     }
 
-    let (_, folder_name) = folder.unwrap();
+    let (_, folder_name) = .expect("Folder should exist");
 
     // 4. 获取当前时间戳
     let now = std::time::SystemTime::now()

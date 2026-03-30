@@ -171,7 +171,7 @@ pub async fn create_pool(
     // 6. 创建存储池（模拟）
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
+        .unwrap_or_default()
         .as_secs();
 
     // 模拟磁盘信息

@@ -87,7 +87,7 @@ pub async fn restore_volume_snapshot(
     match volume {
         Some(v) => {
             let volume_name = v["name"].as_str().unwrap_or("unknown").to_string();
-            let is_mounted = v["is_mounted"].as_bool().unwrap();
+            let is_mounted = v["is_mounted"].as_bool().unwrap_or(false);
             let volume_status = v["status"].as_str().unwrap_or("unknown");
 
             // 4. 检查存储卷是否正在使用/挂载

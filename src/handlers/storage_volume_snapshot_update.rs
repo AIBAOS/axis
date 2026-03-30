@@ -91,7 +91,7 @@ pub async fn update_snapshot(
         }));
     }
 
-    let (_, volume_name) = volume.unwrap();
+    let (_, volume_name) = volume.expect("Volume should exist after check");
 
     // 4. 模拟该存储卷下的快照数据
     let mut mock_snapshots = vec![
@@ -110,7 +110,7 @@ pub async fn update_snapshot(
         }));
     }
 
-    let idx = snapshot_idx.unwrap();
+    let idx = .expect("Snapshot index should exist");
 
     // 6. 提取旧值并转换为可修改的值
     let old_name = mock_snapshots[idx].1.clone();

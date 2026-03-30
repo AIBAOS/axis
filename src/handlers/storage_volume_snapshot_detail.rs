@@ -77,7 +77,7 @@ pub async fn get_volume_snapshot(
 
     match volume {
         Some(v) => {
-            let volume_name = v["name"].as_str().unwrap().to_string();
+            let volume_name = v["name"].as_str().unwrap_or("unknown").to_string();
 
             // 4. 模拟该存储卷的快照数据
             let mock_snapshots = vec![

@@ -115,7 +115,7 @@ pub async fn list_files(
                 Error::from(actix_web::error::ErrorInternalServerError(format!(
                     "Failed to get modified time: {}", e
                 )))
-            })?.duration_since(UNIX_EPOCH).unwrap().as_secs(),
+            })?.duration_since(UNIX_EPOCH).unwrap_or_default().as_secs(),
         };
 
         files.push(file_info);

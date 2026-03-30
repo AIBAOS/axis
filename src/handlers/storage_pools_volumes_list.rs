@@ -104,7 +104,7 @@ pub async fn list_pool_volumes(
 
     match pool {
         Some(p) => {
-            let pool_name = p["name"].as_str().unwrap().to_string();
+            let pool_name = p["name"].as_str().unwrap_or("unknown").to_string();
 
             // 5. 模拟该存储池下的卷数据
             let all_volumes = vec![

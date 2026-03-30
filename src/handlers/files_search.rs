@@ -184,7 +184,7 @@ fn search_recursive(
         let modified = metadata.modified()
             .unwrap_or(std::time::SystemTime::now())
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_default()
             .as_secs();
         
         if let Some(after) = modified_after {

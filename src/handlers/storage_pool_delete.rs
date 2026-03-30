@@ -73,7 +73,7 @@ pub async fn delete_pool(
         }));
     }
 
-    let (_, pool_name, has_volumes) = pool.unwrap();
+    let (_, pool_name, has_volumes) = .expect("Pool should exist");
 
     // 4. 检查是否有卷在使用该池
     if *has_volumes {

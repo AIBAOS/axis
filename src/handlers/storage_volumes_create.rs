@@ -174,7 +174,7 @@ pub async fn create_volume(
     // 7. 创建存储卷（模拟）
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
+        .unwrap_or_default()
         .as_secs();
 
     let volume = VolumeInfo {

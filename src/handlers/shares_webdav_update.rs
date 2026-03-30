@@ -228,7 +228,7 @@ mod tests {
         }));
 
         let repo = web::Data::new(Arc::new(SqliteShareRepository::new(
-            crate::database::pool::create_sqlite_pool(":memory:").unwrap(),
+            crate::database::pool::create_sqlite_pool(":memory:").expect("Failed to create test database"),
         )));
 
         let app = test::init_service(

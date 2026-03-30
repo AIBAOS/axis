@@ -87,7 +87,7 @@ pub async fn delete_storage_pool(
             if has_volumes {
                 return Ok(HttpResponse::BadRequest().json(ErrorResponse {
                     success: false,
-                    error: format!("Cannot delete storage pool '{}': volumes are using this pool", p["name"].as_str().unwrap()),
+                    error: format!("Cannot delete storage pool '{}': volumes are using this pool", p["name"].as_str().unwrap_or("unknown")),
                     code: "POOL_IN_USE".to_string(),
                 }));
             }
