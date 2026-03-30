@@ -1,10 +1,12 @@
 // Phase 43 文件重命名/移动 API
 // 支持重命名和移动文件/文件夹
 
-use actix_web::{web, HttpResponse, Error};
+use actix_web::{web, HttpResponse, Error, HttpRequest};
 use serde::Deserialize;
 use std::path::PathBuf;
 use std::fs;
+
+use crate::services::jwt_service::JwtService;
 
 /// 重命名/移动请求体
 #[derive(Debug, Deserialize)]
@@ -13,10 +15,32 @@ pub struct RenameRequest {
     pub target_path: String,
 }
 
+/// 错误响应
+#[derive(serde::Serialize)]
+pub struct ErrorResponse {
+    pub success: bool,
+    pub error: String,
+    pub code: String,
+}
+
 /// PUT /api/v1/files/rename — 重命名/移动文件或文件夹
 pub async fn rename_file(
+    req: HttpRequest,
     payload: web::Json<RenameRequest>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing or invalid Authorization header"))?;
+
+    jwt_service
+        .validate_token(token)
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))?;
+
     let root_dir = PathBuf::from("/data/uploads");
 
     // 解析源路径
@@ -134,7 +158,9 @@ pub async fn rename_file(
 
 /// PUT /api/v1/files/move — 移动文件（别名，复用 rename 逻辑）
 pub async fn move_file(
+    req: HttpRequest,
     payload: web::Json<RenameRequest>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
-    rename_file(payload).await
+    rename_file(req, payload, jwt_service).await
 }
