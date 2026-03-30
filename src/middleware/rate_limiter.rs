@@ -1,13 +1,16 @@
-use actix_web::{dev::{ServiceRequest, ServiceResponse, Transform, Service}, Error};
+use actix_web::{dev::{ServiceRequest, ServiceResponse, Transform, Service}, Error, HttpResponse};
 use futures_util::future::{ok, Ready};
 use std::future::Future;
 use std::net::IpAddr;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
+use std::pin::Pin;
+use std::task::{Context, Poll};
 use tracing::debug;
 
 // 滑动窗口限流器：按 IP 限速
+#[derive(Clone)]
 pub struct RateLimiter {
     requests: Arc<Mutex<HashMap<IpAddr, Vec<Instant>>>>,
     max_requests_per_second: usize,
@@ -85,15 +88,15 @@ pub fn create_default_rate_limiter() -> RateLimiter {
     RateLimiter::new(10)
 }
 
-// 简单限流中间件（禁用以避免类型问题）
-// 在 Phase 2.1 中启用
+// 限流中间件
 pub struct RateLimitMiddleware<S> {
     service: S,
+    limiter: RateLimiter,
 }
 
 impl<S, B> Transform<S, ServiceRequest> for RateLimiter
 where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
     B: 'static,
 {
@@ -104,34 +107,52 @@ where
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        // 简单起见，暂不启用限流
-        let _ = self;
-        ok(RateLimitMiddleware { service })
+        ok(RateLimitMiddleware { 
+            service,
+            limiter: self.clone(),
+        })
     }
 }
 
 impl<S, B> Service<ServiceRequest> for RateLimitMiddleware<S>
 where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
     B: 'static,
 {
     type Response = ServiceResponse<B>;
     type Error = Error;
-    type Future = std::pin::Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
+    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
 
-    fn poll_ready(
-        &self,
-        cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(&self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)
     }
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
+        // 获取客户端 IP
+        let ip = req.peer_addr().map(|addr| addr.ip()).unwrap_or_else(|| {
+            // 如果无法获取 IP，使用一个默认值（通常不会发生）
+            "127.0.0.1".parse().unwrap()
+        });
+
+        // 检查是否被限流
+        if !self.limiter.is_allowed(&ip) {
+            debug!("Rate limit exceeded for IP: {}", ip);
+            let response = HttpResponse::TooManyRequests()
+                .json(serde_json::json!({
+                    "success": false,
+                    "error": "Too many requests. Please try again later.",
+                    "code": "RATE_LIMITED"
+                }));
+            return Box::pin(async move {
+                Ok(req.into_response(response))
+            });
+        }
+
+        // 允许请求继续
         let fut = self.service.call(req);
         Box::pin(async move {
-            let res = fut.await?;
-            Ok(res)
+            fut.await
         })
     }
 }

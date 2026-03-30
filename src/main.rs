@@ -284,6 +284,7 @@ use handlers::network_config_update::update_network_config;
 use handlers::dns_config_get::get_dns_config;
 use handlers::dns_config_update::update_dns_config;
 use middleware::jwt_auth::JwtAuth;
+use middleware::rate_limiter::RateLimiter;
 use services::rbac_service::RbacService;
 use crate::config::AppSettings;
 
@@ -529,6 +530,9 @@ async fn main() -> std::io::Result<()> {
     // }).ok();
     // let share_data = web::Data::new(share_repo);
 
+    // Bug #52 修复：创建 API 限流器（每秒最多 10 个请求/IP）
+    let rate_limiter = RateLimiter::new(10);
+
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
@@ -547,6 +551,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(power_data.clone())
             .app_data(update_data.clone())
             .app_data(usb_data.clone())
+            .wrap(rate_limiter.clone())
             .wrap(JwtAuth)
             .route("/api/v1/health", web::get().to(health_check))
             .route("/api/v1/auth/login", web::post().to(handlers::auth_login::login))
