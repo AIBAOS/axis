@@ -110,7 +110,7 @@ pub async fn create_volume_snapshot(
     match volume {
         Some(v) => {
             // 5. 验证存储卷状态允许创建快照
-            let volume_status = v["status"].as_str().unwrap();
+            let volume_status = v["status"].as_str().unwrap_or("unknown");
             if volume_status != "online" {
                 return Ok(HttpResponse::BadRequest().json(ErrorResponse {
                     success: false,
@@ -119,7 +119,7 @@ pub async fn create_volume_snapshot(
                 }));
             }
 
-            let volume_name = v["name"].as_str().unwrap().to_string();
+            let volume_name = v["name"].as_str().unwrap_or("unknown").to_string();
 
             // 6. 模拟快照名称唯一性检查
             let existing_snapshots = vec![

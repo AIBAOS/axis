@@ -86,9 +86,9 @@ pub async fn restore_volume_snapshot(
 
     match volume {
         Some(v) => {
-            let volume_name = v["name"].as_str().unwrap().to_string();
+            let volume_name = v["name"].as_str().unwrap_or("unknown").to_string();
             let is_mounted = v["is_mounted"].as_bool().unwrap();
-            let volume_status = v["status"].as_str().unwrap();
+            let volume_status = v["status"].as_str().unwrap_or("unknown");
 
             // 4. 检查存储卷是否正在使用/挂载
             if is_mounted {
@@ -121,7 +121,7 @@ pub async fn restore_volume_snapshot(
             match snapshot {
                 Some(s) => {
                     // 7. 验证快照属于该存储卷
-                    let snapshot_volume_id = s["volume_id"].as_u64().unwrap();
+                    let snapshot_volume_id = s["volume_id"].as_u64().unwrap_or(0);
                     if snapshot_volume_id != volume_id {
                         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
                             success: false,
@@ -131,7 +131,7 @@ pub async fn restore_volume_snapshot(
                     }
 
                     // 8. 检查快照状态（只有 completed 状态的快照可以恢复）
-                    let snapshot_status = s["status"].as_str().unwrap();
+                    let snapshot_status = s["status"].as_str().unwrap_or("unknown");
                     if snapshot_status != "completed" {
                         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
                             success: false,

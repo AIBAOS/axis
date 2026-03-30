@@ -104,11 +104,11 @@ pub async fn get_storage_usage(
 
     // 4. 计算总体统计
     let pool_count = mock_pools.len() as u32;
-    let total_bytes: u64 = mock_pools.iter().map(|p| p["total_bytes"].as_u64().unwrap()).sum();
-    let used_bytes: u64 = mock_pools.iter().map(|p| p["used_bytes"].as_u64().unwrap()).sum();
-    let available_bytes: u64 = mock_pools.iter().map(|p| p["available_bytes"].as_u64().unwrap()).sum();
-    let disk_count: u32 = mock_pools.iter().map(|p| p["disk_count"].as_u64().unwrap() as u32).sum();
-    let volume_count: u32 = mock_pools.iter().map(|p| p["volume_count"].as_u64().unwrap() as u32).sum();
+    let total_bytes: u64 = mock_pools.iter().map(|p| p["total_bytes"].as_u64().unwrap_or(0)).sum();
+    let used_bytes: u64 = mock_pools.iter().map(|p| p["used_bytes"].as_u64().unwrap_or(0)).sum();
+    let available_bytes: u64 = mock_pools.iter().map(|p| p["available_bytes"].as_u64().unwrap_or(0)).sum();
+    let disk_count: u32 = mock_pools.iter().map(|p| p["disk_count"].as_u64().unwrap_or(0) as u32).sum();
+    let volume_count: u32 = mock_pools.iter().map(|p| p["volume_count"].as_u64().unwrap_or(0) as u32).sum();
 
     // 5. 计算使用率
     let usage_percent = if total_bytes > 0 {

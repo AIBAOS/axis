@@ -92,7 +92,7 @@ pub async fn delete_storage_volume(
             if is_system {
                 return Ok(HttpResponse::Forbidden().json(ErrorResponse {
                     success: false,
-                    error: format!("Cannot delete system volume '{}'", v["name"].as_str().unwrap()),
+                    error: format!("Cannot delete system volume '{}'", v["name"].as_str().unwrap_or("unknown")),
                     code: "SYSTEM_VOLUME_PROTECTED".to_string(),
                 }));
             }
@@ -102,7 +102,7 @@ pub async fn delete_storage_volume(
             if in_use {
                 return Ok(HttpResponse::BadRequest().json(ErrorResponse {
                     success: false,
-                    error: format!("Cannot delete volume '{}': volume is currently in use", v["name"].as_str().unwrap()),
+                    error: format!("Cannot delete volume '{}': volume is currently in use", v["name"].as_str().unwrap_or("unknown")),
                     code: "VOLUME_IN_USE".to_string(),
                 }));
             }

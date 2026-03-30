@@ -98,11 +98,11 @@ pub async fn check_update(
         })));
     }
 
-    let _claims = jwt_service.validate_token(token.unwrap())
+    let _claims = jwt_service.validate_token(&token.ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing token"))?)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
 
     let now = chrono::Utc::now().to_rfc3339();
-    let mut status = UPDATE_STATUS.lock().unwrap();
+    let mut status = UPDATE_STATUS.lock().expect("UPDATE_STATUS lock poisoned");
     status.last_check = Some("2026-03-19T11:55:00Z");
     
     // 模拟检查结果（实际应从服务器获取）
@@ -159,10 +159,10 @@ pub async fn get_update_info(
         })));
     }
 
-    let _claims = jwt_service.validate_token(token.unwrap())
+    let _claims = jwt_service.validate_token(&token.ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing token"))?)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
 
-    let _status = UPDATE_STATUS.lock().unwrap();
+    let _status = UPDATE_STATUS.lock().expect("UPDATE_STATUS lock poisoned");
     
     Ok(HttpResponse::Ok().json(json!({
         "current_version": "v0.1.0",
@@ -204,7 +204,7 @@ pub async fn download_update(
         })));
     }
 
-    let mut status = UPDATE_STATUS.lock().unwrap();
+    let mut status = UPDATE_STATUS.lock().expect("UPDATE_STATUS lock poisoned");
     
     if status.current_status != "idle" && status.current_status != "downloaded" {
         return Ok(HttpResponse::Conflict().json(json!({
@@ -252,7 +252,7 @@ pub async fn install_update(
         })));
     }
 
-    let mut status = UPDATE_STATUS.lock().unwrap();
+    let mut status = UPDATE_STATUS.lock().expect("UPDATE_STATUS lock poisoned");
     
     if status.current_status != "downloaded" && status.progress < 100 {
         return Ok(HttpResponse::Conflict().json(json!({
@@ -291,10 +291,10 @@ pub async fn get_update_status(
         })));
     }
 
-    let _claims = jwt_service.validate_token(token.unwrap())
+    let _claims = jwt_service.validate_token(&token.ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing token"))?)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
 
-    let status = UPDATE_STATUS.lock().unwrap();
+    let status = UPDATE_STATUS.lock().expect("UPDATE_STATUS lock poisoned");
     
     Ok(HttpResponse::Ok().json(status.clone()))
 }
@@ -324,7 +324,7 @@ pub async fn cancel_update(
         })));
     }
 
-    let mut status = UPDATE_STATUS.lock().unwrap();
+    let mut status = UPDATE_STATUS.lock().expect("UPDATE_STATUS lock poisoned");
     
     if status.current_status == "idle" || status.current_status == "downloaded" {
         return Ok(HttpResponse::Conflict().json(json!({

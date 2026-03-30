@@ -118,8 +118,8 @@ pub async fn clone_volume_snapshot(
 
     match volume {
         Some(v) => {
-            let _volume_name = v["name"].as_str().unwrap().to_string();
-            let source_pool_id = v["pool_id"].as_u64().unwrap();
+            let _volume_name = v["name"].as_str().unwrap_or("unknown").to_string();
+            let source_pool_id = v["pool_id"].as_u64().unwrap_or(0);
             let target_pool_id = pool_id.unwrap_or(source_pool_id);
 
             // 5. 模拟该存储卷的快照数据（验证快照存在性和归属）
@@ -135,7 +135,7 @@ pub async fn clone_volume_snapshot(
             match snapshot {
                 Some(s) => {
                     // 6. 验证快照归属
-                    let snapshot_volume_id = s["volume_id"].as_u64().unwrap();
+                    let snapshot_volume_id = s["volume_id"].as_u64().unwrap_or(0);
                     if snapshot_volume_id != volume_id {
                         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
                             success: false,
@@ -145,7 +145,7 @@ pub async fn clone_volume_snapshot(
                     }
 
                     // 7. 验证快照状态（只有 completed 状态可克隆）
-                    let snapshot_status = s["status"].as_str().unwrap();
+                    let snapshot_status = s["status"].as_str().unwrap_or("unknown");
                     if snapshot_status != "completed" {
                         return Ok(HttpResponse::BadRequest().json(ErrorResponse {
                             success: false,
@@ -154,7 +154,7 @@ pub async fn clone_volume_snapshot(
                         }));
                     }
 
-                    let snapshot_size = s["size_bytes"].as_u64().unwrap();
+                    let snapshot_size = s["size_bytes"].as_u64().unwrap_or(0);
 
                     // 8. 模拟新卷名称唯一性检查
                     let existing_volumes = vec!["System Volume", "Data Volume", "Backup Volume", "Archive Volume"];
@@ -178,8 +178,8 @@ pub async fn clone_volume_snapshot(
 
                     match pool {
                         Some(p) => {
-                            let pool_available = p["available_bytes"].as_u64().unwrap();
-                            let pool_name = p["name"].as_str().unwrap().to_string();
+                            let pool_available = p["available_bytes"].as_u64().unwrap_or(0);
+                            let pool_name = p["name"].as_str().unwrap_or("unknown").to_string();
 
                             if snapshot_size > pool_available {
                                 return Ok(HttpResponse::BadRequest().json(ErrorResponse {
