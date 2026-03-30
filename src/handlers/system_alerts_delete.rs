@@ -67,15 +67,18 @@ pub async fn delete_system_alert(
     let alert = mock_alerts.iter().find(|(id, _)| *id == alert_id);
 
     // 6. 验证告警存在性
-    if alert.is_none() {
-        return Ok(HttpResponse::NotFound().json(ErrorResponse {
-            success: false,
-            error: format!("System alert {} not found", alert_id),
-            code: "NOT_FOUND".to_string(),
-        }));
-    }
+    let alert = match alert {
+        Some(a) => a,
+        None => {
+            return Ok(HttpResponse::NotFound().json(ErrorResponse {
+                success: false,
+                error: format!("System alert {} not found", alert_id),
+                code: "NOT_FOUND".to_string(),
+            }));
+        }
+    };
 
-    let (_id, status) = alert.unwrap();
+    let (_id, status) = alert;
 
     // 7. 验证告警状态（仅 acknowledged/resolved 状态可删除）
     if status == "active" {

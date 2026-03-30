@@ -130,15 +130,17 @@ pub async fn resolve_system_alert(
     let alert_index = mock_alerts.iter().position(|a| a.id == alert_id);
 
     // 7. 验证告警存在性
-    if alert_index.is_none() {
-        return Ok(HttpResponse::NotFound().json(ErrorResponse {
-            success: false,
-            error: format!("System alert {} not found", alert_id),
-            code: "NOT_FOUND".to_string(),
-        }));
-    }
+    let alert_index = match alert_index {
+        Some(idx) => idx,
+        None => {
+            return Ok(HttpResponse::NotFound().json(ErrorResponse {
+                success: false,
+                error: format!("System alert {} not found", alert_id),
+                code: "NOT_FOUND".to_string(),
+            }));
+        }
+    };
 
-    let alert_index = alert_index.unwrap();
     let alert = &mock_alerts[alert_index];
 
     // 8. 验证告警状态（仅 active/acknowledged 状态可解决）

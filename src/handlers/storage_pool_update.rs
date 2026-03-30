@@ -190,8 +190,8 @@ pub async fn update_pool(
     // 7. 更新存储池（模拟）
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
 
     let updated_pool = StoragePoolInfo {
         id: pool_id,

@@ -197,8 +197,8 @@ pub async fn list_files(
                     size: metadata.len(),
                     uploaded_at: metadata.created().unwrap_or(std::time::SystemTime::now())
                         .duration_since(UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs(),
+                        .map(|d| d.as_secs())
+                        .unwrap_or(0),
                     user_id,
                 };
                 files.push(file_info);

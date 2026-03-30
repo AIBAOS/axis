@@ -164,7 +164,7 @@ mod tests {
             last_login: Some(1710600000),
         };
 
-        let json = serde_json::to_string(&user).unwrap();
+        let json = serde_json::to_string(&user).expect("User serialization should not fail");
         assert!(json.contains("test"));
         assert!(json.contains("user"));
         assert!(!json.contains("password"));

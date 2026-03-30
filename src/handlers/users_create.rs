@@ -61,7 +61,7 @@ fn validate_email(email: &str) -> bool {
     // - domain: 字母、数字、.-（必须包含至少一个.）
     let email_regex = Regex::new(
         r"^[a-zA-Z0-9]([a-zA-Z0-9._%+-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$"
-    ).unwrap();
+    ).expect("Invalid email regex pattern - this is a compile-time error");
     
     email_regex.is_match(email)
 }

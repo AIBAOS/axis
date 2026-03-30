@@ -131,8 +131,8 @@ pub async fn update_pool(
     // 6. 获取当前时间
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
 
     // 7. 返回更新后的存储池信息
     let response = UpdatePoolResponse {

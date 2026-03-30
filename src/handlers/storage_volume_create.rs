@@ -133,15 +133,18 @@ pub async fn create_volume(
     let pool = mock_pools.iter().find(|(id, _, _, _)| *id == req.pool_id);
 
     // 5. 验证存储池存在
-    if pool.is_none() {
-        return Ok(HttpResponse::NotFound().json(ErrorResponse {
-            success: false,
-            error: format!("Storage pool {} not found", req.pool_id),
-            code: "POOL_NOT_FOUND".to_string(),
-        }));
-    }
+    let pool = match pool {
+        Some(p) => p,
+        None => {
+            return Ok(HttpResponse::NotFound().json(ErrorResponse {
+                success: false,
+                error: format!("Storage pool {} not found", req.pool_id),
+                code: "POOL_NOT_FOUND".to_string(),
+            }));
+        }
+    };
 
-    let (_, _pool_name, _, pool_used) = pool.unwrap();
+    let (_, _pool_name, _, pool_used) = pool;
     let pool_available = 8796093022208u64 - *pool_used; // 简化计算
 
     // 6. 检查存储池容量是否足够
