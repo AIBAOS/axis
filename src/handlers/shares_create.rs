@@ -157,7 +157,7 @@ pub async fn create_share(
 
     match volume {
         Some(v) => {
-            let volume_name = v["name"].as_str().unwrap().to_string();
+            let volume_name = v["name"].as_str().unwrap_or("unknown").to_string();
 
             // 7. 模拟共享名称唯一性检查
             let existing_shares = vec!["Public", "Private", "Media", "Documents"];
