@@ -4,6 +4,7 @@
 use actix_web::{web, HttpResponse, Error};
 use serde::{Deserialize, Serialize};
 use chrono::Utc;
+use std::net::IpAddr;
 
 use crate::models::jwt::JwtClaims;
 
@@ -85,6 +86,12 @@ pub struct PrinterCapabilities {
     pub fax: bool,
 }
 
+/// 验证 IP 地址格式（Bug #23 修复）
+fn validate_ip_address(ip_str: &str) -> bool {
+    // 尝试解析为 IP 地址
+    ip_str.parse::<IpAddr>().is_ok()
+}
+
 /// 检查当前用户是否为管理员
 fn is_admin(claims: &JwtClaims) -> bool {
     claims.roles.iter().any(|r| r.to_lowercase() == "admin")
@@ -102,6 +109,26 @@ pub async fn create_printer(
             "message": "仅管理员可创建打印机",
             "code": "FORBIDDEN"
         })));
+    }
+
+    // 验证 IP 地址格式（仅对网络打印机，Bug #23 修复）
+    if req.printer_type == PrinterType::Network {
+        if let Some(ref ip_addr) = req.ip_address {
+            if !ip_addr.is_empty() && !validate_ip_address(ip_addr) {
+                return Ok(HttpResponse::BadRequest().json(serde_json::json!({
+                    "success": false,
+                    "message": format!("Invalid IP address format: {}", ip_addr),
+                    "code": "INVALID_IP_ADDRESS"
+                })));
+            }
+        } else {
+            // 网络打印机必须提供 IP 地址
+            return Ok(HttpResponse::BadRequest().json(serde_json::json!({
+                "success": false,
+                "message": "Network printers require IP address",
+                "code": "MISSING_IP_ADDRESS"
+            })));
+        }
     }
 
     let now = Utc::now().to_rfc3339();
