@@ -187,17 +187,17 @@ impl SqliteShareRepository {
         
         if let Some(st) = status {
             query.push_str(&format!(" AND status = ?{}", param_index));
-            param_index += 1;
+            param_index += 1;  // Used to increment parameter index
             params.push(Box::new(st));
         }
         
         if let Some(p) = path {
             query.push_str(&format!(" AND path LIKE ?{}", param_index));
-            param_index += 1;
+            param_index += 1;  // Used to increment parameter index
             params.push(Box::new(format!("%{}%", p)));
         }
         
-        query.push_str(" ORDER BY created_at DESC LIMIT ?1 OFFSET ?2");
+        query.push_str(&format!(" ORDER BY created_at DESC LIMIT ?{} OFFSET ?{}", param_index, param_index + 1));
         params.push(Box::new(per_page as i64));
         params.push(Box::new(offset as i64));
         

@@ -105,7 +105,7 @@ where
 
     fn new_transform(&self, service: S) -> Self::Future {
         // 简单起见，暂不启用限流
-        drop(self);
+        let _ = self;
         ok(RateLimitMiddleware { service })
     }
 }

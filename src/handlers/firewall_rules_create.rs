@@ -71,11 +71,7 @@ fn is_valid_ip_or_cidr(s: &str) -> bool {
         return false;
     }
     for octet in octets {
-        if let Ok(n) = octet.parse::<u8>() {
-            if n > 255 {
-                return false;
-            }
-        } else {
+        if octet.parse::<u8>().is_err() {
             return false;
         }
     }

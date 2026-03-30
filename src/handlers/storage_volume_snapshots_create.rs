@@ -2,6 +2,8 @@
 // POST /api/v1/storage/volumes/{volume_id}/snapshots — 创建存储卷快照
 
 use actix_web::{web, HttpResponse, Error, HttpRequest};
+use base64::engine::general_purpose;
+use base64::Engine as _;
 use serde::{Deserialize, Serialize};
 
 use crate::models::jwt::JwtClaims;
@@ -70,7 +72,7 @@ pub async fn create_volume_snapshot(
 
     let claims = serde_json::from_str::<JwtClaims>(
         &std::str::from_utf8(
-            &base64::decode(
+            &general_purpose::STANDARD.decode(
                 token.split('.').nth(1).unwrap_or("")
             ).unwrap_or_default()
         ).unwrap_or("")

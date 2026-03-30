@@ -46,7 +46,7 @@ pub struct ErrorResponse {
 /// - 错误处理：401/400/413/500
 pub async fn upload_photo(
     req: HttpRequest,
-    mut payload: Multipart,
+    payload: Multipart,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
     // 1. JWT 认证 - 提取并验证 token

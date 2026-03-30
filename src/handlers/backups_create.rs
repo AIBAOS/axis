@@ -3,6 +3,7 @@
 
 use actix_web::{web, HttpResponse, Error};
 use serde::{Deserialize, Serialize};
+use chrono::{TimeZone, Utc};
 
 use crate::database::backup_store::SqliteBackupRepository;
 use crate::services::jwt_service::JwtService;
@@ -60,16 +61,17 @@ impl From<crate::database::backup_store::BackupRow> for BackupTask {
             destination_path: row.destination_path,
             schedule: row.schedule,
             status: row.status,
-            last_run_at: row.last_run_at.map(|t| chrono::NaiveDateTime::from_timestamp_opt(t, 0)
-                .map(|dt| dt.to_string())
-                .unwrap_or_default()),
+            last_run_at: Some(row.last_run_at.and_then(|t| {
+                chrono::DateTime::from_timestamp(t, 0)
+                    .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
+            }).unwrap_or_default()),
             last_run_status: row.last_run_status,
             last_run_size_bytes: row.last_run_size_bytes,
-            created_at: chrono::NaiveDateTime::from_timestamp_opt(row.created_at, 0)
-                .map(|dt| dt.to_string())
+            created_at: chrono::DateTime::from_timestamp(row.created_at, 0)
+                .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
                 .unwrap_or_default(),
-            updated_at: chrono::NaiveDateTime::from_timestamp_opt(row.updated_at, 0)
-                .map(|dt| dt.to_string())
+            updated_at: chrono::DateTime::from_timestamp(row.updated_at, 0)
+                .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
                 .unwrap_or_default(),
         }
     }

@@ -11,7 +11,8 @@ pub enum SecurityType {
     WEP,
     WPA2,
     WPA3,
-    WPA2_WPA3,
+    #[serde(rename = "wpa2_wpa3")]
+    Wpa2Wpa3,
 }
 
 impl std::fmt::Display for SecurityType {
@@ -21,7 +22,7 @@ impl std::fmt::Display for SecurityType {
             SecurityType::WEP => write!(f, "wep"),
             SecurityType::WPA2 => write!(f, "wpa2"),
             SecurityType::WPA3 => write!(f, "wpa3"),
-            SecurityType::WPA2_WPA3 => write!(f, "wpa2_wpa3"),
+            SecurityType::Wpa2Wpa3 => write!(f, "wpa2_wpa3"),
         }
     }
 }
