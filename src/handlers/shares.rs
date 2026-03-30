@@ -1,11 +1,12 @@
 // 网络共享管理 API 处理器
 // 包含：共享列表、详情、创建、更新、删除接口
 
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 
 use crate::database::share_store::SqliteShareRepository;
 use crate::models::share::{Share, CreateShareRequest, UpdateShareRequest};
+use crate::services::jwt_service::JwtService;
 
 /// 分页查询参数
 #[derive(Deserialize)]
@@ -41,11 +42,47 @@ pub struct ShareOperationResponse {
     pub data: Option<Share>,
 }
 
+/// 检查是否为管理员
+fn is_admin(claims: &crate::models::jwt::JwtClaims) -> bool {
+    claims.roles.iter().any(|r| r.to_lowercase() == "admin")
+}
+
+/// JWT 认证辅助函数
+fn validate_auth(req: &HttpRequest, jwt_service: &web::Data<JwtService>) -> Result<crate::models::jwt::JwtClaims, HttpResponse> {
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if token.is_none() {
+        return Err(HttpResponse::Unauthorized().json(serde_json::json!({
+            "success": false,
+            "message": "Authentication required"
+        })));
+    }
+
+    jwt_service.validate_token(token.unwrap())
+        .map_err(|_| HttpResponse::Unauthorized().json(serde_json::json!({
+            "success": false,
+            "message": "Invalid token"
+        })))
+}
+
 /// 获取共享列表
+/// 需要登录用户访问
 pub async fn list_shares(
+    http_req: HttpRequest,
     share_repo: web::Data<SqliteShareRepository>,
     query: web::Query<PaginatedQuery>,
+    jwt_service: web::Data<JwtService>,
 ) -> impl Responder {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return e,
+    };
+
     let page = query.page.unwrap_or(1);
     let per_page = query.per_page.unwrap_or(10).min(100); // 上限 100
     let protocol = query.protocol.clone();
@@ -89,10 +126,19 @@ pub async fn list_shares(
 }
 
 /// 获取共享详情
+/// 需要登录用户访问
 pub async fn get_share(
+    http_req: HttpRequest,
     share_repo: web::Data<SqliteShareRepository>,
     path: web::Path<u64>,
+    jwt_service: web::Data<JwtService>,
 ) -> impl Responder {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return e,
+    };
+
     let share_id = path.into_inner();
 
     match share_repo.get_share_by_id(share_id) {
@@ -130,10 +176,28 @@ pub async fn get_share(
 }
 
 /// 创建共享
+/// 仅管理员可执行
 pub async fn create_share(
+    http_req: HttpRequest,
     share_repo: web::Data<SqliteShareRepository>,
     req: web::Json<CreateShareRequest>,
+    jwt_service: web::Data<JwtService>,
 ) -> impl Responder {
+    // JWT 认证
+    let claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return e,
+    };
+
+    // 仅管理员可创建共享
+    if !is_admin(&claims) {
+        return HttpResponse::Forbidden().json(ShareOperationResponse {
+            success: false,
+            message: "Only admin users can create shares".to_string(),
+            data: None,
+        });
+    }
+
     let create_req = req.into_inner();
     let path = create_req.path.clone();
 
@@ -173,11 +237,29 @@ pub async fn create_share(
 }
 
 /// 更新共享
+/// 仅管理员可执行
 pub async fn update_share(
+    http_req: HttpRequest,
     share_repo: web::Data<SqliteShareRepository>,
     path: web::Path<u64>,
     req: web::Json<UpdateShareRequest>,
+    jwt_service: web::Data<JwtService>,
 ) -> impl Responder {
+    // JWT 认证
+    let claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return e,
+    };
+
+    // 仅管理员可更新共享
+    if !is_admin(&claims) {
+        return HttpResponse::Forbidden().json(ShareOperationResponse {
+            success: false,
+            message: "Only admin users can update shares".to_string(),
+            data: None,
+        });
+    }
+
     let share_id = path.into_inner();
     let update_req = req.into_inner();
 
@@ -226,10 +308,28 @@ pub async fn update_share(
 }
 
 /// 删除共享
+/// 仅管理员可执行
 pub async fn delete_share(
+    http_req: HttpRequest,
     share_repo: web::Data<SqliteShareRepository>,
     path: web::Path<u64>,
+    jwt_service: web::Data<JwtService>,
 ) -> impl Responder {
+    // JWT 认证
+    let claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return e,
+    };
+
+    // 仅管理员可删除共享
+    if !is_admin(&claims) {
+        return HttpResponse::Forbidden().json(ShareOperationResponse {
+            success: false,
+            message: "Only admin users can delete shares".to_string(),
+            data: None,
+        });
+    }
+
     let share_id = path.into_inner();
 
     match share_repo.delete_share(share_id) {
@@ -266,10 +366,28 @@ pub async fn delete_share(
 }
 
 /// 切换共享启用/禁用状态
+/// 仅管理员可执行
 pub async fn toggle_share(
+    http_req: HttpRequest,
     share_repo: web::Data<SqliteShareRepository>,
     path: web::Path<u64>,
+    jwt_service: web::Data<JwtService>,
 ) -> impl Responder {
+    // JWT 认证
+    let claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return e,
+    };
+
+    // 仅管理员可切换共享状态
+    if !is_admin(&claims) {
+        return HttpResponse::Forbidden().json(ShareOperationResponse {
+            success: false,
+            message: "Only admin users can toggle shares".to_string(),
+            data: None,
+        });
+    }
+
     let share_id = path.into_inner();
 
     match share_repo.toggle_share(share_id) {
