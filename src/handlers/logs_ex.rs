@@ -1,10 +1,12 @@
 // 日志管理处理器（Phase 29）
 // 包含：日志列表、导出、清理接口
 
-use actix_web::{web, HttpResponse, Result};
+use actix_web::{web, HttpResponse, Result, HttpRequest};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::fs;
+
+use crate::services::jwt_service::JwtService;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum LogLevel {
@@ -138,8 +140,33 @@ fn parse_time(time_str: &str) -> Option<i64> {
 }
 
 pub async fn get_logs(
+    req: HttpRequest,
     query: web::Query<QueryParams>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if let Some(t) = token {
+        if jwt_service.validate_token(t).is_err() {
+            return Ok(HttpResponse::Unauthorized().json(json!({
+                "success": false,
+                "error": "Invalid or expired token",
+                "code": "UNAUTHORIZED"
+            })));
+        }
+    } else {
+        return Ok(HttpResponse::Unauthorized().json(json!({
+            "success": false,
+            "error": "Missing Authorization header",
+            "code": "UNAUTHORIZED"
+        })));
+    }
+
     let all_logs = read_all_logs();
     
     // 过滤级别
@@ -214,8 +241,33 @@ pub async fn get_logs(
 }
 
 pub async fn export_logs(
+    req: HttpRequest,
     query: web::Query<std::collections::HashMap<String, String>>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if let Some(t) = token {
+        if jwt_service.validate_token(t).is_err() {
+            return Ok(HttpResponse::Unauthorized().json(json!({
+                "success": false,
+                "error": "Invalid or expired token",
+                "code": "UNAUTHORIZED"
+            })));
+        }
+    } else {
+        return Ok(HttpResponse::Unauthorized().json(json!({
+            "success": false,
+            "error": "Missing Authorization header",
+            "code": "UNAUTHORIZED"
+        })));
+    }
+
     let format = query.get("format").map(|s| s.as_str()).unwrap_or("csv");
     let all_logs = read_all_logs();
     
@@ -258,8 +310,33 @@ pub async fn export_logs(
 }
 
 pub async fn delete_logs(
+    req: HttpRequest,
     query: web::Query<std::collections::HashMap<String, String>>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if let Some(t) = token {
+        if jwt_service.validate_token(t).is_err() {
+            return Ok(HttpResponse::Unauthorized().json(json!({
+                "success": false,
+                "error": "Invalid or expired token",
+                "code": "UNAUTHORIZED"
+            })));
+        }
+    } else {
+        return Ok(HttpResponse::Unauthorized().json(json!({
+            "success": false,
+            "error": "Missing Authorization header",
+            "code": "UNAUTHORIZED"
+        })));
+    }
+
     let level = query.get("level").map(|s| s.as_str());
     let before = query.get("before");
     let after = query.get("after");

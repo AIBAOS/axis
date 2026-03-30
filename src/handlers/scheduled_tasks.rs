@@ -1,12 +1,13 @@
 // 计划任务管理处理器（SQLite 持久化版）
 // 包含：列表、详情、创建、更新、删除、启用/禁用、手动执行
 
-use actix_web::{web, HttpResponse, Result};
+use actix_web::{web, HttpResponse, Result, HttpRequest};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 
 use crate::database::scheduled_task_store::SqliteScheduledTaskRepository;
+use crate::services::jwt_service::JwtService;
 
 #[derive(Debug, Deserialize)]
 pub struct ScheduledTaskQuery {
@@ -37,11 +38,43 @@ pub struct UpdateScheduledTaskRequest {
 
 fn default_task_type() -> String { "system".to_string() }
 
-/// GET /api/v1/scheduled-tasks — 计划任务列表
+/// 验证 JWT token
+async fn validate_jwt(
+    req: &HttpRequest,
+    jwt_service: &web::Data<JwtService>,
+) -> Result<crate::models::jwt::JwtClaims, HttpResponse> {
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    match token {
+        Some(t) => jwt_service.validate_token(t)
+            .map_err(|_| HttpResponse::Unauthorized().json(json!({
+                "success": false,
+                "error": "Invalid or expired token",
+                "code": "UNAUTHORIZED"
+            }))),
+        None => Err(HttpResponse::Unauthorized().json(json!({
+            "success": false,
+            "error": "Missing Authorization header",
+            "code": "UNAUTHORIZED"
+        }))),
+    }
+}
+
+/// GET /api/v1/scheduled-tasks — 计划任务列表 (需要认证)
 pub async fn list_scheduled_tasks(
+    req: HttpRequest,
     query: web::Query<ScheduledTaskQuery>,
     repo: web::Data<Arc<SqliteScheduledTaskRepository>>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    validate_jwt(&req, &jwt_service).await.map_err(|e| {
+        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
+    })?;
+
     let page = query.page.unwrap_or(1).max(1);
     let per_page = std::cmp::min(query.per_page.unwrap_or(20), 100);
 
@@ -66,11 +99,17 @@ pub async fn list_scheduled_tasks(
     }
 }
 
-/// GET /api/v1/scheduled-tasks/{id} — 计划任务详情
+/// GET /api/v1/scheduled-tasks/{id} — 计划任务详情 (需要认证)
 pub async fn get_scheduled_task(
+    req: HttpRequest,
     path: web::Path<i64>,
     repo: web::Data<Arc<SqliteScheduledTaskRepository>>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    validate_jwt(&req, &jwt_service).await.map_err(|e| {
+        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
+    })?;
+
     let id = path.into_inner();
     match repo.get_task_by_id(id) {
         Ok(Some(task)) => Ok(HttpResponse::Ok().json(json!({ "success": true, "data": task }))),
@@ -85,11 +124,17 @@ pub async fn get_scheduled_task(
     }
 }
 
-/// POST /api/v1/scheduled-tasks — 创建计划任务
+/// POST /api/v1/scheduled-tasks — 创建计划任务 (需要认证)
 pub async fn create_scheduled_task(
+    req: HttpRequest,
     payload: web::Json<CreateScheduledTaskRequest>,
     repo: web::Data<Arc<SqliteScheduledTaskRepository>>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    validate_jwt(&req, &jwt_service).await.map_err(|e| {
+        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
+    })?;
+
     if payload.name.trim().is_empty() {
         return Ok(HttpResponse::BadRequest().json(json!({
             "success": false, "message": "name 不能为空"
@@ -117,12 +162,18 @@ pub async fn create_scheduled_task(
     }
 }
 
-/// PUT /api/v1/scheduled-tasks/{id} — 更新计划任务
+/// PUT /api/v1/scheduled-tasks/{id} — 更新计划任务 (需要认证)
 pub async fn update_scheduled_task(
+    req: HttpRequest,
     path: web::Path<i64>,
     payload: web::Json<UpdateScheduledTaskRequest>,
     repo: web::Data<Arc<SqliteScheduledTaskRepository>>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    validate_jwt(&req, &jwt_service).await.map_err(|e| {
+        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
+    })?;
+
     let id = path.into_inner();
 
     // 先检查是否存在
@@ -165,11 +216,17 @@ pub async fn update_scheduled_task(
     }
 }
 
-/// DELETE /api/v1/scheduled-tasks/{id} — 删除计划任务
+/// DELETE /api/v1/scheduled-tasks/{id} — 删除计划任务 (需要认证)
 pub async fn delete_scheduled_task(
+    req: HttpRequest,
     path: web::Path<i64>,
     repo: web::Data<Arc<SqliteScheduledTaskRepository>>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    validate_jwt(&req, &jwt_service).await.map_err(|e| {
+        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
+    })?;
+
     let id = path.into_inner();
 
     if let Ok(Some(task)) = repo.get_task_by_id(id) {
@@ -194,11 +251,17 @@ pub async fn delete_scheduled_task(
     }
 }
 
-/// POST /api/v1/scheduled-tasks/{id}/toggle — 启用/禁用切换
+/// POST /api/v1/scheduled-tasks/{id}/toggle — 启用/禁用切换 (需要认证)
 pub async fn toggle_scheduled_task(
+    req: HttpRequest,
     path: web::Path<i64>,
     repo: web::Data<Arc<SqliteScheduledTaskRepository>>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    validate_jwt(&req, &jwt_service).await.map_err(|e| {
+        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
+    })?;
+
     let id = path.into_inner();
     match repo.toggle_task(id) {
         Ok(Some(new_state)) => Ok(HttpResponse::Ok().json(json!({
@@ -215,11 +278,17 @@ pub async fn toggle_scheduled_task(
     }
 }
 
-/// POST /api/v1/scheduled-tasks/{id}/run — 手动执行
+/// POST /api/v1/scheduled-tasks/{id}/run — 手动执行 (需要认证)
 pub async fn run_scheduled_task(
+    req: HttpRequest,
     path: web::Path<i64>,
     repo: web::Data<Arc<SqliteScheduledTaskRepository>>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    validate_jwt(&req, &jwt_service).await.map_err(|e| {
+        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
+    })?;
+
     let id = path.into_inner();
     match repo.get_task_by_id(id) {
         Ok(Some(task)) => {
