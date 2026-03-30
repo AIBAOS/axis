@@ -690,10 +690,8 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/printers", web::get().to(list_printers))
             .route("/api/v1/printers/stats", web::get().to(get_printer_stats))
             .route("/api/v1/printers", web::post().to(create_printer))
-            .route("/api/v1/printers", web::post().to(create_printer))
             .route("/api/v1/printers/{id}", web::put().to(update_printer))
             .route("/api/v1/printers/{id}", web::get().to(get_printer_2))
-            .route("/api/v1/printers/{id}", web::put().to(update_printer))
             .route("/api/v1/printers/{id}", web::delete().to(delete_printer))
             .route("/api/v1/printers/{id}/jobs", web::get().to(list_print_jobs))
             .route("/api/v1/printers/{id}/jobs", web::post().to(create_print_job_2))
@@ -833,11 +831,6 @@ async fn main() -> std::io::Result<()> {
             .route("/api/v1/database/stats", web::get().to(handlers::database::get_database_stats))
             .route("/api/v1/database/vacuum", web::post().to(handlers::database::vacuum_database))
             .route("/api/v1/database/tables", web::get().to(handlers::database::get_database_tables))
-            // 下载管理 API routes
-            .route("/api/v1/downloads", web::get().to(handlers::downloads::get_downloads))
-            .route("/api/v1/downloads", web::post().to(handlers::downloads::create_download))
-            .route("/api/v1/downloads/{id}", web::get().to(handlers::downloads::get_download))
-            .route("/api/v1/downloads/{id}", web::delete().to(handlers::downloads::cancel_download))
             // 系统设置 API routes
             .route("/api/v1/settings", web::get().to(get_all_settings))
             .route("/api/v1/settings/{key}", web::get().to(get_setting))
