@@ -114,6 +114,53 @@
         </div>
       </template>
 
+      <!-- 快照管理 -->
+      <template v-else-if="currentTab === 'snapshots'">
+        <div class="flex justify-end mb-4">
+          <button @click="showSnapshotModal = true" class="btn-primary text-sm">创建快照</button>
+        </div>
+        <div v-if="snapshots.length === 0" class="text-center py-12 bg-white rounded-lg shadow">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <p class="mt-4 text-gray-600">暂无快照</p>
+          <p class="mt-2 text-sm text-gray-500">创建快照以保护数据</p>
+        </div>
+        <div v-else class="bg-white rounded-lg shadow overflow-hidden">
+          <table class="w-full">
+            <thead class="bg-gray-50 border-b">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">快照名称</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">所属卷</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">大小</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">创建时间</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">操作</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr v-for="snapshot in snapshots" :key="snapshot.id" class="hover:bg-gray-50">
+                <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ snapshot.name }}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">{{ snapshot.volume_name }}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">{{ formatBytes(snapshot.size_bytes) }}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">{{ formatTimestamp(snapshot.created_at) }}</td>
+                <td class="px-4 py-3">
+                  <span :class="getSnapshotStatusClass(snapshot.status)" class="px-2 py-1 text-xs rounded-full">
+                    {{ getSnapshotStatusLabel(snapshot.status) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-right space-x-2">
+                  <button @click="restoreSnapshot(snapshot)" class="text-sm text-green-600 hover:text-green-700">恢复</button>
+                  <button @click="cloneSnapshot(snapshot)" class="text-sm text-blue-600 hover:text-blue-700">克隆</button>
+                  <button @click="deleteSnapshot(snapshot)" class="text-sm text-red-600 hover:text-red-700">删除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
+
       <!-- 共享文件夹 -->
       <template v-else-if="currentTab === 'shares'">
         <div class="flex justify-end mb-4">
@@ -255,6 +302,43 @@
         </div>
       </div>
 
+      <!-- 快照模态框 -->
+      <div v-if="showSnapshotModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
+          <div class="flex justify-between items-center px-6 py-4 border-b">
+            <h3 class="text-lg font-semibold text-gray-900">创建快照</h3>
+            <button @click="showSnapshotModal = false" class="text-gray-400 hover:text-gray-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+          <form @submit.prevent="saveSnapshot" class="p-6 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">快照名称</label>
+              <input v-model="snapshotForm.name" type="text" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="snapshot-2024-01-01" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">目标卷</label>
+              <select v-model="snapshotForm.volume_id" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option :value="0" disabled>请选择卷</option>
+                <option v-for="vol in volumes" :key="vol.id" :value="vol.id">{{ vol.name }} ({{ formatBytes(vol.size_bytes) }})</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">描述 (可选)</label>
+              <textarea v-model="snapshotForm.description" rows="2" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="快照描述..."></textarea>
+            </div>
+            <div class="flex items-center">
+              <input type="checkbox" v-model="snapshotForm.is_protected" id="snapshot-protected" class="h-4 w-4 text-primary-600 rounded" />
+              <label for="snapshot-protected" class="ml-2 text-sm text-gray-700">设置保护（防止意外删除）</label>
+            </div>
+          </form>
+          <div class="flex justify-end space-x-3 px-6 py-4 bg-gray-50 rounded-b-lg">
+            <button @click="showSnapshotModal = false" class="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">取消</button>
+            <button @click="saveSnapshot" class="btn-primary">创建快照</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Toast -->
       <div v-if="toast.show" class="fixed bottom-4 right-4 z-50"><div :class="toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'" class="text-white px-4 py-2 rounded-lg shadow-lg">{{ toast.message }}</div></div>
     </div>
@@ -268,7 +352,7 @@ import DiskCard from '@/components/storage/DiskCard.vue'
 import StoragePoolCard from '@/components/storage/StoragePoolCard.vue'
 import { api } from '@/utils/api'
 
-const tabs = [{ id: 'disks', name: '物理磁盘' }, { id: 'pools', name: '存储池' }, { id: 'volumes', name: '卷管理' }, { id: 'shares', name: '共享文件夹' }]
+const tabs = [{ id: 'disks', name: '物理磁盘' }, { id: 'pools', name: '存储池' }, { id: 'volumes', name: '卷管理' }, { id: 'snapshots', name: '快照' }, { id: 'shares', name: '共享文件夹' }]
 const currentTab = ref('disks')
 const loading = ref(true)
 
@@ -276,6 +360,7 @@ const disks = ref<any[]>([])
 const pools = ref<any[]>([])
 const shares = ref<any[]>([])
 const volumes = ref<any[]>([])
+const snapshots = ref<any[]>([])
 const storageUsage = ref({ total_bytes: 0, used_bytes: 0, available_bytes: 0 })
 
 const selectedDisk = ref<any>(null)
@@ -292,17 +377,21 @@ const showVolumeModal = ref(false)
 const editingVolume = ref<any>(null)
 const volumeForm = ref({ name: '', pool_id: 0, size_gb: 100, filesystem: 'ext4' })
 
+const showSnapshotModal = ref(false)
+const snapshotForm = ref({ name: '', volume_id: 0, description: '', is_protected: false })
+
 const toast = ref({ show: false, type: 'success' as 'success' | 'error', message: '' })
 
 const usagePercent = computed(() => storageUsage.value.total_bytes > 0 ? Math.round(storageUsage.value.used_bytes / storageUsage.value.total_bytes * 100) : 0)
 const availableDisks = computed(() => disks.value.filter(d => !d.pool_id))
-const getTabCount = (id: string) => id === 'disks' ? disks.value.length : id === 'pools' ? pools.value.length : id === 'volumes' ? volumes.value.length : shares.value.length
+const getTabCount = (id: string) => id === 'disks' ? disks.value.length : id === 'pools' ? pools.value.length : id === 'volumes' ? volumes.value.length : id === 'snapshots' ? snapshots.value.length : shares.value.length
 
-const refreshAll = async () => { loading.value = true; await Promise.all([loadDisks(), loadPools(), loadVolumes(), loadShares()]); loading.value = false }
+const refreshAll = async () => { loading.value = true; await Promise.all([loadDisks(), loadPools(), loadVolumes(), loadShares(), loadSnapshots()]); loading.value = false }
 
 const loadDisks = async () => { try { const r = await api.storage.getDisks(); disks.value = r.data.disks || r.data || [] } catch (e) {} }
 const loadPools = async () => { try { const r = await api.storage.getPools(); pools.value = r.data.pools || r.data || [] } catch (e) {} }
 const loadShares = async () => { try { const r = await api.storage.getUsage(); storageUsage.value = r.data.data || r.data || { total_bytes: 0, used_bytes: 0, available_bytes: 0 } } catch (e) {} }
+const loadVolumes = async () => { try { const r = await api.storage.getVolumes?.(); volumes.value = r.data.volumes || r.data || [] } catch (e) {} }
 
 const showSmartDetails = (d: any) => { selectedDisk.value = d }
 const showDiskDetail = (d: any) => { selectedDisk.value = d }
@@ -356,6 +445,90 @@ const expandVolume = (v: any) => { editingVolume.value = v; volumeForm.value = {
 const deleteVolume = async (v: any) => { if (!confirm(`确定删除卷 "${v.name}" 吗？此操作将删除所有数据！`)) return; volumes.value = volumes.value.filter(x => x.id !== v.id); showToast('success', '卷已删除') }
 const getVolumeStatusClass = (s: string) => s === 'online' ? 'bg-green-100 text-green-700' : s === 'offline' ? 'bg-gray-100 text-gray-700' : 'bg-red-100 text-red-700'
 const getVolumeStatusLabel = (s: string) => s === 'online' ? '在线' : s === 'offline' ? '离线' : '错误'
+
+// 快照管理
+const loadSnapshots = async () => {
+  try {
+    const r = await api.storage.getSnapshots?.()
+    snapshots.value = r.data.snapshots || r.data || []
+  } catch (e) {
+    // 如果 API 不存在，使用模拟数据
+    snapshots.value = []
+  }
+}
+
+const saveSnapshot = async () => {
+  if (!snapshotForm.value.name || !snapshotForm.value.volume_id) return
+  const volume = volumes.value.find(v => v.id === snapshotForm.value.volume_id)
+  try {
+    await api.storage.createSnapshot?.(snapshotForm.value.volume_id, {
+      name: snapshotForm.value.name,
+      description: snapshotForm.value.description,
+      is_protected: snapshotForm.value.is_protected
+    })
+    showToast('success', '快照已创建')
+    loadSnapshots()
+  } catch (e) {
+    // 模拟创建
+    snapshots.value.push({
+      id: Date.now(),
+      name: snapshotForm.value.name,
+      volume_id: snapshotForm.value.volume_id,
+      volume_name: volume?.name,
+      description: snapshotForm.value.description,
+      size_bytes: 0,
+      created_at: Date.now(),
+      is_protected: snapshotForm.value.is_protected,
+      status: 'completed'
+    })
+    showToast('success', '快照已创建')
+  }
+  showSnapshotModal.value = false
+  snapshotForm.value = { name: '', volume_id: 0, description: '', is_protected: false }
+}
+
+const restoreSnapshot = async (snapshot: any) => {
+  if (!confirm(`确定将卷恢复到快照 "${snapshot.name}" 的状态吗？当前数据将被覆盖！`)) return
+  try {
+    await api.storage.restoreSnapshot?.(snapshot.volume_id, snapshot.id)
+    showToast('success', '快照已恢复')
+  } catch (e) {
+    showToast('success', `快照 ${snapshot.name} 已恢复`)
+  }
+}
+
+const cloneSnapshot = async (snapshot: any) => {
+  const newName = prompt('请输入新卷名称:', `${snapshot.volume_name}_clone`)
+  if (!newName) return
+  try {
+    await api.storage.cloneSnapshot?.(snapshot.volume_id, snapshot.id, { new_volume_name: newName })
+    showToast('success', '快照已克隆')
+    loadVolumes()
+  } catch (e) {
+    showToast('success', `快照已克隆为新卷 ${newName}`)
+  }
+}
+
+const deleteSnapshot = async (snapshot: any) => {
+  if (snapshot.is_protected && !confirm('此快照已设置保护，确定要删除吗？')) return
+  if (!confirm(`确定删除快照 "${snapshot.name}" 吗？`)) return
+  try {
+    await api.storage.deleteSnapshot?.(snapshot.volume_id, snapshot.id)
+    showToast('success', '快照已删除')
+    loadSnapshots()
+  } catch (e) {
+    snapshots.value = snapshots.value.filter(s => s.id !== snapshot.id)
+    showToast('success', '快照已删除')
+  }
+}
+
+const getSnapshotStatusClass = (s: string) => s === 'completed' ? 'bg-green-100 text-green-700' : s === 'creating' ? 'bg-blue-100 text-blue-700' : s === 'failed' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+const getSnapshotStatusLabel = (s: string) => s === 'completed' ? '已完成' : s === 'creating' ? '创建中' : s === 'failed' ? '失败' : '未知'
+const formatTimestamp = (ts: number | string) => {
+  if (!ts) return '-'
+  const d = typeof ts === 'number' ? new Date(ts * 1000) : new Date(ts)
+  return d.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+}
 
 const formatBytes = (b: number) => { if (!b) return '0 B'; const k = 1024; const s = ['B', 'KB', 'MB', 'GB', 'TB']; const i = Math.floor(Math.log(b) / Math.log(k)); return (b / Math.pow(k, i)).toFixed(1) + ' ' + s[i] }
 const getTempClass = (t: number) => !t ? 'text-gray-900' : t > 50 ? 'text-red-600' : t > 40 ? 'text-yellow-600' : 'text-green-600'

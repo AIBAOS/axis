@@ -149,7 +149,15 @@ export const api = {
     formatDisk: (id: string, filesystem: string) => apiClient.post(`/api/v1/storage/disks/${id}/format`, { filesystem }),
     runSmartTest: (id: string, testType: 'short' | 'long') => apiClient.post(`/api/v1/storage/disks/${id}/smart-test`, { test_type: testType }),
     move: (sourcePath: string, targetPath: string) => apiClient.post('/api/v1/files/move', { source_path: sourcePath, target_path: targetPath }),
-    copy: (sourcePath: string, targetPath: string) => apiClient.post('/api/v1/files/copy', { source_path: sourcePath, target_path: targetPath })
+    copy: (sourcePath: string, targetPath: string) => apiClient.post('/api/v1/files/copy', { source_path: sourcePath, target_path: targetPath }),
+    // 快照管理
+    getSnapshots: (params?: any) => apiClient.get('/api/v1/storage/snapshots', { params }),
+    getVolumeSnapshots: (volumeId: number) => apiClient.get(`/api/v1/storage/volumes/${volumeId}/snapshots`),
+    createSnapshot: (volumeId: number, data: any) => apiClient.post(`/api/v1/storage/volumes/${volumeId}/snapshots`, data),
+    getSnapshot: (volumeId: number, snapshotId: number) => apiClient.get(`/api/v1/storage/volumes/${volumeId}/snapshots/${snapshotId}`),
+    deleteSnapshot: (volumeId: number, snapshotId: number) => apiClient.delete(`/api/v1/storage/volumes/${volumeId}/snapshots/${snapshotId}`),
+    restoreSnapshot: (volumeId: number, snapshotId: number) => apiClient.post(`/api/v1/storage/volumes/${volumeId}/snapshots/${snapshotId}/restore`),
+    cloneSnapshot: (volumeId: number, snapshotId: number, data: any) => apiClient.post(`/api/v1/storage/volumes/${volumeId}/snapshots/${snapshotId}/clone`, data)
   },
 
   // 设置
