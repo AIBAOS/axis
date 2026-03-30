@@ -31,7 +31,7 @@ fn validate_auth(req: &HttpRequest, jwt_service: &web::Data<JwtService>) -> Resu
         })));
     }
 
-    jwt_service.validate_token(token.unwrap())
+    jwt_service.validate_token(&token.expect("Token should exist"))
         .map_err(|_| HttpResponse::Unauthorized().json(json!({
             "success": false,
             "message": "Invalid token"

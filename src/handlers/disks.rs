@@ -40,7 +40,7 @@ pub async fn list_disks(
         })));
     }
 
-    let _claims = jwt_service.validate_token(token.unwrap())
+    let _claims = jwt_service.validate_token(&token.expect("Token should exist"))
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
 
     let page = query.page.unwrap_or(1).max(1);

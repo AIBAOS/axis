@@ -49,7 +49,7 @@ pub async fn get_logs(
         })));
     }
 
-    let _claims = jwt_service.validate_token(token.unwrap())
+    let _claims = jwt_service.validate_token(&token.expect("Token should exist"))
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
 
     let level_filter = query.level.as_ref().and_then(|s| {
