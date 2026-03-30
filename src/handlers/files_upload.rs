@@ -82,6 +82,14 @@ fn validate_filename(filename: &str) -> Result<String, ErrorResponse> {
             code: "INVALID_FILENAME".to_string(),
         });
     }
+    // Bug #50 修复：限制文件名长度 (最大 255 字符)
+    if filename.len() > 255 {
+        return Err(ErrorResponse {
+            success: false,
+            error: "Filename cannot exceed 255 characters".to_string(),
+            code: "INVALID_FILENAME".to_string(),
+        });
+    }
     // 禁止路径分隔符
     if filename.contains('/') || filename.contains('\\') {
         return Err(ErrorResponse {
