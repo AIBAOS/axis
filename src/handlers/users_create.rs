@@ -6,7 +6,9 @@ use serde::{Deserialize, Serialize};
 use regex::Regex;
 
 use crate::database::rbac_store::SqliteRbacRepository;
+use crate::database::user_store::SqliteUserRepository;
 use crate::models::rbac::RbacRepository;
+use crate::models::user::UserRepository;
 use crate::services::jwt_service::JwtService;
 
 /// 创建用户请求
@@ -74,6 +76,7 @@ pub async fn create_user(
     req: HttpRequest,
     payload: web::Json<CreateUserRequest>,
     rbac_repo: web::Data<SqliteRbacRepository>,
+    user_store: web::Data<SqliteUserRepository>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
     // 1. JWT 认证 - 提取并验证 token
@@ -159,14 +162,26 @@ pub async fn create_user(
         }));
     }
 
-    // 7. 模拟用户名唯一性检查
-    let existing_usernames = vec!["admin", "user1", "user2", "guest"];
-    if existing_usernames.contains(&username.as_str()) {
-        return Ok(HttpResponse::Conflict().json(ErrorResponse {
-            success: false,
-            error: format!("Username '{}' already exists", username),
-            code: "CONFLICT".to_string(),
-        }));
+    // 7. 用户名唯一性检查（Bug #20 修复：查询数据库验证）
+    match user_store.find_by_username(username) {
+        Ok(Some(_)) => {
+            return Ok(HttpResponse::Conflict().json(ErrorResponse {
+                success: false,
+                error: format!("Username '{}' already exists", username),
+                code: "CONFLICT".to_string(),
+            }));
+        }
+        Ok(None) => {
+            // 用户名可用，继续创建
+        }
+        Err(e) => {
+            log::error!("Database error checking username: {}", e);
+            return Ok(HttpResponse::InternalServerError().json(ErrorResponse {
+                success: false,
+                error: "Failed to check username availability".to_string(),
+                code: "DATABASE_ERROR".to_string(),
+            }));
+        }
     }
 
     // 8. 模拟创建用户
