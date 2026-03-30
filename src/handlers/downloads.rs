@@ -1,5 +1,7 @@
-use actix_web::{web, HttpResponse, Result};
+use actix_web::{web, HttpRequest, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
+
+use crate::services::jwt_service::JwtService;
 
 /// 下载状态
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -79,10 +81,41 @@ pub struct DownloadPagination {
     pub total_pages: u64,
 }
 
+/// JWT 认证辅助函数
+fn validate_auth(req: &HttpRequest, jwt_service: &web::Data<JwtService>) -> Result<crate::models::jwt::JwtClaims, HttpResponse> {
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if token.is_none() {
+        return Err(HttpResponse::Unauthorized().json(serde_json::json!({
+            "success": false,
+            "message": "Authentication required"
+        })));
+    }
+
+    jwt_service.validate_token(token.unwrap())
+        .map_err(|_| HttpResponse::Unauthorized().json(serde_json::json!({
+            "success": false,
+            "message": "Invalid token"
+        })))
+}
+
 /// 获取下载任务列表
+/// 需要登录用户访问
 pub async fn get_downloads(
+    http_req: HttpRequest,
     query: web::Query<DownloadQuery>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     let page = query.page.unwrap_or(1);
     let limit = query.per_page.unwrap_or(20).min(100) as u64; // 最大 100
     let status_filter = query.status.as_deref();
@@ -241,9 +274,18 @@ pub async fn get_downloads(
 }
 
 /// 获取单个下载任务
+/// 需要登录用户访问
 pub async fn get_download(
+    http_req: HttpRequest,
     path: web::Path<u64>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     let id = path.into_inner();
 
     let mock_downloads = vec![
@@ -289,9 +331,18 @@ pub async fn get_download(
 }
 
 /// 创建下载任务
+/// 需要登录用户访问
 pub async fn create_download(
+    http_req: HttpRequest,
     payload: web::Json<CreateDownloadRequest>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     let url = &payload.url;
     
     // URL 格式校验
@@ -364,9 +415,18 @@ pub async fn create_download(
 }
 
 /// 取消下载任务
+/// 需要登录用户访问
 pub async fn cancel_download(
+    http_req: HttpRequest,
     path: web::Path<u64>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     let id = path.into_inner();
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "success": true,
@@ -376,7 +436,17 @@ pub async fn cancel_download(
 }
 
 /// 获取下载统计
-pub async fn get_download_stats() -> Result<HttpResponse> {
+/// 需要登录用户访问
+pub async fn get_download_stats(
+    http_req: HttpRequest,
+    jwt_service: web::Data<JwtService>,
+) -> Result<HttpResponse> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "total": 5,
         "pending": 1,
