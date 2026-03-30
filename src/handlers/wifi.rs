@@ -1,8 +1,10 @@
 // WiFi 管理处理器（Phase 54）
 // 包含：WiFi 扫描、连接、断开等接口
 
-use actix_web::{web, HttpResponse, Result};
+use actix_web::{web, HttpRequest, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
+
+use crate::services::jwt_service::JwtService;
 
 /// WiFi 安全模式
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -54,10 +56,35 @@ pub struct WiFiScanResponse {
     pub total: u64,
 }
 
+/// 检查是否为管理员
+fn is_admin(claims: &crate::models::jwt::JwtClaims) -> bool {
+    claims.roles.iter().any(|r| r.to_lowercase() == "admin")
+}
+
 /// 执行 WiFi 扫描
+/// 需要登录用户访问
 pub async fn scan_wifi(
+    req: HttpRequest,
     query: web::Query<WiFiScanQuery>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if token.is_none() {
+        return Ok(HttpResponse::Unauthorized().json(serde_json::json!({
+            "success": false,
+            "message": "Authentication required"
+        })));
+    }
+
+    let _claims = jwt_service.validate_token(token.unwrap())
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
+
     let frequency_filter = query.frequency.as_deref();
 
     // 模拟 WiFi 扫描结果（真实数据可由 iwlist 或 rtnetlink 获取）
@@ -147,9 +174,31 @@ pub async fn scan_wifi(
 }
 
 /// 连接 WiFi 网络
+/// 仅管理员可执行
 pub async fn connect_wifi(
+    req: HttpRequest,
     payload: web::Json<ConnectWiFiRequest>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing Authorization header"))?;
+
+    let claims = jwt_service.validate_token(token)
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
+
+    // 仅管理员可连接 WiFi
+    if !is_admin(&claims) {
+        return Ok(HttpResponse::Forbidden().json(serde_json::json!({
+            "success": false,
+            "message": "Only admin users can connect to WiFi networks"
+        })));
+    }
+
     let ssid = &payload.ssid;
     let _password = &payload.password;
 
@@ -173,7 +222,30 @@ pub async fn connect_wifi(
 }
 
 /// 断开 WiFi 连接
-pub async fn disconnect_wifi() -> Result<HttpResponse> {
+/// 仅管理员可执行
+pub async fn disconnect_wifi(
+    req: HttpRequest,
+    jwt_service: web::Data<JwtService>,
+) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing Authorization header"))?;
+
+    let claims = jwt_service.validate_token(token)
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
+
+    // 仅管理员可断开 WiFi
+    if !is_admin(&claims) {
+        return Ok(HttpResponse::Forbidden().json(serde_json::json!({
+            "success": false,
+            "message": "Only admin users can disconnect WiFi"
+        })));
+    }
+
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "success": true,
         "message": "WiFi disconnected"
@@ -181,7 +253,28 @@ pub async fn disconnect_wifi() -> Result<HttpResponse> {
 }
 
 /// 获取当前连接状态
-pub async fn get_wifi_status() -> Result<HttpResponse> {
+/// 需要登录用户访问
+pub async fn get_wifi_status(
+    req: HttpRequest,
+    jwt_service: web::Data<JwtService>,
+) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if token.is_none() {
+        return Ok(HttpResponse::Unauthorized().json(serde_json::json!({
+            "success": false,
+            "message": "Authentication required"
+        })));
+    }
+
+    let _claims = jwt_service.validate_token(token.unwrap())
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
+
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "connected": true,
         "ssid": "Home_AP",
@@ -194,7 +287,28 @@ pub async fn get_wifi_status() -> Result<HttpResponse> {
 }
 
 /// 获取 WiFi 接口列表
-pub async fn list_wifi_interfaces() -> Result<HttpResponse> {
+/// 需要登录用户访问
+pub async fn list_wifi_interfaces(
+    req: HttpRequest,
+    jwt_service: web::Data<JwtService>,
+) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if token.is_none() {
+        return Ok(HttpResponse::Unauthorized().json(serde_json::json!({
+            "success": false,
+            "message": "Authentication required"
+        })));
+    }
+
+    let _claims = jwt_service.validate_token(token.unwrap())
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
+
     Ok(HttpResponse::Ok().json(vec![
         serde_json::json!({
             "name": "wlan0",
@@ -212,9 +326,31 @@ pub async fn list_wifi_interfaces() -> Result<HttpResponse> {
 }
 
 /// 忘记 WiFi 网络
+/// 仅管理员可执行
 pub async fn forget_wifi(
+    req: HttpRequest,
     payload: web::Json<ForgetWiFiRequest>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing Authorization header"))?;
+
+    let claims = jwt_service.validate_token(token)
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
+
+    // 仅管理员可忘记网络
+    if !is_admin(&claims) {
+        return Ok(HttpResponse::Forbidden().json(serde_json::json!({
+            "success": false,
+            "message": "Only admin users can forget WiFi networks"
+        })));
+    }
+
     let ssid = &payload.ssid;
 
     if ssid.is_empty() {
@@ -232,7 +368,28 @@ pub async fn forget_wifi(
 }
 
 /// 获取已保存的 WiFi 网络列表
-pub async fn list_saved_wifi() -> Result<HttpResponse> {
+/// 需要登录用户访问
+pub async fn list_saved_wifi(
+    req: HttpRequest,
+    jwt_service: web::Data<JwtService>,
+) -> Result<HttpResponse> {
+    // JWT 认证
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if token.is_none() {
+        return Ok(HttpResponse::Unauthorized().json(serde_json::json!({
+            "success": false,
+            "message": "Authentication required"
+        })));
+    }
+
+    let _claims = jwt_service.validate_token(token.unwrap())
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
+
     Ok(HttpResponse::Ok().json(vec![
         serde_json::json!({
             "ssid": "Home_AP",
