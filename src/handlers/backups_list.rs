@@ -90,7 +90,7 @@ pub async fn list_backup_tasks(
 
     // 4. 解析查询参数
     let page = query.page.unwrap_or(1).max(1);
-    let page_size = query.page_size.unwrap_or(20).min(100);
+    let page_size = query.page_size.unwrap_or(20).max(1).min(100);
 
     // 5. 模拟备份任务数据（实际应从数据库读取）
     let mut all_tasks = vec![

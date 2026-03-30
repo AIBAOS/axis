@@ -486,7 +486,7 @@ pub async fn search_files(
     }
     
     // 分页参数
-    let limit = query.limit.unwrap_or(50).min(500);
+    let limit = query.limit.unwrap_or(50).max(1).min(500);
     let offset = query.offset.unwrap_or(0);
     
     // 递归参数（默认 true）

@@ -105,7 +105,7 @@ pub async fn list_permissions(
 
     // 2. 解析分页参数
     let page = query.page.unwrap_or(1);
-    let per_page = query.per_page.unwrap_or(20).min(100); // 最大 100
+    let per_page = query.per_page.unwrap_or(20).max(1).min(100);
 
     // 3. 模拟共享文件夹数据（验证存在性）
     let mock_folders = vec![1, 2, 3];

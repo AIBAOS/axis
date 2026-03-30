@@ -117,7 +117,7 @@ pub async fn get_downloads(
     };
 
     let page = query.page.unwrap_or(1);
-    let limit = query.per_page.unwrap_or(20).min(100) as u64; // 最大 100
+    let limit = query.per_page.unwrap_or(20).max(1).min(100) as u64; // 最大 100
     let status_filter = query.status.as_deref();
     let _sort = query.sort.as_deref().unwrap_or("created_at");
     let _order = query.order.as_deref().unwrap_or("desc");

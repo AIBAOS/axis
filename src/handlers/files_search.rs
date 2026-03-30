@@ -288,7 +288,7 @@ pub async fn search_files(
     }
     
     // 解析分页参数
-    let limit = query.limit.unwrap_or(50).min(200); // 最大 200
+    let limit = query.limit.unwrap_or(50).max(1).min(200); // 最大 200
     let offset = query.offset.unwrap_or(0);
     
     // 执行搜索

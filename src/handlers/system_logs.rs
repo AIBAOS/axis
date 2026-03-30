@@ -77,7 +77,7 @@ pub async fn get_system_logs(
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
     let page = query.page.unwrap_or(1);
-    let limit = query.limit.unwrap_or(50).min(200);
+    let limit = query.limit.unwrap_or(50).max(1).min(200);
 
     // 1. JWT 认证 - 提取并验证 token
     let token = req

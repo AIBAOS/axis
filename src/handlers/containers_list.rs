@@ -63,7 +63,7 @@ pub async fn list_containers(
     repo: web::Data<Arc<SqliteContainerRepository>>,
 ) -> Result<HttpResponse, Error> {
     let page = query.page.unwrap_or(1);
-    let per_page = query.per_page.unwrap_or(20).min(100);
+    let per_page = query.per_page.unwrap_or(20).max(1).min(100);
 
     // 1. JWT 认证 - 提取并验证 token
     let token = req

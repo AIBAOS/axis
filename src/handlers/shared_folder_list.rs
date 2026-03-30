@@ -89,7 +89,7 @@ pub async fn list_shared_folders(
 
     // 2. 解析分页参数
     let page = query.page.unwrap_or(1);
-    let per_page = query.per_page.unwrap_or(20).min(100); // 最大 100
+    let per_page = query.per_page.unwrap_or(20).max(1).min(100);
 
     // 3. 解析筛选参数
     let protocol_filter = query.protocol.as_deref();

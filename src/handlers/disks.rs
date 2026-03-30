@@ -44,7 +44,7 @@ pub async fn list_disks(
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
 
     let page = query.page.unwrap_or(1).max(1);
-    let per_page = std::cmp::min(query.per_page.unwrap_or(20), 100);
+    let per_page = query.per_page.unwrap_or(20).max(1).min(100);
 
     match repo.get_disks(
         query.smart_status.as_deref(),

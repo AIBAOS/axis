@@ -76,7 +76,7 @@ pub async fn list_scheduled_tasks(
     })?;
 
     let page = query.page.unwrap_or(1).max(1);
-    let per_page = std::cmp::min(query.per_page.unwrap_or(20), 100);
+    let per_page = query.per_page.unwrap_or(20).max(1).min(100);
 
     match repo.get_tasks(query.status.as_deref(), query.enabled, page, per_page) {
         Ok((tasks, total)) => {

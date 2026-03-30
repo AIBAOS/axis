@@ -90,7 +90,7 @@ pub async fn get_power_logs(
     repo: web::Data<Arc<SqlitePowerRepository>>,
 ) -> Result<HttpResponse> {
     let page = query.page.unwrap_or(1).max(1);
-    let per_page = std::cmp::min(query.per_page.unwrap_or(20), 100);
+    let per_page = query.per_page.unwrap_or(20).max(1).min(100);
 
     match repo.get_power_logs(query.action.as_deref(), page, per_page) {
         Ok((logs, total)) => {

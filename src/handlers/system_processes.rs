@@ -109,7 +109,7 @@ pub async fn get_system_processes(
     }
 
     // 4. 解析并验证查询参数
-    let limit = query.limit.unwrap_or(50).min(200);
+    let limit = query.limit.unwrap_or(50).max(1).min(200);
     let offset = query.offset.unwrap_or(0);
     
     if let Some(ref sort) = query.sort {

@@ -122,7 +122,7 @@ pub async fn browse_files(
     // 2. 解析查询参数
     let path = query.path.clone().unwrap_or_else(|| "/".to_string());
     let page = query.page.unwrap_or(1);
-    let limit = query.limit.unwrap_or(50).min(200);
+    let limit = query.limit.unwrap_or(50).max(1).min(200);
 
     // Bug #51 修复：路径遍历验证
     // 禁止 .. 路径遍历
