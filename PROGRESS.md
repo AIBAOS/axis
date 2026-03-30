@@ -305,6 +305,32 @@
 - **发现问题:** Bug #51 (已修复)
 - **报告位置:** docs/test_report_phase355.md
 
+### 第六轮主动测试 - 安全与边界测试
+
+- **测试时间:** 2026-03-30 12:07 UTC
+- **测试方式:** 代码审计 + 接口检查
+- **测试覆盖接口数:** 20+
+- **发现问题:** 0 (验证 Bug #50/#51 已修复)
+- **报告位置:** docs/test_report_phase356.md
+
+---
+
+## 📋 技术债务
+
+### 残留 unwrap() (9处)
+
+| 文件 | 行号 |
+|------|:----:|
+| files.rs | 200 |
+| storage_pool_update.rs | 193 |
+| storage_pools_update.rs | 134 |
+| storage_volume_create.rs | 144 |
+| system_alerts_acknowledge.rs | 141 |
+| system_alerts_delete.rs | 78 |
+| system_alerts_resolve.rs | 141 |
+| users_create.rs | 64 |
+| users_get_by_id.rs | 167 |
+
 ### Phase 354 表单验证联调测试
 
 - **测试时间:** 2026-03-30 11:02 UTC
