@@ -39,13 +39,17 @@ pub async fn run_backup(
 
     // 2. 执行备份
     match backup_repo.run_backup(backup_id as i64) {
-        true => Ok(HttpResponse::Ok().json(RunBackupResponse {
+        Ok(true) => Ok(HttpResponse::Ok().json(RunBackupResponse {
             success: true,
             message: format!("Backup task {} started", backup_id),
         })),
-        false => Ok(HttpResponse::NotFound().json(RunBackupResponse {
+        Ok(false) => Ok(HttpResponse::NotFound().json(RunBackupResponse {
             success: false,
             message: format!("Backup task {} not found or already running", backup_id),
+        })),
+        Err(e) => Ok(HttpResponse::InternalServerError().json(RunBackupResponse {
+            success: false,
+            message: format!("Backup failed: {}", e),
         })),
     }
 }

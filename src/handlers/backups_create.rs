@@ -105,7 +105,7 @@ pub async fn create_backup(
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))?;
 
     // 2. 权限检查：仅 admin 可创建备份
-    if claims.role != "admin" {
+    if !claims.roles.iter().any(|r| r == "admin") {
         return Ok(HttpResponse::Forbidden().json(ErrorResponse {
             success: false,
             error: "Only administrators can create backup tasks".to_string(),

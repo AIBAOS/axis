@@ -180,7 +180,7 @@ pub async fn upload_file(
                 }
                 
                 // 检查文件大小（下限 - Bug #18 修复）
-                if data.len() as u64 < MIN_FILE_SIZE {
+                if (data.len() as u64) < MIN_FILE_SIZE {
                     return Ok(HttpResponse::BadRequest().json(ErrorResponse {
                         success: false,
                         error: "Empty files are not allowed".to_string(),
