@@ -238,7 +238,7 @@
         <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
           <div class="flex justify-between items-center px-6 py-4 border-b"><h3 class="text-lg font-semibold text-gray-900">{{ editingPool ? '编辑存储池' : '新建存储池' }}</h3><button @click="showPoolModal = false; editingPool = null" class="text-gray-400 hover:text-gray-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div>
           <form @submit.prevent="savePool" class="p-6 space-y-4">
-            <div><label class="block text-sm font-medium text-gray-700 mb-1">存储池名称</label><input v-model="poolForm.name" type="text" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="data-pool" /></div>
+            <div><label class="block text-sm font-medium text-gray-700 mb-1">存储池名称</label><input v-model="poolForm.name" type="text" required :class="['w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500', poolNameError ? 'border-red-500' : 'border-gray-300']" placeholder="data-pool (字母数字空格下划线连字符)" maxlength="100" /><p v-if="poolNameError" class="text-xs text-red-500 mt-1">{{ poolNameError }}</p><p v-else class="text-xs text-gray-500 mt-1">最多100字符，只能包含字母、数字、空格、下划线和连字符</p></div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">RAID 级别</label>
               <select v-model="poolForm.raid_level" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
@@ -290,7 +290,7 @@
             </button>
           </div>
           <form @submit.prevent="saveVolume" class="p-6 space-y-4">
-            <div><label class="block text-sm font-medium text-gray-700 mb-1">卷名</label><input v-model="volumeForm.name" type="text" required :disabled="!!editingVolume" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100" placeholder="data" /></div>
+            <div><label class="block text-sm font-medium text-gray-700 mb-1">卷名</label><input v-model="volumeForm.name" type="text" required :disabled="!!editingVolume" :class="['w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100', volumeNameError ? 'border-red-500' : 'border-gray-300']" placeholder="data (字母数字下划线连字符)" maxlength="64" /><p v-if="volumeNameError && !editingVolume" class="text-xs text-red-500 mt-1">{{ volumeNameError }}</p><p v-else-if="!editingVolume" class="text-xs text-gray-500 mt-1">最多64字符，只能包含字母、数字、下划线和连字符</p></div>
             <div v-if="!editingVolume"><label class="block text-sm font-medium text-gray-700 mb-1">所属存储池</label><select v-model="volumeForm.pool_id" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"><option v-for="pool in pools" :key="pool.id" :value="pool.id">{{ pool.name }} ({{ formatBytes(pool.size_bytes) }})</option></select></div>
             <div><label class="block text-sm font-medium text-gray-700 mb-1">容量 (GB)</label><input v-model.number="volumeForm.size_gb" type="number" min="1" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" /></div>
             <div v-if="!editingVolume"><label class="block text-sm font-medium text-gray-700 mb-1">文件系统</label><select v-model="volumeForm.filesystem" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"><option value="ext4">ext4</option><option value="xfs">XFS</option><option value="btrfs">Btrfs</option><option value="zfs">ZFS</option></select></div>
@@ -352,6 +352,7 @@ import DiskCard from '@/components/storage/DiskCard.vue'
 import StoragePoolCard from '@/components/storage/StoragePoolCard.vue'
 import { api } from '@/utils/api'
 import { useToast } from '@/composables/useToast'
+import { validatePoolName, validateVolumeName, validateFilename } from '@/utils/validators'
 
 const { showToast } = useToast()
 
@@ -383,7 +384,16 @@ const volumeForm = ref({ name: '', pool_id: 0, size_gb: 100, filesystem: 'ext4' 
 const showSnapshotModal = ref(false)
 const snapshotForm = ref({ name: '', volume_id: 0, description: '', is_protected: false })
 
+// 实时验证错误
+const poolNameError = computed(() => {
+  if (!poolForm.value.name) return ''
+  return validatePoolName(poolForm.value.name).error || ''
+})
 
+const volumeNameError = computed(() => {
+  if (!volumeForm.value.name) return ''
+  return validateVolumeName(volumeForm.value.name).error || ''
+})
 
 const usagePercent = computed(() => storageUsage.value.total_bytes > 0 ? Math.round(storageUsage.value.used_bytes / storageUsage.value.total_bytes * 100) : 0)
 const availableDisks = computed(() => disks.value.filter(d => !d.pool_id))
@@ -433,7 +443,11 @@ const runSmartTest = async (disk: any, testType: 'short' | 'long' = 'short') => 
   }
 }
 
-const savePool = async () => { if (!poolForm.value.name) return; if (editingPool.value) { const i = pools.value.findIndex(p => p.id === editingPool.value.id); if (i >= 0) pools.value[i] = { ...editingPool.value, ...poolForm.value }; showToast('success', '存储池已更新') } else { pools.value.push({ id: Date.now(), ...poolForm.value, size_bytes: poolForm.value.disk_ids.reduce((sum, id) => { const d = disks.value.find(x => x.id === id); return sum + (d?.size_bytes || 0) }, 0), used_bytes: 0, status: 'online' }); showToast('success', '存储池已创建') } showPoolModal.value = false; editingPool.value = null }
+const savePool = async () => { 
+  if (!poolForm.value.name) { showToast('error', '请输入存储池名称'); return }
+  const validation = validatePoolName(poolForm.value.name)
+  if (!validation.valid) { showToast('error', validation.error || '名称格式错误'); return }
+  if (editingPool.value) { const i = pools.value.findIndex(p => p.id === editingPool.value.id); if (i >= 0) pools.value[i] = { ...editingPool.value, ...poolForm.value }; showToast('success', '存储池已更新') } else { pools.value.push({ id: Date.now(), ...poolForm.value, size_bytes: poolForm.value.disk_ids.reduce((sum, id) => { const d = disks.value.find(x => x.id === id); return sum + (d?.size_bytes || 0) }, 0), used_bytes: 0, status: 'online' }); showToast('success', '存储池已创建') } showPoolModal.value = false; editingPool.value = null }
 const editPool = (p: any) => { editingPool.value = p; poolForm.value = { name: p.name, raid_level: p.raid_level || 'single', disk_ids: p.disk_ids || [] }; showPoolModal.value = true }
 const expandPool = (p: any) => { editingPool.value = p; poolForm.value = { name: p.name, raid_level: p.raid_level || 'single', disk_ids: p.disk_ids || [] }; showPoolModal.value = true; showToast('info', '选择要添加的磁盘') }
 const deletePool = async (p: any) => { if (!confirm(`确定删除存储池 "${p.name}" 吗？`)) return; pools.value = pools.value.filter(x => x.id !== p.id); showToast('success', '存储池已删除') }
@@ -443,7 +457,12 @@ const editShare = (s: any) => { editingShare.value = s; shareForm.value = { name
 const deleteShare = async (s: any) => { if (!confirm(`确定删除共享 "${s.name}" 吗？`)) return; shares.value = shares.value.filter(x => x.id !== s.id); showToast('success', '共享已删除') }
 
 // 卷管理
-const saveVolume = async () => { if (!volumeForm.value.name || !volumeForm.value.pool_id) return; const pool = pools.value.find(p => p.id === volumeForm.value.pool_id); if (editingVolume.value) { const i = volumes.value.findIndex(v => v.id === editingVolume.value.id); if (i >= 0) volumes.value[i] = { ...editingVolume.value, ...volumeForm.value, size_bytes: volumeForm.value.size_gb * 1024 * 1024 * 1024 }; showToast('success', '卷已更新') } else { volumes.value.push({ id: Date.now(), ...volumeForm.value, pool_name: pool?.name, size_bytes: volumeForm.value.size_gb * 1024 * 1024 * 1024, mount_point: `/mnt/${volumeForm.value.name}`, status: 'online' }); showToast('success', '卷已创建') } showVolumeModal.value = false; editingVolume.value = null }
+const saveVolume = async () => { 
+  if (!volumeForm.value.name) { showToast('error', '请输入卷名'); return }
+  if (!volumeForm.value.pool_id) { showToast('error', '请选择存储池'); return }
+  const validation = validateVolumeName(volumeForm.value.name)
+  if (!validation.valid) { showToast('error', validation.error || '名称格式错误'); return }
+  const pool = pools.value.find(p => p.id === volumeForm.value.pool_id); if (editingVolume.value) { const i = volumes.value.findIndex(v => v.id === editingVolume.value.id); if (i >= 0) volumes.value[i] = { ...editingVolume.value, ...volumeForm.value, size_bytes: volumeForm.value.size_gb * 1024 * 1024 * 1024 }; showToast('success', '卷已更新') } else { volumes.value.push({ id: Date.now(), ...volumeForm.value, pool_name: pool?.name, size_bytes: volumeForm.value.size_gb * 1024 * 1024 * 1024, mount_point: `/mnt/${volumeForm.value.name}`, status: 'online' }); showToast('success', '卷已创建') } showVolumeModal.value = false; editingVolume.value = null }
 const expandVolume = (v: any) => { editingVolume.value = v; volumeForm.value = { name: v.name, pool_id: v.pool_id, size_gb: Math.ceil(v.size_bytes / 1024 / 1024 / 1024), filesystem: v.filesystem || 'ext4' }; showVolumeModal.value = true }
 const deleteVolume = async (v: any) => { if (!confirm(`确定删除卷 "${v.name}" 吗？此操作将删除所有数据！`)) return; volumes.value = volumes.value.filter(x => x.id !== v.id); showToast('success', '卷已删除') }
 const getVolumeStatusClass = (s: string) => s === 'online' ? 'bg-green-100 text-green-700' : s === 'offline' ? 'bg-gray-100 text-gray-700' : 'bg-red-100 text-red-700'

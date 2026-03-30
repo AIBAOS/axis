@@ -23,12 +23,14 @@
             type="text"
             required
             :disabled="mode === 'edit'"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100"
-            placeholder="请输入用户名"
+            :class="['w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100', usernameError ? 'border-red-500' : 'border-gray-300']"
+            placeholder="请输入用户名 (3-50字符)"
             minlength="3"
-            maxlength="32"
+            maxlength="50"
           />
-          <p v-if="mode === 'edit'" class="text-xs text-gray-500 mt-1">用户名不可修改</p>
+          <p v-if="usernameError" class="text-xs text-red-500 mt-1">{{ usernameError }}</p>
+          <p v-else-if="mode === 'edit'" class="text-xs text-gray-500 mt-1">用户名不可修改</p>
+          <p v-else class="text-xs text-gray-500 mt-1">只能包含字母、数字、下划线和连字符</p>
         </div>
 
         <!-- 邮箱 -->
@@ -38,9 +40,10 @@
             v-model="formData.email"
             type="email"
             required
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            :class="['w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500', emailError ? 'border-red-500' : 'border-gray-300']"
             placeholder="请输入邮箱"
           />
+          <p v-if="emailError" class="text-xs text-red-500 mt-1">{{ emailError }}</p>
         </div>
 
         <!-- 密码（仅新建时显示） -->
@@ -50,11 +53,11 @@
             v-model="formData.password"
             type="password"
             required
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            placeholder="请输入密码"
-            minlength="6"
+            :class="['w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500', passwordError ? 'border-red-500' : 'border-gray-300']"
+            placeholder="请输入密码 (至少8位)"
           />
-          <p class="text-xs text-gray-500 mt-1">密码长度至少 6 位</p>
+          <p v-if="passwordError" class="text-xs text-red-500 mt-1">{{ passwordError }}</p>
+          <p v-else class="text-xs text-gray-500 mt-1">至少8位，需包含大写、小写和数字</p>
         </div>
 
         <!-- 重置密码（编辑时显示） -->
@@ -160,8 +163,8 @@
         <button
           type="submit"
           @click="handleSubmit"
-          :disabled="saving"
-          class="btn-primary disabled:opacity-50"
+          :disabled="saving || !isFormValid"
+          class="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {{ saving ? '保存中...' : (mode === 'create' ? '创建' : '保存') }}
         </button>
@@ -171,7 +174,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
+import { validateUsername, validateEmail, validatePassword } from '@/utils/validators'
 
 const props = defineProps<{
   mode: 'create' | 'edit'
@@ -194,6 +198,35 @@ const formData = ref({
   role: 'user',
   status: 'active',
   display_name: ''
+})
+
+// 实时验证错误
+const usernameError = computed(() => {
+  if (!formData.value.username) return ''
+  return validateUsername(formData.value.username).error || ''
+})
+
+const emailError = computed(() => {
+  if (!formData.value.email) return ''
+  return validateEmail(formData.value.email).error || ''
+})
+
+const passwordError = computed(() => {
+  if (props.mode !== 'create' || !formData.value.password) return ''
+  return validatePassword(formData.value.password).error || ''
+})
+
+// 表单是否有效
+const isFormValid = computed(() => {
+  if (!formData.value.username || !formData.value.email) return false
+  if (props.mode === 'create' && !formData.value.password) return false
+  
+  // 验证各字段
+  if (!validateUsername(formData.value.username).valid) return false
+  if (!validateEmail(formData.value.email).valid) return false
+  if (props.mode === 'create' && !validatePassword(formData.value.password).valid) return false
+  
+  return true
 })
 
 // 文件夹权限

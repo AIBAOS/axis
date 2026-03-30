@@ -403,6 +403,7 @@ import { ref, computed, onMounted } from 'vue'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import { api } from '@/utils/api'
 import { useToast } from '@/composables/useToast'
+import { validateFilename } from '@/utils/validators'
 
 const { showToast } = useToast()
 
@@ -533,7 +534,9 @@ const downloadFile = async (file: any) => {
 }
 
 const createFolder = async () => {
-  if (!newFolderName.value.trim()) return
+  if (!newFolderName.value.trim()) { showToast('error', '请输入文件夹名称'); return }
+  const validation = validateFilename(newFolderName.value.trim())
+  if (!validation.valid) { showToast('error', validation.error || '名称格式错误'); return }
   try {
     await api.files.createFolder(currentPath.value, newFolderName.value.trim())
     showNewFolderModal.value = false
@@ -551,7 +554,9 @@ const openRenameModal = (item: any, type: string) => {
 }
 
 const executeRename = async () => {
-  if (!renameTarget.value || !newName.value.trim()) return
+  if (!renameTarget.value || !newName.value.trim()) { showToast('error', '请输入新名称'); return }
+  const validation = validateFilename(newName.value.trim())
+  if (!validation.valid) { showToast('error', validation.error || '名称格式错误'); return }
   try {
     await api.files.rename(renameTarget.value.path, newName.value.trim())
     showToast('success', '重命名成功')

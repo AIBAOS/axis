@@ -26,11 +26,12 @@
               v-model="formData.name"
               type="text"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              :class="['w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500', nameError ? 'border-red-500' : 'border-gray-300']"
               placeholder="请输入共享名称（如 Public, Home）"
               maxlength="64"
             />
-            <p class="text-xs text-gray-500 mt-1">1-64 字符，允许字母、数字、-、_、.</p>
+            <p v-if="nameError" class="text-xs text-red-500 mt-1">{{ nameError }}</p>
+            <p v-else class="text-xs text-gray-500 mt-1">1-64 字符，允许字母、数字、-、_、.</p>
           </div>
 
           <!-- 路径 -->
@@ -247,6 +248,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
+import { validateShareName } from '@/utils/validators'
 
 const props = defineProps<{
   mode: 'create' | 'edit'
@@ -261,6 +263,12 @@ const emit = defineEmits<{
 
 const loading = ref(false)
 const error = ref('')
+
+// 实时验证错误
+const nameError = computed(() => {
+  if (!formData.value.name) return ''
+  return validateShareName(formData.value.name).error || ''
+})
 
 // 协议名称
 const protocolLabel = computed(() => {
@@ -326,8 +334,15 @@ const handleSubmit = async () => {
   loading.value = true
 
   // 验证名称
-  if (!formData.value.name || formData.value.name.length < 1 || formData.value.name.length > 64) {
-    error.value = '共享名称必须在 1-64 字符之间'
+  if (!formData.value.name) {
+    error.value = '请输入共享名称'
+    loading.value = false
+    return
+  }
+  
+  const nameValidation = validateShareName(formData.value.name)
+  if (!nameValidation.valid) {
+    error.value = nameValidation.error || '名称格式错误'
     loading.value = false
     return
   }
