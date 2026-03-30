@@ -1,8 +1,10 @@
 // 任务处理器（Phase 59+）
 // 包含：任务列表/创建/更新/删除/状态管理
 
-use actix_web::{web, HttpResponse, Result};
+use actix_web::{web, HttpRequest, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
+
+use crate::services::jwt_service::JwtService;
 
 /// 任务状态
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -69,8 +71,41 @@ pub struct TaskPagination {
     pub total_pages: u64,
 }
 
+/// JWT 认证辅助函数
+fn validate_auth(req: &HttpRequest, jwt_service: &web::Data<JwtService>) -> Result<crate::models::jwt::JwtClaims, HttpResponse> {
+    let token = req
+        .headers()
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.strip_prefix("Bearer "));
+
+    if token.is_none() {
+        return Err(HttpResponse::Unauthorized().json(serde_json::json!({
+            "success": false,
+            "message": "Authentication required"
+        })));
+    }
+
+    jwt_service.validate_token(token.unwrap())
+        .map_err(|_| HttpResponse::Unauthorized().json(serde_json::json!({
+            "success": false,
+            "message": "Invalid token"
+        })))
+}
+
 /// 获取任务列表（分页 + 状态过滤）
-pub async fn get_tasks(query: web::Query<TaskListQuery>) -> Result<HttpResponse> {
+/// 需要登录用户访问
+pub async fn get_tasks(
+    http_req: HttpRequest,
+    query: web::Query<TaskListQuery>,
+    jwt_service: web::Data<JwtService>,
+) -> Result<HttpResponse> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     let page = query.page.unwrap_or(1);
     let limit = query.limit.unwrap_or(20) as u64;
     let status_filter = query.status.as_deref();
@@ -153,9 +188,18 @@ pub async fn get_tasks(query: web::Query<TaskListQuery>) -> Result<HttpResponse>
 }
 
 /// 获取单个任务
+/// 需要登录用户访问
 pub async fn get_task(
+    http_req: HttpRequest,
     path: web::Path<u64>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     let id = path.into_inner();
 
     let mock_tasks = vec![
@@ -187,9 +231,18 @@ pub async fn get_task(
 }
 
 /// 创建后台任务
+/// 需要登录用户访问
 pub async fn create_task(
+    http_req: HttpRequest,
     payload: web::Json<CreateTaskRequest>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     let name = &payload.name;
 
     Ok(HttpResponse::Created().json(Task {
@@ -203,10 +256,19 @@ pub async fn create_task(
 }
 
 /// 更新任务
+/// 需要登录用户访问
 pub async fn update_task(
+    http_req: HttpRequest,
     path: web::Path<u64>,
     payload: web::Json<UpdateTaskRequest>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     let id = path.into_inner();
 
     // 简化模拟：验证任务存在
@@ -229,9 +291,18 @@ pub async fn update_task(
 }
 
 /// 删除任务
+/// 需要登录用户访问
 pub async fn delete_task(
+    http_req: HttpRequest,
     path: web::Path<u64>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     let id = path.into_inner();
 
     // 简化模拟：验证任务存在
@@ -250,9 +321,18 @@ pub async fn delete_task(
 }
 
 /// 取消任务
+/// 需要登录用户访问
 pub async fn cancel_task(
+    http_req: HttpRequest,
     path: web::Path<u64>,
+    jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
+    // JWT 认证
+    let _claims = match validate_auth(&http_req, &jwt_service) {
+        Ok(c) => c,
+        Err(e) => return Ok(e),
+    };
+
     let id = path.into_inner();
 
     // 简化模拟：验证任务存在且可取消
