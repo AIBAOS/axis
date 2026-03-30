@@ -150,7 +150,7 @@ pub async fn update_storage_volume(
             // 5. 验证名称唯一性（排除自身）
             if let Some(ref new_name) = payload.name {
                 let existing_names = vec!["System Volume", "Data Volume", "Backup Volume", "Archive Volume"];
-                let current_name = v["name"].as_str().unwrap();
+                let current_name = v["name"].as_str().unwrap_or("unknown");
                 if existing_names.contains(&new_name.as_str()) && new_name != current_name {
                     return Ok(HttpResponse::Conflict().json(ErrorResponse {
                         success: false,
@@ -165,7 +165,7 @@ pub async fn update_storage_volume(
 
             // 6. 验证容量缩小限制
             if let Some(new_size) = payload.size_bytes {
-                let used_bytes = v["used_bytes"].as_u64().unwrap();
+                let used_bytes = v["used_bytes"].as_u64().unwrap_or(0);
                 if new_size < used_bytes {
                     return Ok(HttpResponse::BadRequest().json(ErrorResponse {
                         success: false,
@@ -174,7 +174,7 @@ pub async fn update_storage_volume(
                     }));
                 }
                 v["size_bytes"] = serde_json::json!(new_size);
-                v["available_bytes"] = serde_json::json!(new_size - used_bytes);
+                v["available_bytes"] = serde_json::json!(new_size.saturating_sub(used_bytes));
             }
 
             // 7. 更新时间戳
@@ -186,17 +186,17 @@ pub async fn update_storage_volume(
 
             // 8. 返回更新后的存储卷信息
             let response = StorageVolumeResponse {
-                id: v["id"].as_u64().unwrap(),
-                name: v["name"].as_str().unwrap().to_string(),
-                pool_id: v["pool_id"].as_u64().unwrap(),
-                pool_name: v["pool_name"].as_str().unwrap().to_string(),
-                size_bytes: v["size_bytes"].as_u64().unwrap(),
-                used_bytes: v["used_bytes"].as_u64().unwrap(),
-                available_bytes: v["available_bytes"].as_u64().unwrap(),
-                filesystem_type: v["filesystem_type"].as_str().unwrap().to_string(),
-                mount_point: v["mount_point"].as_str().unwrap().to_string(),
-                status: v["status"].as_str().unwrap().to_string(),
-                created_at: v["created_at"].as_u64().unwrap(),
+                id: v["id"].as_u64().unwrap_or(0),
+                name: v["name"].as_str().unwrap_or("unknown").to_string(),
+                pool_id: v["pool_id"].as_u64().unwrap_or(0),
+                pool_name: v["pool_name"].as_str().unwrap_or("unknown").to_string(),
+                size_bytes: v["size_bytes"].as_u64().unwrap_or(0),
+                used_bytes: v["used_bytes"].as_u64().unwrap_or(0),
+                available_bytes: v["available_bytes"].as_u64().unwrap_or(0),
+                filesystem_type: v["filesystem_type"].as_str().unwrap_or("unknown").to_string(),
+                mount_point: v["mount_point"].as_str().unwrap_or("/mnt/unknown").to_string(),
+                status: v["status"].as_str().unwrap_or("unknown").to_string(),
+                created_at: v["created_at"].as_u64().unwrap_or(now),
                 updated_at: now,
             };
 
