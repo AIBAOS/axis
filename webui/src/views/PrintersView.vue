@@ -179,7 +179,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import PrinterCard from '@/components/printers/PrinterCard.vue'
 import PrinterModal from '@/components/printers/PrinterModal.vue'
@@ -243,7 +243,8 @@ const moveJobUp = async (job: any, currentIndex: number) => {
   if (currentIndex === 0) return // 已经是第一个，无法上移
   
   try {
-    await api.printers.queue.moveUp(job.id)
+    // Bug #70 修复：使用正确的 API 路由
+    await api.printers.queue.moveUp(job.printer_id, job.id)
     showToast('success', '任务优先级已提升')
     loadPrintJobs() // 刷新队列
   } catch (e) {
@@ -255,7 +256,8 @@ const moveJobDown = async (job: any, currentIndex: number) => {
   if (currentIndex === activeJobs.value.length - 1) return // 已经是最后一个，无法下移
   
   try {
-    await api.printers.queue.moveDown(job.id)
+    // Bug #70 修复：使用正确的 API 路由
+    await api.printers.queue.moveDown(job.printer_id, job.id)
     showToast('success', '任务优先级已降低')
     loadPrintJobs() // 刷新队列
   } catch (e) {

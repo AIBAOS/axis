@@ -210,14 +210,14 @@ export const api = {
     createJob: (id: number, data: any) => apiClient.post(`/api/v1/printers/${id}/jobs`, data),
     updateJob: (printerId: number, jobId: number, data: any) => apiClient.put(`/api/v1/printers/${printerId}/jobs/${jobId}`, data),
     cancelJob: (printerId: number, jobId: number) => apiClient.delete(`/api/v1/printers/${printerId}/jobs/${jobId}`),
-    // 打印队列管理
+    // 打印队列管理（使用现有后端 API）
     queue: {
       list: () => apiClient.get('/api/v1/printers/queue'),
-      get: (id: number) => apiClient.get(`/api/v1/printers/queue/${id}`),
-      cancel: (id: number) => apiClient.delete(`/api/v1/printers/queue/${id}`),
-      moveUp: (id: number) => apiClient.put(`/api/v1/printers/queue/${id}/priority`, { direction: 'up' }),
-      moveDown: (id: number) => apiClient.put(`/api/v1/printers/queue/${id}/priority`, { direction: 'down' }),
-      setPriority: (id: number, priority: number) => apiClient.put(`/api/v1/printers/queue/${id}/priority`, { priority })
+      // 使用 updateJob 实现优先级调整
+      moveUp: (printerId: number, jobId: number) => 
+        apiClient.put(`/api/v1/printers/${printerId}/jobs/${jobId}`, { priority: 'up' }),
+      moveDown: (printerId: number, jobId: number) => 
+        apiClient.put(`/api/v1/printers/${printerId}/jobs/${jobId}`, { priority: 'down' }),
     }
   },
 
