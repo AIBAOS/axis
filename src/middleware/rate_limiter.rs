@@ -31,9 +31,10 @@ impl RateLimiter {
     pub fn start_cleanup_task(&self, interval_secs: u64, max_age_secs: u64) {
         let limiter = self.clone();
         tokio::spawn(async move {
-            let mut interval = tokio::time::interval(Duration::from_secs(interval_secs));
+            let interval = tokio::time::interval(tokio::time::Duration::from_secs(interval_secs));
+            tokio::pin!(interval); // 使用 tokio::pin! 确保 interval 在堆上分配
             loop {
-                interval.tick().await;
+                interval.as_mut().tick().await;
                 limiter.cleanup_old_entries(max_age_secs);
                 debug!("RateLimiter periodic cleanup completed");
             }
