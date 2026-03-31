@@ -48,10 +48,10 @@ function shouldRetry(error: AxiosError): boolean {
   
   const status = error.response.status
   
-  // 4xx 客户端错误 - 不重试
+  // 4xx 客户端错误 - 不重试（特例除外）
   if (status >= 400 && status < 500) {
-    // 特例：429 Too Many Requests 可以重试
-    if (status === 429) {
+    // Bug #66 修复：408 Request Timeout 和 429 Too Many Requests 可以重试
+    if (status === 408 || status === 429) {
       return true
     }
     return false
@@ -109,7 +109,12 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   response => response,
   async (error: AxiosError) => {
-    const config = error.config as AxiosRequestConfig & { metadata?: { retryCount: number } }
+    const config = error.config as (AxiosRequestConfig & { metadata?: { retryCount: number } }) | undefined
+    
+    // Bug #68 修复：处理 config 为 undefined 的情况
+    if (!config) {
+      return Promise.reject(error)
+    }
     
     // 401 未授权 - 不重试，清除 token 并跳转登录
     if (error.response?.status === 401) {
@@ -123,7 +128,7 @@ apiClient.interceptors.response.use(
       return Promise.reject(error)
     }
     
-    // 初始化或获取重试计数
+    // Bug #67 修复：确保 metadata 存在并正确初始化
     if (!config.metadata) {
       config.metadata = { retryCount: 0 }
     }
@@ -148,8 +153,11 @@ apiClient.interceptors.response.use(
     // 等待后重试
     await delay(delayMs)
     
-    // 重新发送请求
-    return apiClient.request(config)
+    // 重新发送请求（确保 metadata 传递）
+    return apiClient.request({
+      ...config,
+      metadata: config.metadata  // Bug #67 修复：显式传递 metadata
+    })
   }
 )
 
