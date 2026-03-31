@@ -58,9 +58,18 @@
       <!-- 打印队列 -->
       <template v-else-if="currentTab === 'queue'">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-lg font-semibold">打印队列</h2>
+          <div class="flex items-center space-x-3">
+            <h2 class="text-lg font-semibold">打印队列</h2>
+            <span class="text-xs text-gray-500 flex items-center">
+              <span class="w-2 h-2 rounded-full bg-green-400 mr-1 animate-pulse"></span>
+              每 5 秒自动刷新
+            </span>
+          </div>
           <div class="flex space-x-2">
             <button @click="loadPrintJobs" class="btn-secondary text-sm">刷新</button>
+            <button @click="toggleAutoRefresh" :class="autoRefreshEnabled ? 'bg-primary-100 text-primary-700' : ''" class="text-sm px-3 py-1.5 border rounded hover:bg-gray-50">
+              {{ autoRefreshEnabled ? '停止自动' : '自动刷新' }}
+            </button>
             <button @click="pauseAllJobs" :disabled="activeJobs.length === 0" class="text-sm px-3 py-1.5 border rounded hover:bg-gray-50 disabled:opacity-50">全部暂停</button>
             <button @click="resumeAllJobs" :disabled="pausedJobs.length === 0" class="text-sm px-3 py-1.5 border rounded hover:bg-gray-50 disabled:opacity-50">全部恢复</button>
           </div>
@@ -68,13 +77,24 @@
         <div v-if="jobsLoading" class="flex justify-center py-12"><svg class="animate-spin h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg></div>
         <div v-else-if="activeJobs.length === 0" class="text-center py-12 bg-white rounded-lg shadow"><svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg><p class="mt-4 text-gray-600">打印队列为空</p></div>
         <div v-else class="bg-white rounded-lg shadow overflow-hidden">
-          <table class="w-full"><thead class="bg-gray-50 border-b"><tr><th class="px-4 py-3 text-left text-xs font-medium text-gray-500">文档</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500">打印机</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500">状态</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500">页数</th><th class="px-4 py-3 text-right text-xs font-medium text-gray-500">操作</th></tr></thead>
+          <table class="w-full"><thead class="bg-gray-50 border-b"><tr><th class="px-4 py-3 text-left text-xs font-medium text-gray-500 w-12">#</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500">文档</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500">打印机</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500">状态</th><th class="px-4 py-3 text-left text-xs font-medium text-gray-500">页数</th><th class="px-4 py-3 text-center text-xs font-medium text-gray-500">优先级</th><th class="px-4 py-3 text-right text-xs font-medium text-gray-500">操作</th></tr></thead>
             <tbody class="divide-y divide-gray-100">
-              <tr v-for="job in activeJobs" :key="job.id" class="hover:bg-gray-50">
+              <tr v-for="(job, index) in activeJobs" :key="job.id" class="hover:bg-gray-50">
+                <td class="px-4 py-3 text-sm text-gray-500">{{ index + 1 }}</td>
                 <td class="px-4 py-3"><div class="text-sm font-medium text-gray-900">{{ job.document_name || `任务 #${job.id}` }}</div><div class="text-xs text-gray-500">{{ job.user || '系统' }}</div></td>
                 <td class="px-4 py-3 text-sm text-gray-600">{{ job.printer_name || '-' }}</td>
                 <td class="px-4 py-3"><span :class="getJobStatusClass(job.status)" class="px-2 py-1 text-xs rounded-full">{{ getJobStatusLabel(job.status) }}</span></td>
                 <td class="px-4 py-3 text-sm text-gray-600">{{ job.pages || '-' }}</td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center justify-center space-x-1">
+                    <button @click="moveJobUp(job, index)" :disabled="index === 0" class="p-1 rounded hover:bg-gray-100 disabled:opacity-30" title="上移">
+                      <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+                    </button>
+                    <button @click="moveJobDown(job, index)" :disabled="index === activeJobs.length - 1" class="p-1 rounded hover:bg-gray-100 disabled:opacity-30" title="下移">
+                      <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                  </div>
+                </td>
                 <td class="px-4 py-3 text-right">
                   <button v-if="job.status === 'printing'" @click="pauseJob(job)" class="text-sm text-yellow-600 hover:text-yellow-700 mr-3">暂停</button>
                   <button v-if="job.status === 'paused'" @click="resumeJob(job)" class="text-sm text-green-600 hover:text-green-700 mr-3">恢复</button>
@@ -189,28 +209,66 @@ const historyLoading = ref(false)
 const printJobs = ref<any[]>([])
 const printHistory = ref<any[]>([])
 const historyFilter = ref('all')
+const autoRefreshEnabled = ref(true)
+let autoRefreshTimer: ReturnType<typeof setInterval> | null = null
 
+// 自动刷新功能
+const toggleAutoRefresh = () => {
+  autoRefreshEnabled.value = !autoRefreshEnabled.value
+  if (autoRefreshEnabled.value) {
+    startAutoRefresh()
+  } else {
+    stopAutoRefresh()
+  }
+}
 
+const startAutoRefresh = () => {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer)
+  autoRefreshTimer = setInterval(() => {
+    if (currentTab.value === 'queue') {
+      loadPrintJobs()
+    }
+  }, 5000) // 每 5 秒刷新一次
+}
 
-const statusCounts = computed(() => { const c: Record<string, number> = { idle: 0, printing: 0, error: 0, offline: 0, warning: 0, out_of_paper: 0, paper_jam: 0 }; printers.value.forEach(p => { if (c[p.status] !== undefined) c[p.status]++ }); return c })
-const filteredPrinters = computed(() => { let r = printers.value; if (statusFilter.value !== 'all') r = r.filter(p => p.status === statusFilter.value); if (searchQuery.value) { const q = searchQuery.value.toLowerCase(); r = r.filter(p => p.name?.toLowerCase().includes(q) || p.ip_address?.toLowerCase().includes(q)) } return r })
-const activeJobs = computed(() => printJobs.value.filter(j => ['pending', 'printing', 'paused'].includes(j.status)))
-const pausedJobs = computed(() => printJobs.value.filter(j => j.status === 'paused'))
-const filteredHistory = computed(() => { if (historyFilter.value === 'all') return printHistory.value; return printHistory.value.filter(j => j.status === historyFilter.value) })
+const stopAutoRefresh = () => {
+  if (autoRefreshTimer) {
+    clearInterval(autoRefreshTimer)
+    autoRefreshTimer = null
+  }
+}
 
-const getTabCount = (id: string) => { if (id === 'printers') return printers.value.length; if (id === 'queue') return activeJobs.value.length; return 0 }
+// 优先级调整功能
+const moveJobUp = async (job: any, currentIndex: number) => {
+  if (currentIndex === 0) return // 已经是第一个，无法上移
+  
+  try {
+    await api.printers.queue.moveUp(job.id)
+    showToast('success', '任务优先级已提升')
+    loadPrintJobs() // 刷新队列
+  } catch (e) {
+    showToast('error', '调整优先级失败')
+  }
+}
 
-const loadPrinters = async () => { loading.value = true; try { const r = await api.printers.list(); printers.value = r.data.data || r.data || [] } catch (e) { showToast('error', '加载失败') } finally { loading.value = false } }
+const moveJobDown = async (job: any, currentIndex: number) => {
+  if (currentIndex === activeJobs.value.length - 1) return // 已经是最后一个，无法下移
+  
+  try {
+    await api.printers.queue.moveDown(job.id)
+    showToast('success', '任务优先级已降低')
+    loadPrintJobs() // 刷新队列
+  } catch (e) {
+    showToast('error', '调整优先级失败')
+  }
+}
 
-const loadPrintJobs = async () => { jobsLoading.value = true; try { const jobs: any[] = []; for (const p of printers.value) { try { const r = await api.printers.jobs(p.printer_id || p.id); const list = r.data.data || r.data || []; jobs.push(...list.map((j: any) => ({ ...j, printer_name: p.name }))) } catch (e) { /* 单个打印机加载失败不阻塞整体 */ } } printJobs.value = jobs } catch (e) { showToast('error', '加载打印队列失败') } finally { jobsLoading.value = false } }
-
-const loadPrintHistory = async () => { historyLoading.value = true; try { const history: any[] = []; for (const p of printers.value) { try { const r = await api.printers.jobs(p.printer_id || p.id, { status: 'completed,cancelled,error' }); const list = r.data.data || r.data || []; history.push(...list.map((j: any) => ({ ...j, printer_name: p.name }))) } catch (e) { /* 单个打印机加载失败不阻塞整体 */ } } printHistory.value = history.sort((a, b) => (b.completed_at || b.created_at) - (a.completed_at || a.created_at)) } catch (e) { showToast('error', '加载打印历史失败') } finally { historyLoading.value = false } }
-
-const pauseJob = async (job: any) => { try { await api.printers.updateJob?.(job.printer_id, job.id, { status: 'paused' }); showToast('success', '已暂停'); loadPrintJobs() } catch (e) { showToast('error', '暂停失败') } }
-const resumeJob = async (job: any) => { try { await api.printers.updateJob?.(job.printer_id, job.id, { status: 'printing' }); showToast('success', '已恢复'); loadPrintJobs() } catch (e) { showToast('error', '恢复失败') } }
-const cancelJob = async (job: any) => { if (!confirm('确定取消此打印任务？')) return; try { await api.printers.cancelJob?.(job.printer_id, job.id); showToast('success', '已取消'); loadPrintJobs() } catch (e) { showToast('error', '取消失败') } }
-const pauseAllJobs = async () => { for (const j of activeJobs.value) await pauseJob(j) }
-const resumeAllJobs = async () => { for (const j of pausedJobs.value) await resumeJob(j) }
+const pauseAllJobs = async () => {
+  for (const j of activeJobs.value) await pauseJob(j)
+}
+const resumeAllJobs = async () => {
+  for (const j of pausedJobs.value) await resumeJob(j)
+}
 
 const showPrinterDetail = (p: any) => { detailPrinter.value = p }
 const testPrint = async (p: any) => { try { await api.printers.createJob(p.printer_id || p.id, { document_name: 'Test Page', test_page: true }); showToast('success', `测试页已发送到 ${p.name}`) } catch (e) { showToast('success', `测试页已发送`) } }
@@ -228,6 +286,20 @@ const getJobStatusClass = (s: string) => ({ pending: 'bg-gray-100 text-gray-700'
 const getJobStatusLabel = (s: string) => ({ pending: '等待中', printing: '打印中', paused: '已暂停', completed: '已完成', cancelled: '已取消', error: '错误' }[s] || s)
 const formatTime = (ts: number) => ts ? new Date(ts * 1000).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'
 
+// 生命周期
+onMounted(() => { 
+  loadPrinters().then(() => { 
+    loadPrintJobs(); 
+    loadPrintHistory();
+    // 启动自动刷新
+    startAutoRefresh();
+  }) 
+})
+
+onUnmounted(() => {
+  // 清理定时器
+  stopAutoRefresh()
+})
 
 
 onMounted(() => { loadPrinters().then(() => { loadPrintJobs(); loadPrintHistory() }) })
