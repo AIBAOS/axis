@@ -8,7 +8,6 @@ use std::time::{Duration, Instant};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use tracing::debug;
-use tokio; // 确保 tokio 在作用域中
 
 // 滑动窗口限流器：按 IP 限速
 #[derive(Clone)]
