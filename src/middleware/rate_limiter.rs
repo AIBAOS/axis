@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use tracing::debug;
+use tokio; // 确保 tokio 在作用域中
 
 // 滑动窗口限流器：按 IP 限速
 #[derive(Clone)]
@@ -31,10 +32,9 @@ impl RateLimiter {
     pub fn start_cleanup_task(&self, interval_secs: u64, max_age_secs: u64) {
         let limiter = self.clone();
         tokio::spawn(async move {
-            let interval = tokio::time::interval(tokio::time::Duration::from_secs(interval_secs));
-            tokio::pin!(interval); // 使用 tokio::pin! 确保 interval 在堆上分配
+            let mut interval = tokio::time::interval(Duration::from_secs(interval_secs));
             loop {
-                interval.as_mut().tick().await;
+                interval.tick().await;
                 limiter.cleanup_old_entries(max_age_secs);
                 debug!("RateLimiter periodic cleanup completed");
             }
