@@ -62,6 +62,7 @@ function handleDisconnect() {
 function attemptReconnect() {
   if (reconnectAttempts.value >= maxReconnectAttempts) {
     console.warn('Max reconnect attempts reached')
+    status.value = 'offline'  // Bug #64 修复：达到最大重试次数后恢复离线状态
     return
   }
 
