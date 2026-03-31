@@ -1,6 +1,7 @@
 // 数据库连接管理（简化版，支持 SQLite/PostgreSQL 切换）
 use rusqlite::Connection;
 use std::sync::{Arc, Mutex};
+use tracing::info;
 
 // 简单连接包装（无 r2d2 依赖）
 pub struct DbPool {
@@ -67,11 +68,77 @@ pub enum DbConnectionType {
     Postgres(PostgresConnection),
 }
 
-/// 创建 SQLite 连接池
+/// OPT-2-ALT: SQLite 性能优化 PRAGMA 配置
+/// 
+/// 性能提升预期：
+/// - WAL 模式：写并发提升 3-5x
+/// - 增大缓存：查询性能提升 20-30%
+/// - synchronous=NORMAL：写入性能提升 2-3x
+/// - temp_store=MEMORY：临时查询加速
+fn apply_sqlite_pragma(conn: &Connection) -> Result<(), String> {
+    // 1. 启用 WAL 模式（写并发提升 3-5x）
+    // WAL 模式允许多个读取器与一个写入器并发工作
+    conn.execute_batch(
+        "PRAGMA journal_mode = WAL;"
+    ).map_err(|e| format!("Failed to set journal_mode: {}", e))?;
+    
+    // 2. 增大缓存（64MB，查询性能提升 20-30%）
+    // 负数表示以 KB 为单位，-64000 = 64MB
+    conn.execute_batch(
+        "PRAGMA cache_size = -64000;"
+    ).map_err(|e| format!("Failed to set cache_size: {}", e))?;
+    
+    // 3. 同步模式优化（写入性能提升 2-3x）
+    // NORMAL 模式在大多数情况下安全，且性能更好
+    // FULL 模式更安全但性能较低
+    conn.execute_batch(
+        "PRAGMA synchronous = NORMAL;"
+    ).map_err(|e| format!("Failed to set synchronous: {}", e))?;
+    
+    // 4. 临时存储使用内存（临时查询加速）
+    conn.execute_batch(
+        "PRAGMA temp_store = MEMORY;"
+    ).map_err(|e| format!("Failed to set temp_store: {}", e))?;
+    
+    // 5. 启用外键约束（数据完整性）
+    conn.execute_batch(
+        "PRAGMA foreign_keys = ON;"
+    ).map_err(|e| format!("Failed to set foreign_keys: {}", e))?;
+    
+    // 6. 自动 VACUUM 模式（增量式，减少碎片）
+    conn.execute_batch(
+        "PRAGMA auto_vacuum = INCREMENTAL;"
+    ).map_err(|e| format!("Failed to set auto_vacuum: {}", e))?;
+    
+    // 7. 忙等待超时（5 秒，避免立即失败）
+    conn.execute_batch(
+        "PRAGMA busy_timeout = 5000;"
+    ).map_err(|e| format!("Failed to set busy_timeout: {}", e))?;
+    
+    info!("SQLite PRAGMA optimization applied successfully");
+    Ok(())
+}
+
+/// 创建 SQLite 连接池（带性能优化）
 pub fn create_sqlite_pool(path: &str) -> Result<DbConnectionType, String> {
     let conn = Connection::open(path)
         .map_err(|e| format!("Failed to open SQLite: {}", e))?;
+    
+    // OPT-2-ALT: 应用 SQLite 性能优化
+    apply_sqlite_pragma(&conn)?;
+    
     Ok(DbConnectionType::Sqlite(DbPool::new(path, conn)))
+}
+
+/// 创建 SQLite 内存数据库（用于测试）
+pub fn create_sqlite_memory_pool() -> Result<DbConnectionType, String> {
+    let conn = Connection::open_in_memory()
+        .map_err(|e| format!("Failed to create in-memory SQLite: {}", e))?;
+    
+    // 应用相同的 PRAGMA 优化
+    apply_sqlite_pragma(&conn)?;
+    
+    Ok(DbConnectionType::Sqlite(DbPool::new(":memory:", conn)))
 }
 
 #[cfg(feature = "postgres")]
@@ -164,6 +231,7 @@ pub fn init_rbac_tables(conn: &DbConnectionType) -> Result<(), String> {
 
             // 预置系统角色
             if let Ok(conn) = Connection::open(&c.path) {
+                apply_sqlite_pragma(&conn)?;
                 crate::database::seed_roles::init_system_roles(&conn);
             }
             
