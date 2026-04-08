@@ -89,7 +89,7 @@
           </select>
         </div>
 
-        <div class="pt-4">
+        <div class="pt-4 flex space-x-3">
           <button
             @click="saveSettings"
             :disabled="saving"
@@ -153,6 +153,20 @@
           </button>
         </div>
       </div>
+    </div>
+
+    <!-- 网络配置入口 -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">网络配置</h3>
+      <router-link
+        to="/settings/network"
+        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+      >
+        配置网络
+        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+        </svg>
+      </router-link>
     </div>
 
     <!-- 重启确认模态框 -->

@@ -4,6 +4,7 @@ import Login from '../views/Login.vue'
 import Dashboard from '../views/Dashboard.vue'
 import Files from '../views/Files.vue'
 import Storage from '../views/Storage.vue'
+import NetworkSettings from '../views/NetworkSettings.vue'
 
 const routes = [
   {
@@ -32,6 +33,12 @@ const routes = [
     path: '/storage',
     name: 'Storage',
     component: Storage,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/settings/network',
+    name: 'NetworkSettings',
+    component: NetworkSettings,
     meta: { requiresAuth: true },
   },
 ]
