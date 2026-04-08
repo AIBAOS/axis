@@ -28,23 +28,44 @@
     </div>
 
     <!-- 面包屑导航 -->
-    <nav class="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-      <button
-        @click="navigateTo('/')"
-        class="hover:text-indigo-600 dark:hover:text-indigo-400"
-      >
-        📁 根目录
-      </button>
-      <template v-for="(segment, index) in breadcrumbSegments" :key="index">
-        <span class="text-gray-400">/</span>
+    <nav class="flex items-center justify-between px-6 py-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+      <div class="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+        <!-- 返回上级按钮 -->
         <button
-          @click="navigateToBreadcrumb(index)"
+          v-if="currentPath !== '/'"
+          @click="navigateToParent()"
+          class="hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center"
+          title="返回上级"
+        >
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        </button>
+        <button
+          @click="navigateTo('/')"
           class="hover:text-indigo-600 dark:hover:text-indigo-400"
         >
-          {{ segment }}
+          📁 根目录
         </button>
-      </template>
+        <template v-for="(segment, index) in breadcrumbSegments" :key="index">
+          <span class="text-gray-400">/</span>
+          <button
+            @click="navigateToBreadcrumb(index)"
+            class="hover:text-indigo-600 dark:hover:text-indigo-400"
+          >
+            {{ segment }}
+          </button>
+        </template>
+      </div>
+      <div class="text-xs text-gray-400">
+        {{ sortedFiles.length }} 个项目
+      </div>
     </nav>
+
+    <!-- Toast 通知 -->
+    <div v-if="toast.show" class="fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white transition-opacity duration-300" :class="toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'">
+      {{ toast.message }}
+    </div>
 
     <!-- 文件列表 -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -91,10 +112,25 @@
 
       <!-- 空目录 -->
       <div v-else-if="sortedFiles.length === 0" class="px-6 py-12 text-center">
-        <svg class="w-12 h-12 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
         </svg>
-        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">此目录为空</p>
+        <p class="text-lg font-medium text-gray-500 dark:text-gray-400 mb-2">此目录为空</p>
+        <p class="text-sm text-gray-400 dark:text-gray-500 mb-4">上传文件或创建文件夹开始使用</p>
+        <div class="flex justify-center space-x-3">
+          <button
+            @click="showUploadModal = true"
+            class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+          >
+            上传文件
+          </button>
+          <button
+            @click="createFolder"
+            class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            新建文件夹
+          </button>
+        </div>
       </div>
 
       <!-- 文件列表 -->
@@ -111,7 +147,7 @@
             <span class="text-xl mr-3">
               {{ file.type === 'dir' ? '📁' : getFileIcon(file.name) }}
             </span>
-            <span class="text-sm font-medium text-gray-900 dark:text-white" :class="{ 'cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400': file.type === 'dir' }">
+            <span class="text-sm font-medium text-gray-900 dark:text-white truncate" :class="{ 'cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400': file.type === 'dir' }">
               {{ file.name }}
             </span>
           </div>
@@ -193,9 +229,9 @@
             </button>
           </div>
           <div v-if="selectedFiles.length > 0" class="mt-4">
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">已选择文件：</p>
-            <ul class="text-sm text-gray-500 dark:text-gray-400 space-y-1">
-              <li v-for="file in selectedFiles" :key="file.name">{{ file.name }} ({{ formatFileSize(file.size) }})</li>
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">已选择 {{ selectedFiles.length }} 个文件</p>
+            <ul class="text-sm text-gray-500 dark:text-gray-400 space-y-1 max-h-32 overflow-y-auto">
+              <li v-for="(file, idx) in selectedFiles" :key="idx" class="truncate">{{ file.name }}</li>
             </ul>
           </div>
         </div>
@@ -270,6 +306,29 @@ const newFileName = ref('')
 const selectedFiles = ref([])
 const uploading = ref(false)
 
+// Toast 通知
+const toast = ref({
+  show: false,
+  message: '',
+  type: 'success', // success or error
+  timer: null
+})
+
+// 显示 Toast
+const showToast = (message, type = 'success') => {
+  if (toast.value.timer) {
+    clearTimeout(toast.value.timer)
+  }
+  toast.value = {
+    show: true,
+    message,
+    type,
+    timer: setTimeout(() => {
+      toast.value.show = false
+    }, 3000)
+  }
+}
+
 // 排序状态
 const sortField = ref('name') // name, size, modified
 const sortOrder = ref('asc') // asc, desc
@@ -312,6 +371,19 @@ const navigateTo = (path) => {
   loadFiles()
 }
 
+// 导航到上级目录
+const navigateToParent = () => {
+  const parts = currentPath.value.split('/').filter(Boolean)
+  if (parts.length > 0) {
+    parts.pop()
+    currentPath.value = '/' + parts.join('/')
+    if (currentPath.value === '/') {
+      currentPath.value = '/'
+    }
+    loadFiles()
+  }
+}
+
 // 导航到面包屑位置
 const navigateToBreadcrumb = (index) => {
   const path = '/' + breadcrumbSegments.value.slice(0, index + 1).join('/')
@@ -346,6 +418,7 @@ const loadFiles = async () => {
     }
   } catch (error) {
     console.error('Failed to load files:', error)
+    showToast('加载文件失败', 'error')
   } finally {
     loading.value = false
   }
@@ -404,9 +477,10 @@ const downloadFile = async (file) => {
     document.body.appendChild(link)
     link.click()
     link.remove()
+    showToast('下载成功')
   } catch (error) {
     console.error('Download failed:', error)
-    alert('下载失败')
+    showToast('下载失败', 'error')
   }
 }
 
@@ -419,9 +493,10 @@ const deleteFile = async (file) => {
       params: { path: file.path }
     })
     loadFiles()
+    showToast('删除成功')
   } catch (error) {
     console.error('Delete failed:', error)
-    alert('删除失败')
+    showToast('删除失败', 'error')
   }
 }
 
@@ -453,9 +528,10 @@ const confirmRename = async () => {
     })
     loadFiles()
     closeRenameModal()
+    showToast('重命名成功')
   } catch (error) {
     console.error('Rename failed:', error)
-    alert('重命名失败')
+    showToast('重命名失败', 'error')
   }
 }
 
@@ -469,9 +545,10 @@ const createFolder = async () => {
       path: currentPath.value === '/' ? `/${name}` : `${currentPath.value}/${name}`
     })
     loadFiles()
+    showToast('创建成功')
   } catch (error) {
     console.error('Create folder failed:', error)
-    alert('创建文件夹失败')
+    showToast('创建文件夹失败', 'error')
   }
 }
 
@@ -499,9 +576,10 @@ const uploadFiles = async () => {
     showUploadModal.value = false
     selectedFiles.value = []
     loadFiles()
+    showToast('上传成功')
   } catch (error) {
     console.error('Upload failed:', error)
-    alert('上传失败')
+    showToast('上传失败', 'error')
   } finally {
     uploading.value = false
   }
