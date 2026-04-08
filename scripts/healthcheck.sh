@@ -162,14 +162,26 @@ check_database() {
 check_disk_space() {
     log_info "检查磁盘空间..."
     
-    # 从配置文件读取阈值（支持自定义）
+    # DEPLOY-2 修复：阈值配置优先级：环境变量 > 配置文件 > 默认值
     DISK_THRESHOLD=90  # 默认值
-    if [ -f /etc/axis/config.toml ]; then
+    
+    # 1. 优先使用环境变量
+    if [ -n "$AXIS_DISK_THRESHOLD" ]; then
+        DISK_THRESHOLD=$AXIS_DISK_THRESHOLD
+        log_info "使用环境变量磁盘阈值：${DISK_THRESHOLD}%"
+    # 2. 其次使用配置文件
+    elif [ -f /etc/axis/config.toml ]; then
         CONFIG_THRESHOLD=$(grep "^disk_threshold" /etc/axis/config.toml 2>/dev/null | cut -d'=' -f2 | tr -d ' "' || echo "")
         if [ -n "$CONFIG_THRESHOLD" ] && [ "$CONFIG_THRESHOLD" -ge 50 ] && [ "$CONFIG_THRESHOLD" -le 99 ]; then
             DISK_THRESHOLD=$CONFIG_THRESHOLD
-            log_info "使用配置的磁盘阈值：${DISK_THRESHOLD}%"
+            log_info "使用配置文件磁盘阈值：${DISK_THRESHOLD}%"
         fi
+    fi
+    
+    # 验证阈值范围
+    if [ "$DISK_THRESHOLD" -lt 50 ] || [ "$DISK_THRESHOLD" -gt 99 ]; then
+        log_warning "磁盘阈值 ${DISK_THRESHOLD}% 超出合理范围 (50-99)，使用默认值 90%"
+        DISK_THRESHOLD=90
     fi
     
     USAGE=$(df /var/lib/axis | tail -1 | awk '{print $5}' | sed 's/%//')
@@ -187,14 +199,26 @@ check_disk_space() {
 check_memory() {
     log_info "检查内存使用..."
     
-    # 从配置文件读取阈值（支持自定义）
+    # DEPLOY-2 修复：阈值配置优先级：环境变量 > 配置文件 > 默认值
     MEMORY_THRESHOLD=80  # 默认值
-    if [ -f /etc/axis/config.toml ]; then
+    
+    # 1. 优先使用环境变量
+    if [ -n "$AXIS_MEMORY_THRESHOLD" ]; then
+        MEMORY_THRESHOLD=$AXIS_MEMORY_THRESHOLD
+        log_info "使用环境变量内存阈值：${MEMORY_THRESHOLD}%"
+    # 2. 其次使用配置文件
+    elif [ -f /etc/axis/config.toml ]; then
         CONFIG_THRESHOLD=$(grep "^memory_threshold" /etc/axis/config.toml 2>/dev/null | cut -d'=' -f2 | tr -d ' "' || echo "")
         if [ -n "$CONFIG_THRESHOLD" ] && [ "$CONFIG_THRESHOLD" -ge 50 ] && [ "$CONFIG_THRESHOLD" -le 99 ]; then
             MEMORY_THRESHOLD=$CONFIG_THRESHOLD
-            log_info "使用配置的内存阈值：${MEMORY_THRESHOLD}%"
+            log_info "使用配置文件内存阈值：${MEMORY_THRESHOLD}%"
         fi
+    fi
+    
+    # 验证阈值范围
+    if [ "$MEMORY_THRESHOLD" -lt 50 ] || [ "$MEMORY_THRESHOLD" -gt 99 ]; then
+        log_warning "内存阈值 ${MEMORY_THRESHOLD}% 超出合理范围 (50-99)，使用默认值 80%"
+        MEMORY_THRESHOLD=80
     fi
     
     if command -v free &>/dev/null; then
