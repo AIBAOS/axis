@@ -32,12 +32,32 @@ pub struct AppSettings {
 
 impl AppSettings {
     /// 从 config.toml 文件加载配置
+    /// Bug #77 修复：验证安全敏感配置
     pub fn from_file(path: &str) -> Result<Self, String> {
         let content = std::fs::read_to_string(path)
             .map_err(|e| format!("Failed to read config file: {}", e))?;
 
-        let config: AppSettings = toml::from_str(&content)
+        let mut config: AppSettings = toml::from_str(&content)
             .map_err(|e| format!("Failed to parse config: {}", e))?;
+
+        // Bug #77 修复：检查 JWT 密钥安全性
+        // 如果配置文件中的密钥是默认值或过短，检查环境变量
+        let is_insecure = config.jwt.secret_key.is_empty() 
+            || config.jwt.secret_key == "your-secret-key-here" 
+            || config.jwt.secret_key.len() < 32;
+        
+        if is_insecure {
+            // 尝试从环境变量获取
+            if let Ok(secret) = env::var("JWT_SECRET_KEY") {
+                if secret.len() >= 32 {
+                    config.jwt.secret_key = secret;
+                } else {
+                    return Err("JWT_SECRET_KEY environment variable must be at least 32 characters".to_string());
+                }
+            } else {
+                return Err("JWT secret_key is not configured. Set JWT_SECRET_KEY environment variable or update config.toml with a strong key (at least 32 characters)".to_string());
+            }
+        }
 
         Ok(config)
     }
