@@ -114,12 +114,36 @@ start_service() {
     systemctl start $AXIS_SERVICE
     sleep 5
     
-    if systemctl is-active --quiet $AXIS_SERVICE; then
-        log_success "服务启动成功"
-    else
-        log_error "服务启动失败，请检查日志"
-        exit 1
-    fi
+    # DEPLOY-3 修复：验证服务状态
+    local MAX_RETRIES=3
+    local RETRY_COUNT=0
+    
+    while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+        if systemctl is-active --quiet $AXIS_SERVICE; then
+            # 服务运行中，进一步验证 API 可访问性
+            if command -v curl &>/dev/null; then
+                RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080/api/v1/system/health" 2>/dev/null || echo "000")
+                if [ "$RESPONSE" = "200" ]; then
+                    log_success "服务启动成功，健康检查通过 (HTTP $RESPONSE)"
+                    return 0
+                else
+                    log_warning "服务运行但 API 不可用 (HTTP $RESPONSE)，尝试重启..."
+                fi
+            else
+                log_success "服务启动成功"
+                return 0
+            fi
+        else
+            log_warning "服务未运行，尝试重启 ($RETRY_COUNT/$MAX_RETRIES)..."
+        fi
+        
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        systemctl restart $AXIS_SERVICE
+        sleep 5
+    done
+    
+    log_error "服务启动失败，已尝试 $MAX_RETRIES 次，请检查日志：journalctl -u axis"
+    exit 1
 }
 
 # 显示恢复信息
