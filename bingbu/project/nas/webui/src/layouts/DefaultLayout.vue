@@ -25,9 +25,22 @@
             <router-link to="/backups" class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">
               备份管理
             </router-link>
-            <router-link to="/settings" class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">
-              系统设置
-            </router-link>
+            <div class="relative group">
+              <button class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center">
+                系统
+                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+              <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 hidden group-hover:block">
+                <router-link to="/settings" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  设置
+                </router-link>
+                <router-link to="/settings/system" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  系统设置
+                </router-link>
+              </div>
+            </div>
             <button @click="logout" class="text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400">
               退出
             </button>
@@ -62,9 +75,15 @@
         <router-link to="/backups" class="block text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400" @click="showMobileMenu = false">
           备份管理
         </router-link>
-        <router-link to="/settings" class="block text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400" @click="showMobileMenu = false">
-          系统设置
-        </router-link>
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">系统</p>
+          <router-link to="/settings" class="block text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400" @click="showMobileMenu = false">
+            设置
+          </router-link>
+          <router-link to="/settings/system" class="block text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400" @click="showMobileMenu = false">
+            系统设置
+          </router-link>
+        </div>
         <button @click="logout; showMobileMenu = false" class="block text-left text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400">
           退出
         </button>

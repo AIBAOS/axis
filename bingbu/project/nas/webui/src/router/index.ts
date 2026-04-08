@@ -7,6 +7,7 @@ import Storage from '../views/Storage.vue'
 import Users from '../views/Users'
 import Backups from '../views/Backups'
 import Settings from '../views/Settings'
+import SystemSettings from '../views/SystemSettings'
 
 const routes = [
   {
@@ -53,6 +54,12 @@ const routes = [
     path: '/settings',
     name: 'Settings',
     component: Settings,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/settings/system',
+    name: 'SystemSettings',
+    component: SystemSettings,
     meta: { requiresAuth: true },
   },
 ]
