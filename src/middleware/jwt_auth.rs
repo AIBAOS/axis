@@ -3,7 +3,7 @@
 
 use actix_web::{
     dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
-    Error, HttpMessage, web,
+    Error, HttpMessage, web, HttpResponse,
 };
 use futures_util::future::{ok, Ready};
 use std::rc::Rc;
@@ -48,33 +48,58 @@ where
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
+        // Bug #79 修复：公开路径不需要认证
+        let path = req.path();
+        let public_paths = [
+            "/api/v1/health",
+            "/api/v1/auth/login",
+            "/api/v1/auth/refresh",
+        ];
+        
+        if public_paths.contains(&path) {
+            let fut = self.service.call(req);
+            return Box::pin(async move {
+                let res = fut.await?;
+                Ok(res)
+            });
+        }
+
         // 从 Header 中获取 Authorization
         let auth_header = req.headers().get("Authorization").and_then(|h| h.to_str().ok());
 
-        if let Some(auth) = auth_header {
-            if let Some(jwt_data) = req.app_data::<web::Data<Rc<JwtService>>>() {
-                let jwt_service = jwt_data.get_ref();
+        // Bug #79 修复：无 token 或无效 token 应拒绝请求
+        if auth_header.is_none() {
+            return Box::pin(async move {
+                Ok(req.into_response(
+                    HttpResponse::Unauthorized().json(serde_json::json!({
+                        "success": false,
+                        "message": "Authentication required"
+                    }))
+                ))
+            });
+        }
 
-                // 解析 JWT Token
-                match extract_claims_from_auth(jwt_service, auth) {
-                    Ok(claims) => {
-                        // 将 Claims 存储到请求扩展中
-                        req.extensions_mut().insert(claims);
-                    }
-                    Err(_) => {
-                        // Token 无效，注入空 Claims（后续 handlers 可检查）
-                        req.extensions_mut().insert(JwtClaims {
-                            sub: "0".to_string(),
-                            user_id: 0,
-                            username: "".to_string(),
-                            issuer: "".to_string(),
-                            audience: "".to_string(),
-                            exp: 0,
-                            iat: 0,
-                            roles: Vec::new(),
-                            permissions: Vec::new(),
-                        });
-                    }
+        let auth = auth_header.unwrap();
+        
+        if let Some(jwt_data) = req.app_data::<web::Data<Rc<JwtService>>>() {
+            let jwt_service = jwt_data.get_ref();
+
+            // 解析 JWT Token
+            match extract_claims_from_auth(jwt_service, auth) {
+                Ok(claims) => {
+                    // 将 Claims 存储到请求扩展中
+                    req.extensions_mut().insert(claims);
+                }
+                Err(e) => {
+                    // Bug #79 修复：无效 token 拒绝请求
+                    return Box::pin(async move {
+                        Ok(req.into_response(
+                            HttpResponse::Unauthorized().json(serde_json::json!({
+                                "success": false,
+                                "message": "Invalid or expired token"
+                            }))
+                        ))
+                    });
                 }
             }
         }
