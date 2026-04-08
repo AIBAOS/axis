@@ -94,26 +94,36 @@ impl SqliteQuotaRepository {
         Ok(())
     }
 
-    /// 更新已用空间
+    /// 更新已用空间（原子操作，防止并发竞态）
     pub fn update_used(&self, user_id: u64, delta: i64) -> Result<UserQuota, String> {
         let conn = self.get_connection()?;
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_or(0, |d| d.as_secs()) as i64;
 
-        // 更新并返回新值
-        let quota = conn.query_row(
-            r#"
-            INSERT INTO user_quotas (user_id, quota_bytes, used_bytes, updated_at)
-            VALUES (?1, 0, ?2, ?3)
-            ON CONFLICT(user_id) DO UPDATE SET
-                used_bytes = used_bytes + ?2,
-                updated_at = ?3
-            RETURNING user_id, quota_bytes, used_bytes, updated_at
-            "#,
-            params![user_id, delta, now],
+        // 使用事务确保原子性
+        let tx = conn.transaction().map_err(|e| format!("Transaction failed: {}", e))?;
+        
+        // 使用 IMMEDIATE 事务模式获取写锁，防止并发读写
+        tx.execute("UPDATE user_quotas SET used_bytes = used_bytes + ?1, updated_at = ?2 WHERE user_id = ?3",
+            params![delta, now, user_id],
+        ).map_err(|e| format!("Update failed: {}", e))?;
+        
+        // 如果不存在则插入
+        let affected = tx.execute(
+            "INSERT OR IGNORE INTO user_quotas (user_id, quota_bytes, used_bytes, updated_at) VALUES (?1, 0, ?2, ?3)",
+            params![user_id, delta.max(0) as i64, now],
+        ).map_err(|e| format!("Insert failed: {}", e))?;
+        
+        // 查询并返回结果
+        let quota = tx.query_row(
+            "SELECT user_id, quota_bytes, used_bytes, updated_at FROM user_quotas WHERE user_id = ?1",
+            params![user_id],
             |row| Self::row_to_quota(row),
         ).map_err(|e| format!("Query failed: {}", e))?;
+        
+        // 提交事务
+        tx.commit().map_err(|e| format!("Commit failed: {}", e))?;
         
         Ok(quota)
     }
@@ -144,5 +154,61 @@ impl SqliteQuotaRepository {
     /// 获取用户配额使用情况
     pub fn get_quota_usage(&self, user_id: u64) -> Result<Option<UserQuota>, String> {
         self.get_quota(user_id)
+    }
+
+    /// 原子操作：检查并更新配额（防止并发竞态）
+    /// 如果当前可用空间 >= required_bytes，则增加 used_bytes 并返回 true
+    /// 否则返回 false
+    pub fn try_reserve_quota(&self, user_id: u64, required_bytes: u64) -> Result<bool, String> {
+        let conn = self.get_connection()?;
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |d| d.as_secs()) as i64;
+
+        // 使用事务和行级锁确保原子性
+        let tx = conn.transaction().map_err(|e| format!("Transaction failed: {}", e))?;
+        
+        // 获取当前配额（带锁）
+        let current = tx.query_row(
+            "SELECT quota_bytes, used_bytes FROM user_quotas WHERE user_id = ?1 FOR UPDATE",
+            params![user_id],
+            |row| {
+                let quota_bytes: u64 = row.get(0)?;
+                let used_bytes: u64 = row.get(1)?;
+                Ok((quota_bytes, used_bytes))
+            },
+        );
+
+        let (quota_bytes, used_bytes) = match current {
+            Ok((q, u)) => (q, u),
+            Err(rusqlite::Error::QueryReturnedNoRows) => {
+                // 用户不存在配额记录，视为无限制
+                tx.commit().map_err(|e| format!("Commit failed: {}", e))?;
+                return Ok(true);
+            }
+            Err(e) => return Err(format!("Query failed: {}", e)),
+        };
+
+        // 检查配额
+        if quota_bytes == 0 {
+            // 无限制
+            tx.commit().map_err(|e| format!("Commit failed: {}", e))?;
+            return Ok(true);
+        }
+
+        let available = quota_bytes.saturating_sub(used_bytes);
+        if available >= required_bytes {
+            // 配额充足，更新
+            tx.execute(
+                "UPDATE user_quotas SET used_bytes = used_bytes + ?1, updated_at = ?2 WHERE user_id = ?3",
+                params![required_bytes as i64, now, user_id],
+            ).map_err(|e| format!("Update failed: {}", e))?;
+            tx.commit().map_err(|e| format!("Commit failed: {}", e))?;
+            Ok(true)
+        } else {
+            // 配额不足
+            tx.commit().map_err(|e| format!("Commit failed: {}", e))?;
+            Ok(false)
+        }
     }
 }

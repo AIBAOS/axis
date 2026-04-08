@@ -64,24 +64,33 @@ impl QuotaService {
         }
     }
 
-    /// QUOTA-1: 预检查并占用配额
-    /// 成功返回 true，失败返回 false
+    /// QUOTA-1: 预检查并占用配额（原子操作，防止并发竞态）
+    /// 成功返回 Ok(())，失败返回 Err
     pub fn reserve_quota(&self, user_id: u64, bytes: u64) -> Result<(), String> {
-        match self.check_quota(user_id, bytes) {
-            QuotaCheckResult::Available(_) | QuotaCheckResult::NoQuota => {
-                // 更新已用空间
-                self.update_used(user_id, bytes as i64)?;
-                Ok(())
+        let repo = self.get_repo();
+        
+        // 使用原子操作检查并预留配额
+        let success = repo.try_reserve_quota(user_id, bytes)?;
+        
+        if success {
+            Ok(())
+        } else {
+            // 获取当前配额信息以返回详细的错误消息
+            if let Some(quota) = repo.get_quota(user_id).ok().flatten() {
+                if quota.quota_bytes > 0 {
+                    let available = quota.quota_bytes.saturating_sub(quota.used_bytes);
+                    let needed = bytes.saturating_sub(available);
+                    return Err(format!("Quota exceeded. Need {} more bytes", needed));
+                }
             }
-            QuotaCheckResult::Insufficient(needed) => {
-                Err(format!("Quota exceeded. Need {} more bytes", needed))
-            }
+            Err("Quota exceeded".to_string())
         }
     }
 
     /// QUOTA-1: 释放配额（用于上传失败回滚）
     pub fn release_quota(&self, user_id: u64, bytes: u64) -> Result<(), String> {
-        self.update_used(user_id, -(bytes as i64))
+        self.update_used(user_id, -(bytes as i64))?;
+        Ok(())
     }
 
     /// 获取用户配额
