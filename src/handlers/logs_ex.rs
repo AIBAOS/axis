@@ -219,14 +219,16 @@ pub async fn get_logs(
         filtered
     };
     
-    let page = query.offset.unwrap_or(0) / query.limit.unwrap_or(20);
-    let page_size = query.limit.unwrap_or(20);
+    let limit = query.limit.unwrap_or(20).max(1); // Bug #71 修复：防止除零错误
+    let offset = query.offset.unwrap_or(0);
+    let page = offset / limit;
+    let page_size = limit;
     let total = filtered.len() as u32;
-    let offset = (page as u32) * page_size;
+    let start_offset = (page as u32) * page_size;
     
     let paginated = filtered
         .into_iter()
-        .skip(offset as usize)
+        .skip(start_offset as usize)
         .take(page_size as usize)
         .collect::<Vec<LogEntry>>();
     
@@ -236,7 +238,7 @@ pub async fn get_logs(
         total,
         page: page as u32 + 1,
         page_size,
-        has_more: (offset + page_size as u32) < total,
+        has_more: (start_offset + page_size as u32) < total,
     }))
 }
 
