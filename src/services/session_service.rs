@@ -18,9 +18,13 @@ pub struct Session {
     pub last_activity: u64,
 }
 
+/// SESS-1: 会话超时配置（默认 30 分钟）
+const DEFAULT_SESSION_TIMEOUT_SECS: u64 = 30 * 60;
+
 /// Session 服务
 pub struct SessionService {
     sessions: Arc<Mutex<SqliteSessionRepository>>,
+    session_timeout_secs: u64,
 }
 
 impl SessionService {
@@ -33,7 +37,13 @@ impl SessionService {
         
         Self {
             sessions: Arc::new(Mutex::new(session_repo)),
+            session_timeout_secs: DEFAULT_SESSION_TIMEOUT_SECS,
         }
+    }
+
+    /// 设置会话超时时间（秒）
+    pub fn set_session_timeout(&mut self, timeout_secs: u64) {
+        self.session_timeout_secs = timeout_secs;
     }
 
     /// 创建新会话
@@ -65,7 +75,7 @@ impl SessionService {
         id
     }
 
-    /// 获取会话
+    /// 获取会话（SESS-1: 检查超时）
     pub fn get_session(&self, session_id: &str) -> Option<Session> {
         let repo = match self.sessions.lock() {
             Ok(guard) => guard,
@@ -74,7 +84,29 @@ impl SessionService {
                 poisoned.into_inner()
             }
         };
-        repo.get_session(session_id).ok().flatten()
+        
+        match repo.get_session(session_id) {
+            Ok(Some(session)) => {
+                // SESS-1: 检查会话是否超时
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map_or(0, |d| d.as_secs());
+                
+                if now - session.last_activity > self.session_timeout_secs {
+                    // 会话已超时，删除并返回 None
+                    eprintln!("Session {} expired (inactive for {}s)", session_id, now - session.last_activity);
+                    let _ = repo.delete_session(session_id);
+                    None
+                } else {
+                    Some(session)
+                }
+            }
+            Ok(None) => None,
+            Err(e) => {
+                eprintln!("Failed to get session: {}", e);
+                None
+            }
+        }
     }
 
     /// 更新最后活动时间
@@ -124,6 +156,44 @@ impl SessionService {
             }
         };
         repo.get_sessions_by_user(user_id).unwrap_or_default()
+    }
+
+    /// SESS-1: 清理所有过期会话
+    pub fn cleanup_expired_sessions(&self) -> usize {
+        let repo = match self.sessions.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => {
+                eprintln!("SessionService mutex poisoned, recovering");
+                poisoned.into_inner()
+            }
+        };
+        
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_or(0, |d| d.as_secs());
+        
+        // 获取所有会话
+        match repo.get_all_sessions() {
+            Ok(sessions) => {
+                let expired: Vec<String> = sessions
+                    .iter()
+                    .filter(|s| now - s.last_activity > self.session_timeout_secs)
+                    .map(|s| s.id.clone())
+                    .collect();
+                
+                let count = expired.len();
+                for session_id in &expired {
+                    let _ = repo.delete_session(session_id);
+                }
+                
+                if count > 0 {
+                    eprintln!("Cleaned up {} expired sessions", count);
+                }
+                
+                count
+            }
+            Err(_) => 0
+        }
     }
 }
 

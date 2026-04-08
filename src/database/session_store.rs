@@ -168,4 +168,32 @@ impl SqliteSessionRepository {
 
         Ok(affected > 0)
     }
+
+    /// SESS-1: 获取所有会话（用于清理过期会话）
+    pub fn get_all_sessions(&self) -> Result<Vec<Session>, String> {
+        let conn = self.get_connection()?;
+        let mut stmt = conn.prepare(
+            r#"
+            SELECT session_id, user_id, created_at, last_active
+            FROM sessions
+            ORDER BY last_active DESC
+            "#,
+        ).map_err(|e| format!("Prepare failed: {}", e))?;
+        
+        let sessions: Vec<Session> = stmt
+            .query_map([], |row| {
+                Ok(Session {
+                    id: row.get(0)?,
+                    user_id: row.get(1)?,
+                    username: "".to_string(),
+                    created_at: row.get(2)?,
+                    last_activity: row.get(3)?,
+                })
+            })
+            .map_err(|e| format!("Query failed: {}", e))?
+            .filter_map(|r| r.ok())
+            .collect();
+        
+        Ok(sessions)
+    }
 }
