@@ -87,9 +87,10 @@ pub async fn get_apps(
             })))
         }
         Err(e) => {
+            log::error!("查询应用列表失败: {}", e);
             Ok(HttpResponse::InternalServerError().json(json!({
                 "success": false,
-                "message": format!("查询应用列表失败: {}", e)
+                "message": "Internal server error"
             })))
         }
     }
@@ -127,10 +128,13 @@ pub async fn get_app(
             "success": false,
             "message": format!("App '{}' not found", id)
         }))),
-        Err(e) => Ok(HttpResponse::InternalServerError().json(json!({
-            "success": false,
-            "message": format!("查询应用失败: {}", e)
-        }))),
+        Err(e) => {
+            log::error!("查询应用失败: {}", e);
+            Ok(HttpResponse::InternalServerError().json(json!({
+                "success": false,
+                "message": "Internal server error"
+            })))
+        }
     }
 }
 
@@ -172,7 +176,7 @@ pub async fn install_app(
         Ok(app) => Ok(HttpResponse::Created().json(app)),
         Err(e) => Ok(HttpResponse::InternalServerError().json(json!({
             "success": false,
-            "message": format!("安装应用失败: {}", e)
+            "message": "Internal server error"
         }))),
     }
 }
@@ -216,7 +220,7 @@ pub async fn uninstall_app(
         }))),
         Err(e) => Ok(HttpResponse::InternalServerError().json(json!({
             "success": false,
-            "message": format!("卸载应用失败: {}", e)
+            "message": "Internal server error"
         }))),
     }
 }

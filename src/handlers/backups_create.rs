@@ -217,7 +217,7 @@ pub async fn create_backup(
         })),
         Err(e) => Ok(HttpResponse::InternalServerError().json(ErrorResponse {
             success: false,
-            error: format!("Failed to create backup task: {}", e),
+            error: "Internal server error",
             code: "DATABASE_ERROR".to_string(),
         })),
     }

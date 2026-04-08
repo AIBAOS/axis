@@ -107,7 +107,7 @@ pub async fn get_container_detail(
         Err(e) => {
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: format!("查询容器失败：{}", e),
+                error: "Internal server error",
                 code: "DATABASE_ERROR".to_string(),
             }))
         }

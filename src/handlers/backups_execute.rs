@@ -49,7 +49,7 @@ pub async fn run_backup(
         })),
         Err(e) => Ok(HttpResponse::InternalServerError().json(RunBackupResponse {
             success: false,
-            message: format!("Backup failed: {}", e),
+            message: "Internal server error",
         })),
     }
 }
