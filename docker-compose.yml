@@ -1,0 +1,60 @@
+version: '3.8'
+
+# Axis NAS Docker Compose 配置
+# 版本：v1.0.0
+# 更新时间：2026-04-08
+
+services:
+  axis:
+    image: axis-nas:latest
+    container_name: axis-nas
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      # 数据持久化
+      - axis-data:/var/lib/axis
+      # 配置持久化
+      - axis-config:/etc/axis
+      # 日志持久化
+      - axis-logs:/var/log/axis
+    environment:
+      # JWT 密钥（生产环境请修改）
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-super-secret-32-character-key}
+      # 数据库路径
+      - DATABASE_PATH=/var/lib/axis/NAS.db
+      # 服务器端口
+      - SERVER_PORT=8080
+      # 日志级别
+      - RUST_LOG=info
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/system/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - axis-network
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+# 网络配置
+networks:
+  axis-network:
+    driver: bridge
+
+# 数据卷
+volumes:
+  axis-data:
+    driver: local
+  axis-config:
+    driver: local
+  axis-logs:
+    driver: local
