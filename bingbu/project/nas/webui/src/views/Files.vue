@@ -48,11 +48,35 @@
 
     <!-- 文件列表 -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <!-- 列表头部 -->
+      <!-- 列表头部（可点击排序） -->
       <div class="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-500 dark:text-gray-400">
-        <div class="col-span-6">名称</div>
-        <div class="col-span-2">大小</div>
-        <div class="col-span-3">修改时间</div>
+        <div 
+          class="col-span-6 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center"
+          @click="toggleSort('name')"
+        >
+          <span>名称</span>
+          <span v-if="sortField === 'name'" class="ml-1">
+            {{ sortOrder === 'asc' ? '↑' : '↓' }}
+          </span>
+        </div>
+        <div 
+          class="col-span-2 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center"
+          @click="toggleSort('size')"
+        >
+          <span>大小</span>
+          <span v-if="sortField === 'size'" class="ml-1">
+            {{ sortOrder === 'asc' ? '↑' : '↓' }}
+          </span>
+        </div>
+        <div 
+          class="col-span-3 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center"
+          @click="toggleSort('modified')"
+        >
+          <span>修改时间</span>
+          <span v-if="sortField === 'modified'" class="ml-1">
+            {{ sortOrder === 'asc' ? '↑' : '↓' }}
+          </span>
+        </div>
         <div class="col-span-1 text-right">操作</div>
       </div>
 
@@ -66,7 +90,7 @@
       </div>
 
       <!-- 空目录 -->
-      <div v-else-if="files.length === 0" class="px-6 py-12 text-center">
+      <div v-else-if="sortedFiles.length === 0" class="px-6 py-12 text-center">
         <svg class="w-12 h-12 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
         </svg>
@@ -76,7 +100,7 @@
       <!-- 文件列表 -->
       <div v-else>
         <div
-          v-for="file in files"
+          v-for="file in sortedFiles"
           :key="file.name"
           class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 items-center"
           :class="{ 'cursor-pointer': file.type === 'dir' }"
@@ -246,10 +270,40 @@ const newFileName = ref('')
 const selectedFiles = ref([])
 const uploading = ref(false)
 
+// 排序状态
+const sortField = ref('name') // name, size, modified
+const sortOrder = ref('asc') // asc, desc
+
 // 面包屑导航片段
 const breadcrumbSegments = computed(() => {
   if (currentPath.value === '/') return []
   return currentPath.value.split('/').filter(Boolean)
+})
+
+// 排序后的文件列表
+const sortedFiles = computed(() => {
+  const sorted = [...files.value].sort((a, b) => {
+    // 文件夹始终排在前面
+    if (a.type === 'dir' && b.type !== 'dir') return -1
+    if (a.type !== 'dir' && b.type === 'dir') return 1
+    
+    let comparison = 0
+    switch (sortField.value) {
+      case 'name':
+        comparison = a.name.localeCompare(b.name)
+        break
+      case 'size':
+        comparison = (a.size || 0) - (b.size || 0)
+        break
+      case 'modified':
+        comparison = (a.modified || 0) - (b.modified || 0)
+        break
+    }
+    
+    return sortOrder.value === 'asc' ? comparison : -comparison
+  })
+  
+  return sorted
 })
 
 // 导航到指定路径
@@ -262,6 +316,18 @@ const navigateTo = (path) => {
 const navigateToBreadcrumb = (index) => {
   const path = '/' + breadcrumbSegments.value.slice(0, index + 1).join('/')
   navigateTo(path)
+}
+
+// 切换排序
+const toggleSort = (field) => {
+  if (sortField.value === field) {
+    // 相同字段，切换顺序
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    // 新字段，默认升序
+    sortField.value = field
+    sortOrder.value = 'asc'
+  }
 }
 
 // 加载文件列表
@@ -318,6 +384,7 @@ const formatFileSize = (bytes) => {
 
 // 格式化日期时间
 const formatDateTime = (timestamp) => {
+  if (!timestamp) return '--'
   const date = new Date(timestamp * 1000)
   return date.toLocaleString('zh-CN')
 }
@@ -447,7 +514,6 @@ onMounted(() => {
     router.push('/login')
     return
   }
-  
   loadFiles()
 })
 </script>
