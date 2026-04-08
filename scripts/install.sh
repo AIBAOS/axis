@@ -32,9 +32,18 @@ AXIS_LOG_DIR="/var/log/axis"
 AXIS_SERVICE="axis"
 AXIS_PORT="8080"
 
+# 静默模式
+QUIET_MODE=false
+
+# JWT 密钥和数据库路径
+JWT_SECRET_KEY=""
+DATABASE_PATH="/var/lib/axis/NAS.db"
+
 # 日志函数
 log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    if [ "$QUIET_MODE" = false ]; then
+        echo -e "${BLUE}[INFO]${NC} $1"
+    fi
 }
 
 log_success() {
@@ -47,6 +56,150 @@ log_warning() {
 
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# 解析命令行参数
+parse_args() {
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -q|--quiet)
+                QUIET_MODE=true
+                shift
+                ;;
+            -p|--port)
+                AXIS_PORT="$2"
+                shift 2
+                ;;
+            --jwt-secret)
+                JWT_SECRET_KEY="$2"
+                shift 2
+                ;;
+            --db-path)
+                DATABASE_PATH="$2"
+                shift 2
+                ;;
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            *)
+                log_error "未知参数：$1"
+                show_help
+                exit 1
+                ;;
+        esac
+    done
+}
+
+# 显示帮助信息
+show_help() {
+    echo "Axis NAS 一键安装脚本"
+    echo ""
+    echo "用法：$0 [选项]"
+    echo ""
+    echo "选项:"
+    echo "  -q, --quiet          静默安装模式"
+    echo "  -p, --port PORT      指定端口（默认：8080）"
+    echo "  --jwt-secret KEY     指定 JWT 密钥（默认：自动生成）"
+    echo "  --db-path PATH       指定数据库路径（默认：/var/lib/axis/NAS.db）"
+    echo "  -h, --help           显示帮助信息"
+    echo ""
+    echo "示例:"
+    echo "  $0                              # 交互式安装"
+    echo "  $0 -q                           # 静默安装"
+    echo "  $0 -p 8080 --jwt-secret KEY    # 指定端口和 JWT 密钥"
+}
+
+# 检测系统依赖
+check_dependencies() {
+    log_info "正在检测系统依赖..."
+    
+    local MISSING_DEPS=()
+    
+    # 检测 systemd
+    if ! command -v systemctl &>/dev/null; then
+        MISSING_DEPS+=("systemd")
+    fi
+    
+    # 检测 curl 或 wget
+    if ! command -v curl &>/dev/null && ! command -v wget &>/dev/null; then
+        MISSING_DEPS+=("curl/wget")
+    fi
+    
+    # 检测 tar
+    if ! command -v tar &>/dev/null; then
+        MISSING_DEPS+=("tar")
+    fi
+    
+    # 检测 Docker（可选）
+    if command -v docker &>/dev/null; then
+        log_info "Docker: 已安装（可选）"
+    else
+        log_info "Docker: 未安装（可选，Docker 部署需要）"
+    fi
+    
+    # 报告缺失的依赖
+    if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
+        log_error "缺失依赖：${MISSING_DEPS[*]}"
+        log_info "请安装缺失的依赖后重新运行"
+        exit 1
+    fi
+    
+    log_success "系统依赖检测通过"
+}
+
+# 交互式配置
+interactive_config() {
+    if [ "$QUIET_MODE" = true ]; then
+        return 0
+    fi
+    
+    echo ""
+    echo "========================================"
+    echo "  Axis NAS 配置"
+    echo "========================================"
+    echo ""
+    
+    # 端口配置
+    read -p "请输入服务端口 [默认：$AXIS_PORT]: " INPUT_PORT
+    if [ -n "$INPUT_PORT" ]; then
+        AXIS_PORT="$INPUT_PORT"
+    fi
+    
+    # JWT 密钥配置
+    read -p "是否自动生成 JWT 密钥？[Y/n] " GENERATE_JWT
+    if [[ "$GENERATE_JWT" =~ ^[Nn]$ ]]; then
+        read -p "请输入 JWT 密钥（至少 32 字符）: " INPUT_JWT
+        if [ -n "$INPUT_JWT" ]; then
+            JWT_SECRET_KEY="$INPUT_JWT"
+        fi
+    fi
+    
+    # 数据库路径配置
+    read -p "请输入数据库路径 [默认：$DATABASE_PATH]: " INPUT_DB
+    if [ -n "$INPUT_DB" ]; then
+        DATABASE_PATH="$INPUT_DB"
+    fi
+    
+    echo ""
+    echo "配置总结:"
+    echo "  端口：$AXIS_PORT"
+    echo "  JWT 密钥：${JWT_SECRET_KEY:0:10}...（已隐藏）"
+    echo "  数据库路径：$DATABASE_PATH"
+    echo ""
+    read -p "确认配置？[Y/n] " CONFIRM
+    if [[ "$CONFIRM" =~ ^[Nn]$ ]]; then
+        log_error "安装已取消"
+        exit 1
+    fi
+}
+
+# 生成 JWT 密钥
+generate_jwt_secret() {
+    if [ -z "$JWT_SECRET_KEY" ]; then
+        JWT_SECRET_KEY=$(openssl rand -base64 32)
+        log_info "已生成 JWT 密钥"
+    fi
 }
 
 # 检查是否以 root 运行
@@ -330,8 +483,73 @@ show_info() {
     echo "========================================"
 }
 
+# 安装后验证
+verify_installation() {
+    log_info "正在验证安装..."
+    
+    local VERIFY_OK=true
+    
+    # 检查服务状态
+    if systemctl is-active --quiet $AXIS_SERVICE; then
+        log_success "服务状态：运行中"
+    else
+        log_error "服务状态：未运行"
+        VERIFY_OK=false
+    fi
+    
+    # 检查端口监听
+    sleep 2
+    if command -v ss &>/dev/null; then
+        if ss -tln | grep -q ":$AXIS_PORT "; then
+            log_success "端口监听：$AXIS_PORT 正常"
+        else
+            log_error "端口监听：$AXIS_PORT 未监听"
+            VERIFY_OK=false
+        fi
+    fi
+    
+    # 检查 API 健康
+    if command -v curl &>/dev/null; then
+        RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:$AXIS_PORT/api/v1/system/health" 2>/dev/null || echo "000")
+        if [ "$RESPONSE" = "200" ]; then
+            log_success "API 健康检查：HTTP $RESPONSE"
+        else
+            log_error "API 健康检查：HTTP $RESPONSE"
+            VERIFY_OK=false
+        fi
+    fi
+    
+    # 检查配置文件
+    if [ -f "$AXIS_CONFIG_DIR/config.toml" ]; then
+        log_success "配置文件：存在"
+    else
+        log_error "配置文件：不存在"
+        VERIFY_OK=false
+    fi
+    
+    # 检查数据目录
+    if [ -d "$AXIS_DATA_DIR" ]; then
+        log_success "数据目录：存在"
+    else
+        log_error "数据目录：不存在"
+        VERIFY_OK=false
+    fi
+    
+    echo ""
+    if [ "$VERIFY_OK" = true ]; then
+        log_success "安装验证通过"
+        return 0
+    else
+        log_error "安装验证失败"
+        return 1
+    fi
+}
+
 # 主函数
 main() {
+    # 解析命令行参数
+    parse_args "$@"
+    
     echo ""
     echo "========================================"
     echo "  Axis NAS 一键安装脚本"
@@ -341,7 +559,8 @@ main() {
     
     check_root
     detect_os
-    install_dependencies
+    check_dependencies
+    interactive_config
     create_user
     create_directories
     generate_jwt_secret
@@ -350,6 +569,7 @@ main() {
     install_service
     configure_firewall
     start_service
+    verify_installation
     show_info
 }
 

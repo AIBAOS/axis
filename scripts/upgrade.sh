@@ -61,6 +61,42 @@ stop_service() {
     log_success "服务已停止"
 }
 
+# 获取当前版本
+get_current_version() {
+    if [ -f "$AXIS_HOME/axis" ]; then
+        local VERSION=$("$AXIS_HOME/axis" --version 2>/dev/null || echo "unknown")
+        echo "$VERSION"
+    else
+        echo "unknown"
+    fi
+}
+
+# 获取最新版本
+get_latest_version() {
+    local VERSION=$(curl -s https://api.github.com/repos/AIBAOS/axis/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
+    if [ -z "$VERSION" ]; then
+        echo "v1.0.0"
+    else
+        echo "$VERSION"
+    fi
+}
+
+# 版本对比（返回 0 表示需要升级，1 表示已是最新）
+compare_versions() {
+    local CURRENT=$1
+    local LATEST=$2
+    
+    if [ "$CURRENT" = "unknown" ]; then
+        return 0
+    fi
+    
+    if [ "$CURRENT" = "$LATEST" ]; then
+        return 1
+    fi
+    
+    return 0
+}
+
 # 备份当前版本
 backup_current() {
     log_info "正在备份当前版本..."
@@ -83,9 +119,19 @@ backup_current() {
     
     # 备份配置文件
     if [ -d "$AXIS_CONFIG_DIR" ]; then
-        cp -r "$AXIS_CONFIG_DIR" "$BACKUP_DIR/config_$TIMESTAMP"
-        log_info "配置文件已备份到：$BACKUP_DIR/config_$TIMESTAMP"
+        tar -czf "$BACKUP_DIR/config_$TIMESTAMP.tar.gz" -C "$(dirname $AXIS_CONFIG_DIR)" "$(basename $AXIS_CONFIG_DIR)"
+        log_info "配置文件已备份到：$BACKUP_DIR/config_$TIMESTAMP.tar.gz"
     fi
+    
+    # 创建备份清单
+    cat > "$BACKUP_DIR/backup_$TIMESTAMP.txt" << EOF
+备份时间：$TIMESTAMP
+当前版本：$(get_current_version)
+目标版本：$TARGET_VERSION
+二进制文件：$BACKUP_PATH
+数据库：$BACKUP_DIR/NAS.db_$TIMESTAMP
+配置文件：$BACKUP_DIR/config_$TIMESTAMP.tar.gz
+EOF
     
     log_success "备份完成"
 }
@@ -201,23 +247,46 @@ show_info() {
 
 # 主函数
 main() {
-    local VERSION=$1
+    local TARGET_VERSION=$1
     
     echo ""
     echo "========================================"
     echo "  Axis NAS 升级脚本"
-    echo "  目标版本：${VERSION:-最新}"
     echo "========================================"
     echo ""
     
     check_root
+    
+    # 获取版本信息
+    CURRENT_VERSION=$(get_current_version)
+    if [ -z "$TARGET_VERSION" ]; then
+        TARGET_VERSION=$(get_latest_version)
+    fi
+    
+    echo "当前版本：$CURRENT_VERSION"
+    echo "目标版本：$TARGET_VERSION"
+    echo ""
+    
+    # 版本对比
+    if [ "$CURRENT_VERSION" = "$TARGET_VERSION" ]; then
+        log_success "已是最新版本，无需升级"
+        exit 0
+    fi
+    
+    # 确认升级
+    read -p "确认升级到 $TARGET_VERSION？[Y/n] " CONFIRM
+    if [[ "$CONFIRM" =~ ^[Nn]$ ]]; then
+        log_info "升级已取消"
+        exit 0
+    fi
+    
     stop_service
     backup_current
-    download_new_version "$VERSION"
+    download_new_version "$TARGET_VERSION"
     replace_binary
     start_service
     cleanup
-    show_info "$VERSION"
+    show_info "$TARGET_VERSION"
 }
 
 # 执行主函数
