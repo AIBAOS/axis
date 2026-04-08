@@ -5,7 +5,6 @@ use actix_web::{web, HttpRequest, HttpResponse, Result};
 use actix_web::web::Json;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::sync::Mutex;
 
 use crate::services::jwt_service::JwtService;
 
@@ -64,7 +63,9 @@ pub struct InstallRequest {
 }
 
 // 模拟更新状态存储
-static UPDATE_STATUS: Mutex<UpdateStatus> = Mutex::new(UpdateStatus {
+// PERF-1: 使用 RwLock 替代 Mutex，支持并发读取更新状态
+use std::sync::RwLock;
+static UPDATE_STATUS: RwLock<UpdateStatus> = RwLock::new(UpdateStatus {
     current_status: "idle",
     progress: 0,
     downloaded_bytes: 0,
@@ -102,8 +103,11 @@ pub async fn check_update(
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
 
     let now = chrono::Utc::now().to_rfc3339();
-    let mut status = UPDATE_STATUS.lock().expect("UPDATE_STATUS lock poisoned");
-    status.last_check = Some("2026-03-19T11:55:00Z");
+    // PERF-1: 使用 write() 锁进行写操作
+    {
+        let mut status = UPDATE_STATUS.write().expect("UPDATE_STATUS lock poisoned");
+        status.last_check = Some("2026-03-19T11:55:00Z");
+    }
     
     // 模拟检查结果（实际应从服务器获取）
     let has_update = true;
@@ -162,7 +166,8 @@ pub async fn get_update_info(
     let _claims = jwt_service.validate_token(&token.ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing token"))?)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
 
-    let _status = UPDATE_STATUS.lock().expect("UPDATE_STATUS lock poisoned");
+    // PERF-1: 使用 read() 锁进行读操作
+    let _status = UPDATE_STATUS.read().expect("UPDATE_STATUS lock poisoned");
     
     Ok(HttpResponse::Ok().json(json!({
         "current_version": "v0.1.0",
@@ -204,7 +209,8 @@ pub async fn download_update(
         })));
     }
 
-    let mut status = UPDATE_STATUS.lock().expect("UPDATE_STATUS lock poisoned");
+    // PERF-1: 使用 write() 锁进行写操作
+    let mut status = UPDATE_STATUS.write().expect("UPDATE_STATUS lock poisoned");
     
     if status.current_status != "idle" && status.current_status != "downloaded" {
         return Ok(HttpResponse::Conflict().json(json!({
@@ -252,7 +258,8 @@ pub async fn install_update(
         })));
     }
 
-    let mut status = UPDATE_STATUS.lock().expect("UPDATE_STATUS lock poisoned");
+    // PERF-1: 使用 write() 锁进行写操作
+    let mut status = UPDATE_STATUS.write().expect("UPDATE_STATUS lock poisoned");
     
     if status.current_status != "downloaded" && status.progress < 100 {
         return Ok(HttpResponse::Conflict().json(json!({
@@ -294,7 +301,8 @@ pub async fn get_update_status(
     let _claims = jwt_service.validate_token(&token.ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing token"))?)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid token"))?;
 
-    let status = UPDATE_STATUS.lock().expect("UPDATE_STATUS lock poisoned");
+    // PERF-1: 使用 read() 锁进行读操作
+    let status = UPDATE_STATUS.read().expect("UPDATE_STATUS lock poisoned");
     
     Ok(HttpResponse::Ok().json(status.clone()))
 }
@@ -324,7 +332,8 @@ pub async fn cancel_update(
         })));
     }
 
-    let mut status = UPDATE_STATUS.lock().expect("UPDATE_STATUS lock poisoned");
+    // PERF-1: 使用 write() 锁进行写操作
+    let mut status = UPDATE_STATUS.write().expect("UPDATE_STATUS lock poisoned");
     
     if status.current_status == "idle" || status.current_status == "downloaded" {
         return Ok(HttpResponse::Conflict().json(json!({

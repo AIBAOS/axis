@@ -19,9 +19,9 @@ pub struct UpdateSettingRequest {
 
 // 模拟 settings 存储，实际应从数据库读取
 use once_cell::sync::Lazy;
-use std::sync::Mutex;
+use std::sync::RwLock;  // PERF-1: 使用 RwLock 替代 Mutex，支持并发读
 
-static SETTINGS: Lazy<Mutex<serde_json::Map<String, serde_json::Value>>> = Lazy::new(|| {
+static SETTINGS: Lazy<RwLock<serde_json::Map<String, serde_json::Value>>> = Lazy::new(|| {
     let mut settings = serde_json::Map::new();
     // 初始化默认设置
     settings.insert("network.host".to_string(), json!("0.0.0.0"));
@@ -29,11 +29,12 @@ static SETTINGS: Lazy<Mutex<serde_json::Map<String, serde_json::Value>>> = Lazy:
     settings.insert("storage.path".to_string(), json!("/data"));
     settings.insert("system.timezone".to_string(), json!("Asia/Shanghai"));
     settings.insert("user.prefer_theme".to_string(), json!("dark"));
-    Mutex::new(settings)
+    RwLock::new(settings)  // PERF-1: 使用 RwLock
 });
 
 fn get_settings_map() -> serde_json::Map<String, serde_json::Value> {
-    let settings = SETTINGS.lock().expect("SETTINGS lock poisoned");
+    // PERF-1: 使用 read() 锁，允许多个并发读取
+    let settings = SETTINGS.read().expect("SETTINGS lock poisoned");
     settings.clone()
 }
 
@@ -135,12 +136,12 @@ pub async fn update_setting(
     }
 
     let key = path.into_inner();
-    let mut settings = get_settings_map();
     
-    settings.insert(key.clone(), payload.value.clone());
-    
-    let mut writable = SETTINGS.lock().expect("SETTINGS lock poisoned");
-    *writable = settings;
+    // PERF-1: 使用 write() 锁进行写操作
+    {
+        let mut writable = SETTINGS.write().expect("SETTINGS lock poisoned");
+        writable.insert(key.clone(), payload.value.clone());
+    }
     
     Ok(HttpResponse::Ok().json(Setting {
         key,

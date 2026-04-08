@@ -16,11 +16,11 @@ pub struct QueryParams {
 }
 
 // 使用静态变量存储日志（简化实现，实际应使用数据库）
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};  // PERF-1: 使用 RwLock 替代 Mutex，支持并发读
 use once_cell::sync::Lazy;
 
-static LOGS: Lazy<Arc<Mutex<Vec<FileAuditLog>>>> = Lazy::new(|| {
-    Arc::new(Mutex::new(Vec::new()))
+static LOGS: Lazy<Arc<RwLock<Vec<FileAuditLog>>>> = Lazy::new(|| {
+    Arc::new(RwLock::new(Vec::new()))
 });
 
 // 最大日志条目数，防止内存无限增长
@@ -61,7 +61,7 @@ pub async fn get_file_audit_logs(
         Err(e) => return Ok(e),
     };
 
-    let logs = LOGS.lock().map_err(|_| {
+    let logs = LOGS.read().map_err(|_| {
         actix_web::error::ErrorInternalServerError("Failed to acquire lock")
     })?;
     
@@ -91,7 +91,7 @@ pub async fn get_file_audit_log_by_id(
         Err(e) => return Ok(e),
     };
 
-    let logs = LOGS.lock().map_err(|_| {
+    let logs = LOGS.read().map_err(|_| {
         actix_web::error::ErrorInternalServerError("Failed to acquire lock")
     })?;
     
@@ -118,7 +118,7 @@ pub async fn get_file_audit_stats(
         Err(e) => return Ok(e),
     };
 
-    let logs = LOGS.lock().map_err(|_| {
+    let logs = LOGS.read().map_err(|_| {
         actix_web::error::ErrorInternalServerError("Failed to acquire lock")
     })?;
     
@@ -154,7 +154,7 @@ pub async fn delete_file_audit_logs(
         Err(e) => return Ok(e),
     };
 
-    let mut logs = LOGS.lock().map_err(|_| {
+    let mut logs = LOGS.write().map_err(|_| {
         actix_web::error::ErrorInternalServerError("Failed to acquire lock")
     })?;
     
@@ -176,7 +176,7 @@ pub fn log_file_operation(
     ip_address: &str,
     details: Option<&str>,
 ) {
-    let mut logs = LOGS.lock().expect("LOGS lock poisoned");
+    let mut logs = LOGS.write().expect("LOGS lock poisoned");
     
     // 防止内存无限增长：超过最大条目数时删除最老的 10%
     if logs.len() >= MAX_LOG_ENTRIES {
