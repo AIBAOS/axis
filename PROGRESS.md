@@ -758,9 +758,25 @@
 |----|------|:------:|----------|:----:|
 | PERF-1 | Mutex 竞争瓶颈 | 🟠 中 | 并发吞吐量提升 2-3x | ✅ 已完成 |
 | PERF-2 | 文件上传流式处理 | 🔴 高 | 内存使用降低 80%+ | ✅ 已完成 |
+| PERF-4 | 数据库索引优化 | 🟠 中 | 查询速度提升 10-100x | ✅ 已完成 |
 | PERF-3 | Vec 容量预分配 | 🟡 低 | 减少 30% 内存分配 | ⏳ 待实施 |
-| PERF-4 | 数据库索引优化 | 🟠 中 | 查询速度提升 10-100x | ⏳ 待实施 |
 | PERF-5 | HTTP 响应压缩 | 🟡 低 | 网络传输减少 60-80% | ⏳ 待实施 |
+
+### PERF-4: 数据库索引优化
+
+- **实施时间:** 2026-04-08 02:25 UTC
+- **状态:** ✅ 已完成
+- **新增索引:** 14 个
+- **优化表:**
+  | 表名 | 新增索引 |
+  |------|----------|
+  | shares | protocol, status, created_at, name |
+  | sessions | user_id, last_active |
+  | users | email |
+  | permissions | resource, action |
+  | user_roles | user_id, role_id |
+  | roles_permissions | role_id, permission_id |
+- **预期提升:** 查询速度提升 10-100x
 
 ### PERF-1: RwLock 替代读多写少的 Mutex
 
