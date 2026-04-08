@@ -1,11 +1,11 @@
 <template>
   <div class="space-y-6">
     <!-- 页面标题 -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
         控制面板
       </h1>
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center space-x-2 flex-shrink-0">
         <span class="text-sm text-gray-500 dark:text-gray-400">
           最后更新：{{ lastUpdateTime }}
         </span>
