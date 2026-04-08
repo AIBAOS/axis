@@ -11,6 +11,7 @@
 | `rollback.sh` | 回滚版本 | `sudo ./rollback.sh [备份路径]` |
 | `backup.sh` | 备份数据 | `sudo ./backup.sh [备份目录]` |
 | `restore.sh` | 恢复数据 | `sudo ./restore.sh <备份文件>` |
+| `healthcheck.sh` | 健康检查 | `./healthcheck.sh [--verbose] [--json]` |
 
 ## 快速开始
 
