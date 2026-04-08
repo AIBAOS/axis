@@ -32,7 +32,7 @@ pub struct ErrorResponse {
 
 /// 检查当前用户是否为管理员
 fn is_admin(claims: &JwtClaims) -> bool {
-    claims.roles.iter().any(|r| r == "admin")
+    claims.is_admin()
 }
 
 /// 删除存储卷快照（Phase 85）

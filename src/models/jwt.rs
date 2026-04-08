@@ -36,6 +36,14 @@ pub struct JwtClaims {
     pub permissions: Vec<String>, // 用户权限
 }
 
+impl JwtClaims {
+    /// Bug #75 修复：统一的权限检查函数
+    /// 检查用户是否拥有管理员角色（大小写不敏感）
+    pub fn is_admin(&self) -> bool {
+        self.roles.iter().any(|r| r.to_lowercase() == "admin")
+    }
+}
+
 /// JWT 响应结构
 #[derive(Serialize, Deserialize, Clone)]
 pub struct JwtResponse {

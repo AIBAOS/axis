@@ -52,7 +52,7 @@ pub async fn delete_user(
 
     // 2. 权限校验 - 仅 admin 角色可删除用户
     let current_user_id = claims.user_id;
-    let is_admin = claims.roles.iter().any(|r| r == "admin");
+    let is_admin = claims.roles.iter().any(|r| r.to_lowercase() == "admin");
     
     if !is_admin {
         return Ok(HttpResponse::Forbidden().json(ErrorResponse {

@@ -307,7 +307,7 @@ pub async fn create_user(
     match current_user {
         Some(user) => {
             // 检查是否有 admin 角色
-            let is_admin = user.roles.iter().any(|r| r == "admin" || r == "1");
+            let is_admin = user.roles.iter().any(|r| r.to_lowercase() == "admin" || r == "1");
             if !is_admin {
                 return Ok(HttpResponse::Forbidden().json(ErrorResponse {
                     success: false,

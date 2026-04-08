@@ -38,7 +38,7 @@ pub async fn delete_firewall_rule(
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))?;
 
     // 3. 验证 admin 权限
-    let is_admin = _claims.roles.iter().any(|r| r == "admin");
+    let is_admin = _claims.roles.iter().any(|r| r.to_lowercase() == "admin");
     if !is_admin {
         return Ok(HttpResponse::Forbidden().json(ErrorResponse {
             success: false,

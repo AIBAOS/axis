@@ -71,7 +71,7 @@ pub async fn get_system_notification_detail(
         .validate_token(token)
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))?;
 
-    let is_admin = claims.roles.iter().any(|r| r == "admin");
+    let is_admin = claims.roles.iter().any(|r| r.to_lowercase() == "admin");
     let user_id = claims.user_id;
 
     // 3. 查询通知是否存在

@@ -42,7 +42,7 @@ pub async fn delete_notification(
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))?;
 
     // 3. 验证 admin 权限
-    if !claims.roles.iter().any(|r| r == "admin") {
+    if !claims.roles.iter().any(|r| r.to_lowercase() == "admin") {
         return Ok(HttpResponse::Forbidden().json(ErrorResponse {
             success: false,
             error: "仅 admin 可删除通知".to_string(),

@@ -59,7 +59,7 @@ pub async fn delete_job(
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))?;
 
     let username = claims.sub;
-    let is_admin = claims.roles.iter().any(|r| r == "admin");
+    let is_admin = claims.roles.iter().any(|r| r.to_lowercase() == "admin");
 
     // 3. 模拟 CUPS 服务连接检查
     let cups_available = true; // 模拟 CUPS 服务可用

@@ -82,7 +82,7 @@ pub async fn get_user_by_id(
     let current_user_id = claims.user_id;
 
     // 4. 检查是否为 admin
-    let is_admin_user = claims.roles.iter().any(|r| r == "admin");
+    let is_admin_user = claims.roles.iter().any(|r| r.to_lowercase() == "admin");
 
     // 5. 权限控制
     // - admin 可以查看任意用户
