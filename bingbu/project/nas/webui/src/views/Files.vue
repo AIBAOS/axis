@@ -48,56 +48,80 @@
       </div>
     </div>
 
-    <!-- 面包屑导航 -->
-    <nav class="flex items-center justify-between px-6 py-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-      <div class="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-        <!-- 返回上级按钮 -->
-        <button
-          v-if="currentPath !== '/'"
-          @click="navigateToParent()"
-          class="hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center"
-          title="返回上级"
-        >
-          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-          </svg>
-        </button>
-        <button
-          @click="navigateTo('/')"
-          class="hover:text-indigo-600 dark:hover:text-indigo-400"
-        >
-          📁 根目录
-        </button>
-        <template v-for="(segment, index) in breadcrumbSegments" :key="index">
-          <span class="text-gray-400">/</span>
+    <!-- 面包屑导航和搜索栏 -->
+    <div class="space-y-3">
+      <nav class="flex items-center justify-between px-6 py-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <div class="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+          <!-- 返回上级按钮 -->
           <button
-            @click="navigateToBreadcrumb(index)"
+            v-if="currentPath !== '/'"
+            @click="navigateToParent()"
+            class="hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center"
+            title="返回上级"
+          >
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+          </button>
+          <button
+            @click="navigateTo('/')"
             class="hover:text-indigo-600 dark:hover:text-indigo-400"
           >
-            {{ segment }}
+            📁 根目录
           </button>
-        </template>
-      </div>
-      <div class="flex items-center space-x-4">
-        <!-- 全选复选框 -->
-        <label class="flex items-center text-sm text-gray-500 dark:text-gray-400 cursor-pointer">
-          <input
-            type="checkbox"
-            :checked="isAllSelected"
-            @change="toggleSelectAll"
-            class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-          />
-          <span class="ml-2">全选</span>
-        </label>
-        <!-- 项目数量统计 -->
-        <div class="text-xs text-gray-400">
-          {{ sortedFiles.length }} 个项目
-          <span v-if="selectedFiles.length > 0" class="text-indigo-600 dark:text-indigo-400">
-            (已选 {{ selectedFiles.length }})
-          </span>
+          <template v-for="(segment, index) in breadcrumbSegments" :key="index">
+            <span class="text-gray-400">/</span>
+            <button
+              @click="navigateToBreadcrumb(index)"
+              class="hover:text-indigo-600 dark:hover:text-indigo-400"
+            >
+              {{ segment }}
+            </button>
+          </template>
         </div>
+        <div class="flex items-center space-x-4">
+          <!-- 全选复选框 -->
+          <label class="flex items-center text-sm text-gray-500 dark:text-gray-400 cursor-pointer">
+            <input
+              type="checkbox"
+              :checked="isAllSelected"
+              @change="toggleSelectAll"
+              class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+            />
+            <span class="ml-2">全选</span>
+          </label>
+          <!-- 项目数量统计 -->
+          <div class="text-xs text-gray-400">
+            {{ filteredFiles.length }} 个项目
+            <span v-if="selectedFiles.length > 0" class="text-indigo-600 dark:text-indigo-400">
+              (已选 {{ selectedFiles.length }})
+            </span>
+          </div>
+        </div>
+      </nav>
+
+      <!-- 搜索栏 -->
+      <div class="relative">
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="搜索文件..."
+          class="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+        <svg class="absolute left-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+        <button
+          v-if="searchQuery"
+          @click="searchQuery = ''"
+          class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
       </div>
-    </nav>
+    </div>
 
     <!-- Toast 通知 -->
     <div v-if="toast.show" class="fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white transition-opacity duration-300" :class="toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'">
@@ -155,14 +179,18 @@
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">加载中...</p>
       </div>
 
-      <!-- 空目录 -->
-      <div v-else-if="sortedFiles.length === 0" class="px-6 py-12 text-center">
+      <!-- 空目录/无搜索结果 -->
+      <div v-else-if="filteredFiles.length === 0" class="px-6 py-12 text-center">
         <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
         </svg>
-        <p class="text-lg font-medium text-gray-500 dark:text-gray-400 mb-2">此目录为空</p>
-        <p class="text-sm text-gray-400 dark:text-gray-500 mb-4">上传文件或创建文件夹开始使用</p>
-        <div class="flex justify-center space-x-3">
+        <p class="text-lg font-medium text-gray-500 dark:text-gray-400 mb-2">
+          {{ searchQuery ? '未找到匹配的文件' : '此目录为空' }}
+        </p>
+        <p class="text-sm text-gray-400 dark:text-gray-500 mb-4">
+          {{ searchQuery ? '尝试其他搜索关键词' : '上传文件或创建文件夹开始使用' }}
+        </p>
+        <div v-if="!searchQuery" class="flex justify-center space-x-3">
           <button
             @click="showUploadModal = true"
             class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
@@ -181,7 +209,7 @@
       <!-- 文件列表 -->
       <div v-else>
         <div
-          v-for="file in sortedFiles"
+          v-for="file in filteredFiles"
           :key="file.name"
           class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 items-center"
           :class="{ 'cursor-pointer': file.type === 'dir' }"
@@ -364,6 +392,9 @@ const uploading = ref(false)
 // 批量选择
 const selectedFiles = ref([])
 
+// 搜索
+const searchQuery = ref('')
+
 // Toast 通知
 const toast = ref({
   show: false,
@@ -422,14 +453,25 @@ const sortedFiles = computed(() => {
   return sorted
 })
 
+// 过滤后的文件列表（支持搜索）
+const filteredFiles = computed(() => {
+  if (!searchQuery.value) return sortedFiles.value
+  
+  const query = searchQuery.value.toLowerCase()
+  return sortedFiles.value.filter(file => 
+    file.name.toLowerCase().includes(query)
+  )
+})
+
 // 是否全选
 const isAllSelected = computed(() => {
-  return sortedFiles.value.length > 0 && selectedFiles.value.length === sortedFiles.value.length
+  return filteredFiles.value.length > 0 && selectedFiles.value.length === filteredFiles.value.length
 })
 
 // 导航到指定路径
 const navigateTo = (path) => {
   currentPath.value = path
+  searchQuery.value = ''
   clearSelection()
   loadFiles()
 }
@@ -443,6 +485,7 @@ const navigateToParent = () => {
     if (currentPath.value === '/') {
       currentPath.value = '/'
     }
+    searchQuery.value = ''
     clearSelection()
     loadFiles()
   }
@@ -469,7 +512,7 @@ const toggleSelectAll = () => {
   if (isAllSelected.value) {
     clearSelection()
   } else {
-    selectedFiles.value = [...sortedFiles.value]
+    selectedFiles.value = [...filteredFiles.value]
   }
 }
 
