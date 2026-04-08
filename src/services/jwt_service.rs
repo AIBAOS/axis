@@ -56,12 +56,23 @@ impl JwtService {
     }
 
     /// 验证 JWT Token
+    /// Bug #76 修复：添加过期时间检查
     pub fn validate_token(&self, token: &str) -> Result<JwtClaims, String> {
         let decoding_key = DecodingKey::from_secret(self.config.secret_key.as_bytes());
         let validation = Validation::default();
 
         let token_data = decode::<JwtClaims>(token, &decoding_key, &validation)
             .map_err(|e| format!("Failed to decode token: {}", e))?;
+
+        // Bug #76 修复：检查 token 是否过期
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|_| "Invalid system time")?
+            .as_secs();
+        
+        if token_data.claims.exp < now {
+            return Err("Token has expired".to_string());
+        }
 
         Ok(token_data.claims)
     }
