@@ -3,8 +3,8 @@
     <div class="max-w-md w-full space-y-8">
       <!-- Logo 和标题 -->
       <div class="text-center">
-        <h1 class="text-4xl font-bold text-indigo-600 dark:text-indigo-400">Axis NAS</h1>
-        <h2 class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">
+        <h1 class="text-3xl sm:text-4xl font-bold text-indigo-600 dark:text-indigo-400">Axis NAS</h1>
+        <h2 class="mt-2 text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
           用户登录
         </h2>
         <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -13,22 +13,22 @@
       </div>
 
       <!-- 登录表单 -->
-      <form class="mt-8 space-y-6" @submit.prevent="handleLogin">
+      <form class="mt-6 sm:mt-8 space-y-4 sm:space-y-6" @submit.prevent="handleLogin">
         <!-- 错误提示 -->
-        <div v-if="errorMessage" class="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
+        <div v-if="errorMessage" class="rounded-md bg-red-50 dark:bg-red-900/20 p-3 sm:p-4">
           <div class="flex">
             <div class="ml-3">
-              <h3 class="text-sm font-medium text-red-800 dark:text-red-200">
+              <h3 class="text-xs sm:text-sm font-medium text-red-800 dark:text-red-200">
                 {{ errorMessage }}
               </h3>
             </div>
           </div>
         </div>
 
-        <div class="rounded-md shadow-sm space-y-4">
+        <div class="rounded-md shadow-sm space-y-3 sm:space-y-4">
           <!-- 用户名 -->
           <div>
-            <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label for="username" class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               用户名
             </label>
             <input
@@ -38,14 +38,14 @@
               type="text"
               autocomplete="username"
               required
-              class="appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 text-gray-900 dark:text-white dark:bg-gray-800 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+              class="appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 text-gray-900 dark:text-white dark:bg-gray-800 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 text-sm"
               placeholder="请输入用户名"
             />
           </div>
 
           <!-- 密码 -->
           <div>
-            <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label for="password" class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               密码
             </label>
             <input
@@ -55,7 +55,7 @@
               type="password"
               autocomplete="current-password"
               required
-              class="appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 text-gray-900 dark:text-white dark:bg-gray-800 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+              class="appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 text-gray-900 dark:text-white dark:bg-gray-800 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 text-sm"
               placeholder="请输入密码"
             />
           </div>
@@ -70,7 +70,7 @@
             type="checkbox"
             class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
           />
-          <label for="remember-me" class="ml-2 block text-sm text-gray-900 dark:text-gray-300">
+          <label for="remember-me" class="ml-2 block text-xs sm:text-sm text-gray-900 dark:text-gray-300">
             记住我
           </label>
         </div>
