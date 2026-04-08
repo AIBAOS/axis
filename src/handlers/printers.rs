@@ -142,8 +142,8 @@ pub async fn list_printers(
         }));
     }
 
-    let page = query.page.unwrap_or(1);
-    let limit = query.limit.unwrap_or(20) as u64;
+    let page = query.page.unwrap_or(1).max(1); // Bug #72 修复：防止整数下溢
+    let limit = query.limit.unwrap_or(20).max(1) as u64; // Bug #72 修复：防止空结果
     let status_filter = query.status.as_deref();
     let type_filter = query.printer_type.as_deref();
 

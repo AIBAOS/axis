@@ -190,8 +190,9 @@ pub async fn list_files(
         }));
     }
     
-    let page = query.page.unwrap_or(1);
-    let page_size = query.page_size.unwrap_or(50);
+    // Bug #72 修复：确保 page >= 1，防止整数下溢
+    let page = query.page.unwrap_or(1).max(1);
+    let page_size = query.page_size.unwrap_or(50).max(1);
     let offset = (page - 1) * page_size;
     
     let mut files: Vec<FileInfo> = Vec::new();

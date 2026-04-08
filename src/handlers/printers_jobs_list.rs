@@ -120,7 +120,7 @@ pub async fn list_printer_jobs(
     }
 
     // 2. 解析查询参数
-    let page = query.page.unwrap_or(1);
+    let page = query.page.unwrap_or(1).max(1); // Bug #72 修复：防止整数下溢
     let page_size = query.page_size.unwrap_or(20).max(1).min(100);
     let status_filter = query.status.as_deref();
 

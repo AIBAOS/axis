@@ -69,8 +69,8 @@ pub async fn get_notifications(
         Err(e) => return Ok(e),
     };
 
-    let page = query.page.unwrap_or(1);
-    let page_size = query.page_size.unwrap_or(20);
+    let page = query.page.unwrap_or(1).max(1); // Bug #72 修复：防止整数下溢
+    let page_size = query.page_size.unwrap_or(20).max(1); // Bug #72 修复：防止空结果
 
     match repo.get_notifications(
         query.notification_type.as_deref(),

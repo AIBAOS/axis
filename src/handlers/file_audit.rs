@@ -65,8 +65,9 @@ pub async fn get_file_audit_logs(
         actix_web::error::ErrorInternalServerError("Failed to acquire lock")
     })?;
     
-    let page = query.page.unwrap_or(1);
-    let page_size = query.page_size.unwrap_or(20);
+    // Bug #72 修复：确保 page >= 1，防止整数下溢
+    let page = query.page.unwrap_or(1).max(1);
+    let page_size = query.page_size.unwrap_or(20).max(1);
     let offset = (page - 1) * page_size;
     
     let filtered: Vec<FileAuditLog> = logs.iter()

@@ -75,7 +75,7 @@ pub async fn list_system_alerts(
     query: web::Query<AlertsListQuery>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse, Error> {
-    let page = query.page.unwrap_or(1);
+    let page = query.page.unwrap_or(1).max(1); // Bug #72 修复：防止整数下溢
     let per_page = query.per_page.unwrap_or(20).min(100);
 
     // 1. JWT 认证 - 提取并验证 token

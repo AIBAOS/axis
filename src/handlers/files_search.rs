@@ -241,7 +241,7 @@ pub async fn search_files(
             success: true,
             data: vec![],
             total: 0,
-            limit: query.limit.unwrap_or(50),
+            limit: query.limit.unwrap_or(50).max(1), // Bug #72 修复
             offset: query.offset.unwrap_or(0),
         }));
     }
@@ -264,7 +264,7 @@ pub async fn search_files(
             success: true,
             data: vec![],
             total: 0,
-            limit: query.limit.unwrap_or(50),
+            limit: query.limit.unwrap_or(50).max(1), // Bug #72 修复
             offset: query.offset.unwrap_or(0),
         }));
     }

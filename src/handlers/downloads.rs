@@ -116,7 +116,7 @@ pub async fn get_downloads(
         Err(e) => return Ok(e),
     };
 
-    let page = query.page.unwrap_or(1);
+    let page = query.page.unwrap_or(1).max(1); // Bug #72 修复：防止整数下溢
     let limit = query.per_page.unwrap_or(20).max(1).min(100) as u64; // 最大 100
     let status_filter = query.status.as_deref();
     let _sort = query.sort.as_deref().unwrap_or("created_at");

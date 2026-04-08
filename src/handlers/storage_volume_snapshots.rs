@@ -85,8 +85,8 @@ pub async fn list_snapshots(
     let volume_id = path.into_inner();
 
     // 2. 解析分页参数
-    let page = query.page.unwrap_or(1);
-    let per_page = query.per_page.unwrap_or(20).min(100); // 最大 100
+    let page = query.page.unwrap_or(1).max(1); // Bug #72 修复：防止整数下溢
+    let per_page = query.per_page.unwrap_or(20).max(1).min(100) // Bug #72 修复：防止空结果; // 最大 100
 
     // 3. 模拟存储卷数据（验证存在性）
     let mock_volumes = vec![1, 2, 3];

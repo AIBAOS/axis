@@ -61,7 +61,7 @@ pub async fn get_logs(
         }
     });
 
-    let limit = query.limit.unwrap_or(20) as usize;
+    let limit = query.limit.unwrap_or(20).max(1) as usize; // Bug #72 修复：防止空结果
     let offset = query.offset.unwrap_or(0) as usize;
 
     let mut mock_logs = vec![

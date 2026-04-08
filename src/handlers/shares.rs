@@ -83,7 +83,7 @@ pub async fn list_shares(
         Err(e) => return e,
     };
 
-    let page = query.page.unwrap_or(1);
+    let page = query.page.unwrap_or(1).max(1); // Bug #72 修复：防止整数下溢
     let per_page = query.per_page.unwrap_or(10).min(100); // 上限 100
     let protocol = query.protocol.clone();
     let status = query.status.clone();

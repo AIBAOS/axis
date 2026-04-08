@@ -82,7 +82,7 @@ pub async fn list_pools(
     // 2. 权限校验 - 任意登录用户可访问（无需 admin）
 
     // 3. 解析查询参数
-    let page = query.page.unwrap_or(1);
+    let page = query.page.unwrap_or(1).max(1); // Bug #72 修复：防止整数下溢
     let per_page = query.per_page.unwrap_or(20).min(100);
 
     // 4. 模拟存储池数据（后续连接系统 API）

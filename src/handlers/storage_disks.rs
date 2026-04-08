@@ -107,8 +107,8 @@ pub async fn list_storage_disks(
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))?;
 
     // 2. 解析查询参数
-    let page = query.page.unwrap_or(1);
-    let limit = query.limit.unwrap_or(20).min(100);
+    let page = query.page.unwrap_or(1).max(1); // Bug #72 修复：防止整数下溢
+    let limit = query.limit.unwrap_or(20).max(1).min(100) // Bug #72 修复：防止空结果;
     let disk_type_filter = query.disk_type.as_deref();
     let smart_status_filter = query.smart_status.as_deref();
     let status_filter = query.status.as_deref();
