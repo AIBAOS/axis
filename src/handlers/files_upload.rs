@@ -133,10 +133,11 @@ fn validate_filename(filename: &str) -> Result<String, ErrorResponse> {
     Ok(safe_filename)
 }
 
-/// 上传文件（Phase 119 + PERF-2 优化）
+/// 上传文件（Phase 119 + PERF-2 + QUOTA-1 优化）
 /// - JWT 认证，登录用户可访问
 /// - multipart/form-data 格式
 /// - 验证文件类型和大小
+/// - QUOTA-1: 配额检查
 /// - 流式保存到指定路径（避免全量加载到内存）
 /// - 处理文件名冲突
 pub async fn upload_file(
@@ -144,6 +145,7 @@ pub async fn upload_file(
     mut payload: Multipart,
     _rbac_repo: web::Data<SqliteRbacRepository>,
     jwt_service: web::Data<JwtService>,
+    quota_service: web::Data<crate::services::quota_service::QuotaService>,
 ) -> Result<HttpResponse, Error> {
     // 1. JWT 认证 - 提取并验证 token
     let token = req
@@ -158,7 +160,7 @@ pub async fn upload_file(
         .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))?;
 
     // 2. 获取当前用户信息
-    let _user_id = claims.sub.parse().unwrap_or(0);
+    let user_id = claims.user_id;
     let username = claims.sub.clone();
 
     // 3. 解析 multipart 表单数据
@@ -322,6 +324,19 @@ pub async fn upload_file(
     let safe_filename = filename.ok_or_else(|| {
         actix_web::error::ErrorBadRequest("filename is required")
     })?;
+
+    // QUOTA-1: 更新用户配额
+    if file_size > 0 {
+        if let Err(e) = quota_service.reserve_quota(user_id, file_size) {
+            // 配额不足，删除已上传的文件
+            let _ = fs::remove_file(&final_path);
+            return Ok(HttpResponse::InsufficientStorage().json(ErrorResponse {
+                success: false,
+                error: format!("Quota exceeded: {}", e),
+                code: "QUOTA_EXCEEDED".to_string(),
+            }));
+        }
+    }
 
     // 12. 返回上传结果
     let now = std::time::SystemTime::now()
