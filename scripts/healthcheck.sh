@@ -162,14 +162,23 @@ check_database() {
 check_disk_space() {
     log_info "检查磁盘空间..."
     
-    THRESHOLD=90
+    # 从配置文件读取阈值（支持自定义）
+    DISK_THRESHOLD=90  # 默认值
+    if [ -f /etc/axis/config.toml ]; then
+        CONFIG_THRESHOLD=$(grep "^disk_threshold" /etc/axis/config.toml 2>/dev/null | cut -d'=' -f2 | tr -d ' "' || echo "")
+        if [ -n "$CONFIG_THRESHOLD" ] && [ "$CONFIG_THRESHOLD" -ge 50 ] && [ "$CONFIG_THRESHOLD" -le 99 ]; then
+            DISK_THRESHOLD=$CONFIG_THRESHOLD
+            log_info "使用配置的磁盘阈值：${DISK_THRESHOLD}%"
+        fi
+    fi
+    
     USAGE=$(df /var/lib/axis | tail -1 | awk '{print $5}' | sed 's/%//')
     
-    if [ "$USAGE" -lt "$THRESHOLD" ]; then
-        log_success "磁盘使用率：${USAGE}% (< ${THRESHOLD}%)"
+    if [ "$USAGE" -lt "$DISK_THRESHOLD" ]; then
+        log_success "磁盘使用率：${USAGE}% (< ${DISK_THRESHOLD}%)"
         return 0
     else
-        log_error "磁盘使用率：${USAGE}% (>= ${THRESHOLD}%)"
+        log_error "磁盘使用率：${USAGE}% (>= ${DISK_THRESHOLD}%)"
         return 1
     fi
 }
@@ -178,16 +187,26 @@ check_disk_space() {
 check_memory() {
     log_info "检查内存使用..."
     
+    # 从配置文件读取阈值（支持自定义）
+    MEMORY_THRESHOLD=80  # 默认值
+    if [ -f /etc/axis/config.toml ]; then
+        CONFIG_THRESHOLD=$(grep "^memory_threshold" /etc/axis/config.toml 2>/dev/null | cut -d'=' -f2 | tr -d ' "' || echo "")
+        if [ -n "$CONFIG_THRESHOLD" ] && [ "$CONFIG_THRESHOLD" -ge 50 ] && [ "$CONFIG_THRESHOLD" -le 99 ]; then
+            MEMORY_THRESHOLD=$CONFIG_THRESHOLD
+            log_info "使用配置的内存阈值：${MEMORY_THRESHOLD}%"
+        fi
+    fi
+    
     if command -v free &>/dev/null; then
         TOTAL=$(free -m | grep Mem | awk '{print $2}')
         USED=$(free -m | grep Mem | awk '{print $3}')
         PERCENT=$((USED * 100 / TOTAL))
         
-        if [ "$PERCENT" -lt 80 ]; then
-            log_success "内存使用率：${PERCENT}% (< 80%)"
+        if [ "$PERCENT" -lt "$MEMORY_THRESHOLD" ]; then
+            log_success "内存使用率：${PERCENT}% (< ${MEMORY_THRESHOLD}%)"
             return 0
         else
-            log_warning "内存使用率：${PERCENT}% (>= 80%)"
+            log_warning "内存使用率：${PERCENT}% (>= ${MEMORY_THRESHOLD}%)"
             return 1
         fi
     else
