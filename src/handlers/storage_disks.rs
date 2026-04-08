@@ -108,7 +108,7 @@ pub async fn list_storage_disks(
 
     // 2. 解析查询参数
     let page = query.page.unwrap_or(1).max(1); // Bug #72 修复：防止整数下溢
-    let limit = query.limit.unwrap_or(20).max(1).min(100) // Bug #72 修复：防止空结果;
+    let limit = query.limit.unwrap_or(20).max(1).min(100); // Bug #72 修复：防止空结果
     let disk_type_filter = query.disk_type.as_deref();
     let smart_status_filter = query.smart_status.as_deref();
     let status_filter = query.status.as_deref();

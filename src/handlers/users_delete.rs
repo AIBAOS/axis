@@ -6,6 +6,7 @@ use serde::Serialize;
 
 use crate::database::user_store::SqliteUserRepository;
 use crate::database::rbac_store::SqliteRbacRepository;
+use crate::models::rbac::RbacRepository;
 use crate::models::user::UserRepository;
 use crate::services::jwt_service::JwtService;
 

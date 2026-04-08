@@ -70,12 +70,7 @@ where
         // Bug #79 修复：无 token 或无效 token 应拒绝请求
         if auth_header.is_none() {
             return Box::pin(async move {
-                Ok(req.into_response(
-                    HttpResponse::Unauthorized().json(serde_json::json!({
-                        "success": false,
-                        "message": "Authentication required"
-                    }))
-                ))
+                Err(actix_web::error::ErrorUnauthorized("Authentication required"))
             });
         }
 
@@ -93,12 +88,7 @@ where
                 Err(e) => {
                     // Bug #79 修复：无效 token 拒绝请求
                     return Box::pin(async move {
-                        Ok(req.into_response(
-                            HttpResponse::Unauthorized().json(serde_json::json!({
-                                "success": false,
-                                "message": "Invalid or expired token"
-                            }))
-                        ))
+                        Err(actix_web::error::ErrorUnauthorized("Invalid or expired token"))
                     });
                 }
             }

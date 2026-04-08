@@ -174,9 +174,7 @@ impl RbacRepository for SqliteRbacRepository {
         Ok(id as u64)
     }
 
-    /// 删除用户的所有角色关联 (Bug #45 修复)
-    /// 在删除用户时调用，确保数据一致性
-    pub fn remove_user_roles(&self, user_id: u64) -> Result<(), String> {
+    fn remove_user_roles(&self, user_id: u64) -> Result<(), String> {
         let conn = self.get_connection()?;
         
         conn.execute(

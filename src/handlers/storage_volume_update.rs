@@ -150,7 +150,7 @@ pub async fn update_volume(
         }));
     }
 
-    let mut volume = .expect("Volume should exist");
+    let mut volume = volume.expect("Volume should exist");
 
     // 6. 检查名称是否已存在（如果更新名称，排除自身）
     if let Some(ref new_name) = req.name {

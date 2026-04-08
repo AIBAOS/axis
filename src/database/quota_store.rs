@@ -96,7 +96,7 @@ impl SqliteQuotaRepository {
 
     /// 更新已用空间（原子操作，防止并发竞态）
     pub fn update_used(&self, user_id: u64, delta: i64) -> Result<UserQuota, String> {
-        let conn = self.get_connection()?;
+        let mut conn = self.get_connection()?;
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_or(0, |d| d.as_secs()) as i64;
@@ -160,7 +160,7 @@ impl SqliteQuotaRepository {
     /// 如果当前可用空间 >= required_bytes，则增加 used_bytes 并返回 true
     /// 否则返回 false
     pub fn try_reserve_quota(&self, user_id: u64, required_bytes: u64) -> Result<bool, String> {
-        let conn = self.get_connection()?;
+        let mut conn = self.get_connection()?;
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_or(0, |d| d.as_secs()) as i64;

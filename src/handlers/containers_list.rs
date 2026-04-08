@@ -117,7 +117,7 @@ pub async fn list_containers(
         Err(e) => {
             Ok(HttpResponse::InternalServerError().json(ErrorResponse {
                 success: false,
-                error: "Internal server error",
+                error: "Internal server error".to_string(),
                 code: "DATABASE_ERROR".to_string(),
             }))
         }

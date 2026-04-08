@@ -89,7 +89,7 @@ pub async fn list_smb_shares_v2(
     // 4. 解析查询参数
     // Bug #72 修复：确保 page >= 1，防止整数下溢
     let page = query.page.unwrap_or(1).max(1);
-    let limit = query.limit.unwrap_or(20).max(1).min(100) // Bug #72 修复：防止空结果;
+    let limit = query.limit.unwrap_or(20).max(1).min(100); // Bug #72 修复：防止空结果
     let public_filter = query.public;
 
     // 5. 模拟 SMB 共享数据（后续可连接数据库）
@@ -202,11 +202,11 @@ mod tests {
     #[test]
     fn test_limit_max() {
         let limit: u32 = 150;
-        let limited = limit.max(1).min(100) // Bug #72 修复：防止空结果;
+        let limited = limit.max(1).min(100); // Bug #72 修复：防止空结果
         assert_eq!(limited, 100);
 
         let limit: u32 = 50;
-        let limited = limit.max(1).min(100) // Bug #72 修复：防止空结果;
+        let limited = limit.max(1).min(100); // Bug #72 修复：防止空结果
         assert_eq!(limited, 50);
     }
 

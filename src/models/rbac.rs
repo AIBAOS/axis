@@ -37,4 +37,6 @@ pub trait RbacRepository: Send + Sync + 'static {
     fn get_role_by_name(&self, name: &str) -> Option<Role>;
     fn get_roles_by_user(&self, user_id: u64) -> Vec<Role>;
     fn check_permission(&self, user_id: u64, resource: &str, action: &str) -> bool;
+    /// 删除用户的所有角色关联
+    fn remove_user_roles(&self, user_id: u64) -> Result<(), String>;
 }

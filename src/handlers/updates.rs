@@ -7,6 +7,7 @@ use serde_json::json;
 use std::sync::Arc;
 
 use crate::database::update_store::SqliteUpdateRepository;
+use crate::models::jwt::JwtClaims;
 use crate::services::jwt_service::JwtService;
 
 const CURRENT_VERSION: &str = "0.1.0";
@@ -23,26 +24,16 @@ pub struct UpdateHistoryQuery {
 async fn validate_jwt(
     req: &HttpRequest,
     jwt_service: &web::Data<JwtService>,
-) -> Result<(), HttpResponse> {
+) -> Result<JwtClaims, actix_web::Error> {
     let token = req
         .headers()
         .get("Authorization")
         .and_then(|h| h.to_str().ok())
-        .and_then(|s| s.strip_prefix("Bearer "));
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing Authorization header"))?;
 
-    match token {
-        Some(t) => jwt_service.validate_token(t)
-            .map_err(|_| HttpResponse::Unauthorized().json(json!({
-                "success": false,
-                "error": "Invalid or expired token",
-                "code": "UNAUTHORIZED"
-            }))),
-        None => Err(HttpResponse::Unauthorized().json(json!({
-            "success": false,
-            "error": "Missing Authorization header",
-            "code": "UNAUTHORIZED"
-        }))),
-    }
+    jwt_service.validate_token(&token)
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))
 }
 
 /// GET /api/v1/system/updates/check — 检查系统更新 (需要认证)
@@ -51,9 +42,7 @@ pub async fn check_updates(
     repo: web::Data<Arc<SqliteUpdateRepository>>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
-    validate_jwt(&req, &jwt_service).await.map_err(|e| {
-        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
-    })?;
+    validate_jwt(&req, &jwt_service).await?;
 
     let installed_version = repo.get_current_version()
         .unwrap_or(None)
@@ -83,9 +72,7 @@ pub async fn get_update_history(
     repo: web::Data<Arc<SqliteUpdateRepository>>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
-    validate_jwt(&req, &jwt_service).await.map_err(|e| {
-        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
-    })?;
+    validate_jwt(&req, &jwt_service).await?;
 
     let page = query.page.unwrap_or(1).max(1);
     let per_page = std::cmp::min(query.per_page.unwrap_or(20), 100);

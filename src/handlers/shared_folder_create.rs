@@ -133,7 +133,7 @@ pub async fn create_shared_folder(
         }));
     }
 
-    let (_, volume_name) = .expect("Volume should exist");
+    let (_, volume_name) = volume.expect("Volume should exist");
 
     // 6. 检查共享文件夹名称唯一性（模拟）
     let existing_names = vec!["public".to_string(), "homes".to_string(), "media".to_string()];

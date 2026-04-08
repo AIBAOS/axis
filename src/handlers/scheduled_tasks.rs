@@ -7,6 +7,7 @@ use serde_json::json;
 use std::sync::Arc;
 
 use crate::database::scheduled_task_store::SqliteScheduledTaskRepository;
+use crate::models::jwt::JwtClaims;
 use crate::services::jwt_service::JwtService;
 
 #[derive(Debug, Deserialize)]
@@ -42,26 +43,16 @@ fn default_task_type() -> String { "system".to_string() }
 async fn validate_jwt(
     req: &HttpRequest,
     jwt_service: &web::Data<JwtService>,
-) -> Result<crate::models::jwt::JwtClaims, HttpResponse> {
+) -> Result<crate::models::jwt::JwtClaims, actix_web::Error> {
     let token = req
         .headers()
         .get("Authorization")
         .and_then(|h| h.to_str().ok())
-        .and_then(|s| s.strip_prefix("Bearer "));
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing Authorization header"))?;
 
-    match token {
-        Some(t) => jwt_service.validate_token(t)
-            .map_err(|_| HttpResponse::Unauthorized().json(json!({
-                "success": false,
-                "error": "Invalid or expired token",
-                "code": "UNAUTHORIZED"
-            }))),
-        None => Err(HttpResponse::Unauthorized().json(json!({
-            "success": false,
-            "error": "Missing Authorization header",
-            "code": "UNAUTHORIZED"
-        }))),
-    }
+    jwt_service.validate_token(&token)
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))
 }
 
 /// GET /api/v1/scheduled-tasks — 计划任务列表 (需要认证)
@@ -71,9 +62,7 @@ pub async fn list_scheduled_tasks(
     repo: web::Data<Arc<SqliteScheduledTaskRepository>>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
-    validate_jwt(&req, &jwt_service).await.map_err(|e| {
-        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
-    })?;
+    validate_jwt(&req, &jwt_service).await?;
 
     let page = query.page.unwrap_or(1).max(1);
     let per_page = query.per_page.unwrap_or(20).max(1).min(100);
@@ -106,9 +95,7 @@ pub async fn get_scheduled_task(
     repo: web::Data<Arc<SqliteScheduledTaskRepository>>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
-    validate_jwt(&req, &jwt_service).await.map_err(|e| {
-        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
-    })?;
+    validate_jwt(&req, &jwt_service).await?;
 
     let id = path.into_inner();
     match repo.get_task_by_id(id) {
@@ -131,9 +118,7 @@ pub async fn create_scheduled_task(
     repo: web::Data<Arc<SqliteScheduledTaskRepository>>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
-    validate_jwt(&req, &jwt_service).await.map_err(|e| {
-        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
-    })?;
+    validate_jwt(&req, &jwt_service).await?;
 
     if payload.name.trim().is_empty() {
         return Ok(HttpResponse::BadRequest().json(json!({
@@ -170,9 +155,7 @@ pub async fn update_scheduled_task(
     repo: web::Data<Arc<SqliteScheduledTaskRepository>>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
-    validate_jwt(&req, &jwt_service).await.map_err(|e| {
-        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
-    })?;
+    validate_jwt(&req, &jwt_service).await?;
 
     let id = path.into_inner();
 
@@ -223,9 +206,7 @@ pub async fn delete_scheduled_task(
     repo: web::Data<Arc<SqliteScheduledTaskRepository>>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
-    validate_jwt(&req, &jwt_service).await.map_err(|e| {
-        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
-    })?;
+    validate_jwt(&req, &jwt_service).await?;
 
     let id = path.into_inner();
 
@@ -258,9 +239,7 @@ pub async fn toggle_scheduled_task(
     repo: web::Data<Arc<SqliteScheduledTaskRepository>>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
-    validate_jwt(&req, &jwt_service).await.map_err(|e| {
-        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
-    })?;
+    validate_jwt(&req, &jwt_service).await?;
 
     let id = path.into_inner();
     match repo.toggle_task(id) {
@@ -285,9 +264,7 @@ pub async fn run_scheduled_task(
     repo: web::Data<Arc<SqliteScheduledTaskRepository>>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
-    validate_jwt(&req, &jwt_service).await.map_err(|e| {
-        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
-    })?;
+    validate_jwt(&req, &jwt_service).await?;
 
     let id = path.into_inner();
     match repo.get_task_by_id(id) {

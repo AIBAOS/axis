@@ -90,7 +90,7 @@ pub async fn list_pool_volumes(
 
     // 3. 解析查询参数
     let page = query.page.unwrap_or(1).max(1); // Bug #72 修复：防止整数下溢
-    let limit = query.limit.unwrap_or(20).max(1).min(100) // Bug #72 修复：防止空结果;
+    let limit = query.limit.unwrap_or(20).max(1).min(100); // Bug #72 修复：防止空结果
 
     // 4. 模拟存储池数据（验证存在性）
     let mock_pools = vec![

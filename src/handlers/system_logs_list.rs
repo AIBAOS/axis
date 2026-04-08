@@ -93,7 +93,7 @@ pub async fn get_system_logs(
 
     // 4. 解析并验证查询参数
     let page = query.page.unwrap_or(1).max(1);
-    let page_size = query.page_size.unwrap_or(20).max(1).min(100) // Bug #72 修复：防止空结果;
+    let page_size = query.page_size.unwrap_or(20).max(1).min(100); // Bug #72 修复：防止空结果
 
     if let Some(ref level) = query.level {
         if !validate_log_level(level) {

@@ -73,7 +73,7 @@ pub async fn delete_volume(
         }));
     }
 
-    let (_, volume_name, has_data) = .expect("Volume should exist");
+    let (_, volume_name, has_data) = volume.expect("Volume should exist");
 
     // 4. 检查是否有数据/服务在使用该卷
     if *has_data {

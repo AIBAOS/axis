@@ -538,20 +538,18 @@ async fn main() -> std::io::Result<()> {
     log::info!("RateLimiter cleanup task started (interval: 300s, max_age: 60s)");
 
     // SESS-1: 启动会话超时清理任务（每 10 分钟清理过期会话）
-    {
-        let session_svc = session_service.get_ref().clone();
-        tokio::spawn(async move {
-            let mut interval = tokio::time::interval(std::time::Duration::from_secs(600));
-            loop {
-                interval.tick().await;
-                let cleaned = session_svc.cleanup_expired_sessions();
-                if cleaned > 0 {
-                    log::info!("Cleaned up {} expired sessions", cleaned);
-                }
+    let session_svc_clone = session_service.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(600));
+        loop {
+            interval.tick().await;
+            let cleaned = session_svc_clone.get_ref().cleanup_expired_sessions();
+            if cleaned > 0 {
+                log::info!("Cleaned up {} expired sessions", cleaned);
             }
-        });
-        log::info!("Session cleanup task started (interval: 600s, timeout: 1800s)");
-    }
+        }
+    });
+    log::info!("Session cleanup task started (interval: 600s, timeout: 1800s)");
 
     HttpServer::new(move || {
         App::new()

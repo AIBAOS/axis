@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use crate::services::rbac_service::RbacService;
 use crate::services::jwt_service::JwtService;
+use crate::models::jwt::JwtClaims;
 
 #[derive(Serialize, Deserialize)]
 pub struct CreateRoleRequest {
@@ -67,26 +68,16 @@ fn is_admin(claims: &crate::models::jwt::JwtClaims) -> bool {
 async fn validate_jwt(
     req: &HttpRequest,
     jwt_service: &web::Data<JwtService>,
-) -> Result<crate::models::jwt::JwtClaims, HttpResponse> {
+) -> Result<crate::models::jwt::JwtClaims, actix_web::Error> {
     let token = req
         .headers()
         .get("Authorization")
         .and_then(|h| h.to_str().ok())
-        .and_then(|s| s.strip_prefix("Bearer "));
+        .and_then(|s| s.strip_prefix("Bearer "))
+        .ok_or_else(|| actix_web::error::ErrorUnauthorized("Missing Authorization header"))?;
 
-    match token {
-        Some(t) => jwt_service.validate_token(t)
-            .map_err(|_| HttpResponse::Unauthorized().json(serde_json::json!({
-                "success": false,
-                "error": "Invalid or expired token",
-                "code": "UNAUTHORIZED"
-            }))),
-        None => Err(HttpResponse::Unauthorized().json(serde_json::json!({
-            "success": false,
-            "error": "Missing Authorization header",
-            "code": "UNAUTHORIZED"
-        }))),
-    }
+    jwt_service.validate_token(&token)
+        .map_err(|_| actix_web::error::ErrorUnauthorized("Invalid or expired token"))
 }
 
 /// 创建新角色 (仅 admin)
@@ -96,9 +87,7 @@ pub async fn create_role(
     rbac_service: web::Data<Arc<RbacService>>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
-    let claims = validate_jwt(&req, &jwt_service).await.map_err(|e| {
-        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
-    })?;
+    let claims = validate_jwt(&req, &jwt_service).await?;
     
     if !is_admin(&claims) {
         return Ok(HttpResponse::Forbidden().json(serde_json::json!({
@@ -130,9 +119,7 @@ pub async fn list_roles(
     rbac_service: web::Data<Arc<RbacService>>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
-    validate_jwt(&req, &jwt_service).await.map_err(|e| {
-        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
-    })?;
+    validate_jwt(&req, &jwt_service).await?;
 
     let roles = rbac_service.list_roles();
     let role_infos: Vec<RoleInfo> = roles.into_iter().map(|r| RoleInfo {
@@ -152,9 +139,7 @@ pub async fn list_permissions(
     rbac_service: web::Data<Arc<RbacService>>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
-    validate_jwt(&req, &jwt_service).await.map_err(|e| {
-        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
-    })?;
+    validate_jwt(&req, &jwt_service).await?;
 
     let permissions = rbac_service.list_permissions();
     let permission_infos: Vec<PermissionInfo> = permissions.into_iter().map(|p| PermissionInfo {
@@ -178,9 +163,7 @@ pub async fn assign_permission_to_role(
     rbac_service: web::Data<Arc<RbacService>>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
-    let claims = validate_jwt(&req, &jwt_service).await.map_err(|e| {
-        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
-    })?;
+    let claims = validate_jwt(&req, &jwt_service).await?;
     
     if !is_admin(&claims) {
         return Ok(HttpResponse::Forbidden().json(serde_json::json!({
@@ -215,9 +198,7 @@ pub async fn get_user_permissions(
     rbac_service: web::Data<Arc<RbacService>>,
     jwt_service: web::Data<JwtService>,
 ) -> Result<HttpResponse> {
-    validate_jwt(&req, &jwt_service).await.map_err(|e| {
-        actix_web::error::ErrorUnauthorized(serde_json::to_string(&e).unwrap_or_default())
-    })?;
+    validate_jwt(&req, &jwt_service).await?;
 
     let user_id = path.into_inner();
     let roles = rbac_service.get_roles_by_user(user_id);

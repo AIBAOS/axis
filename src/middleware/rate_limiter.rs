@@ -186,14 +186,8 @@ where
         // 检查是否被限流
         if !self.limiter.is_allowed(&ip) {
             debug!("Rate limit exceeded for IP: {}", ip);
-            let response = HttpResponse::TooManyRequests()
-                .json(serde_json::json!({
-                    "success": false,
-                    "error": "Too many requests. Please try again later.",
-                    "code": "RATE_LIMITED"
-                }));
             return Box::pin(async move {
-                Ok(req.into_response(response))
+                Err(actix_web::error::ErrorTooManyRequests("Too many requests. Please try again later."))
             });
         }
 

@@ -195,7 +195,7 @@ pub async fn update_shared_folder(
     }
 
     // 8. 执行更新
-    let folder_idx = .expect("Folder index should exist");
+    let folder_idx = folder_idx.expect("Folder index should exist");
     let folder = &mut mock_folders[folder_idx];
 
     if let Some(ref new_name) = req.name {

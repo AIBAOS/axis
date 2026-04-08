@@ -110,7 +110,7 @@ pub async fn update_snapshot(
         }));
     }
 
-    let idx = .expect("Snapshot index should exist");
+    let idx = snapshot_idx.expect("Snapshot index should exist");
 
     // 6. 提取旧值并转换为可修改的值
     let old_name = mock_snapshots[idx].1.clone();
