@@ -1,11 +1,11 @@
 <template>
   <div class="space-y-6">
     <!-- 页面标题和操作栏 -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
         文件管理
       </h1>
-      <div class="flex items-center space-x-3">
+      <div class="flex items-center space-x-3 flex-shrink-0">
         <!-- 批量操作按钮（有选中时显示） -->
         <template v-if="selectedFiles.length > 0">
           <button
@@ -50,8 +50,8 @@
 
     <!-- 面包屑导航和搜索栏 -->
     <div class="space-y-3">
-      <nav class="flex items-center justify-between px-6 py-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-        <div class="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+      <nav class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 sm:px-6 py-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <div class="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400 flex-wrap">
           <!-- 返回上级按钮 -->
           <button
             v-if="currentPath !== '/'"
@@ -131,7 +131,7 @@
     <!-- 文件列表 -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
       <!-- 列表头部（可点击排序） -->
-      <div class="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-500 dark:text-gray-400">
+      <div class="hidden sm:grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-500 dark:text-gray-400">
         <div class="col-span-1 flex items-center justify-center">
           <input
             type="checkbox"
@@ -168,6 +168,19 @@
           </span>
         </div>
         <div class="col-span-1 text-right">操作</div>
+      </div>
+      
+      <!-- 移动端列表头部 -->
+      <div class="sm:hidden px-4 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-500 dark:text-gray-400">
+        <div class="flex items-center justify-between">
+          <input
+            type="checkbox"
+            :checked="isAllSelected"
+            @change="toggleSelectAll"
+            class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+          />
+          <span>{{ filteredFiles.length }} 个项目</span>
+        </div>
       </div>
 
       <!-- 加载状态 -->
@@ -208,10 +221,10 @@
 
       <!-- 文件列表 -->
       <div v-else>
-        <div
+        <!-- 桌面端列表 -->
+        <div class="hidden sm:grid grid-cols-12 gap-4 px-6 py-3 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 items-center"
           v-for="file in filteredFiles"
           :key="file.name"
-          class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 items-center"
           :class="{ 'cursor-pointer': file.type === 'dir' }"
           @dblclick="file.type === 'dir' && navigateTo(file.path)"
         >
@@ -275,6 +288,69 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
               </svg>
             </button>
+          </div>
+        </div>
+        
+        <!-- 移动端列表 -->
+        <div class="sm:hidden divide-y divide-gray-200 dark:divide-gray-700">
+          <div
+            v-for="file in filteredFiles"
+            :key="file.name"
+            class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700"
+            :class="{ 'cursor-pointer': file.type === 'dir' }"
+            @click="file.type === 'dir' && navigateTo(file.path)"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex items-center flex-1 min-w-0">
+                <input
+                  type="checkbox"
+                  :checked="isSelected(file)"
+                  @change.stop="toggleFileSelection(file)"
+                  class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 mr-3 flex-shrink-0"
+                />
+                <span class="text-xl mr-3 flex-shrink-0">
+                  {{ file.type === 'dir' ? '📁' : getFileIcon(file.name) }}
+                </span>
+                <div class="min-w-0 flex-1">
+                  <div class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {{ file.name }}
+                  </div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {{ file.type === 'dir' ? '文件夹' : formatFileSize(file.size) }} · {{ formatDateTime(file.modified) }}
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center space-x-2 ml-2 flex-shrink-0">
+                <button
+                  v-if="file.type === 'file'"
+                  @click.stop="downloadFile(file)"
+                  class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+                  title="下载"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                  </svg>
+                </button>
+                <button
+                  @click.stop="showRenameModal(file)"
+                  class="text-gray-400 hover:text-yellow-600 dark:hover:text-yellow-400"
+                  title="重命名"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                  </svg>
+                </button>
+                <button
+                  @click.stop="deleteFile(file)"
+                  class="text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                  title="删除"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
