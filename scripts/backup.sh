@@ -1,11 +1,14 @@
 #!/bin/bash
 #
 # Axis NAS 备份脚本
-#
+# 
 # 用途：备份数据库和配置文件
 #
 # 使用方法：
-#   sudo ./backup.sh [备份目录]
+#   sudo ./backup.sh [选项] [备份目录]
+#
+# 选项：
+#   -h, --help           显示帮助信息
 #
 # 示例：
 #   sudo ./backup.sh                    # 备份到默认目录
@@ -41,6 +44,20 @@ log_warning() {
 
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# 显示帮助信息
+show_help() {
+    echo "Axis NAS 备份脚本"
+    echo ""
+    echo "用法：$0 [选项] [备份目录]"
+    echo ""
+    echo "选项:"
+    echo "  -h, --help           显示帮助信息"
+    echo ""
+    echo "示例:"
+    echo "  $0                              # 备份到默认目录"
+    echo "  $0 /mnt/backup/axis             # 备份到指定目录"
 }
 
 # 检查 root 权限

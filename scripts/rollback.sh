@@ -1,15 +1,20 @@
 #!/bin/bash
 #
 # Axis NAS 回滚脚本
-#
+# 
 # 用途：回滚到之前的版本（升级失败时使用）
 #
 # 使用方法：
-#   sudo ./rollback.sh [备份路径]
+#   sudo ./rollback.sh [选项] [备份路径]
+#
+# 选项：
+#   -l, --list           列出可用回滚点
+#   -h, --help           显示帮助信息
 #
 # 示例：
 #   sudo ./rollback.sh                      # 回滚到最近的备份
-#   sudo ./rollback.sh /var/backup/axis/axis_backup_20260408_160000
+#   sudo ./rollback.sh -l                   # 列出所有回滚点
+#   sudo ./rollback.sh /var/backup/xxx      # 回滚到指定备份
 #
 
 set -e
@@ -43,6 +48,22 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# 显示帮助信息
+show_help() {
+    echo "Axis NAS 回滚脚本"
+    echo ""
+    echo "用法：$0 [选项] [备份路径]"
+    echo ""
+    echo "选项:"
+    echo "  -l, --list           列出可用回滚点"
+    echo "  -h, --help           显示帮助信息"
+    echo ""
+    echo "示例:"
+    echo "  $0                              # 回滚到最近的备份"
+    echo "  $0 -l                           # 列出所有回滚点"
+    echo "  $0 /var/backup/axis/xxx         # 回滚到指定备份"
+}
+
 # 检查 root 权限
 check_root() {
     if [ "$EUID" -ne 0 ]; then
@@ -51,19 +72,42 @@ check_root() {
     fi
 }
 
-# 查找最近的备份
-find_latest_backup() {
-    log_info "正在查找最近的备份..."
+# 列出可用回滚点
+list_backups() {
+    log_info "正在查找可用回滚点..."
+    echo ""
+    echo "========================================"
+    echo "  可用回滚点"
+    echo "========================================"
+    echo ""
     
-    LATEST_BACKUP=$(ls -t "$BACKUP_DIR"/axis_backup_* 2>/dev/null | head -n1)
+    if [ ! -d "$BACKUP_DIR" ]; then
+        log_error "备份目录不存在：$BACKUP_DIR"
+        exit 1
+    fi
     
-    if [ -z "$LATEST_BACKUP" ]; then
+    local COUNT=0
+    for backup in $(ls -t "$BACKUP_DIR"/axis_backup_* 2>/dev/null); do
+        ((COUNT++))
+        local DATE=$(echo "$backup" | grep -oP '\d{8}_\d{6}')
+        echo "  $COUNT. $backup"
+        echo "     时间：$DATE"
+        
+        # 显示备份清单（如果有）
+        if [ -f "${backup}.txt" ]; then
+            echo "     详情：$(head -1 ${backup}.txt)"
+        fi
+        echo ""
+    done
+    
+    if [ $COUNT -eq 0 ]; then
         log_error "未找到备份文件"
         exit 1
     fi
     
-    log_info "找到备份：$LATEST_BACKUP"
-    echo "$LATEST_BACKUP"
+    echo "========================================"
+    echo "总计：$COUNT 个回滚点"
+    echo "========================================"
 }
 
 # 停止服务
@@ -89,6 +133,14 @@ do_rollback() {
     else
         log_error "备份文件不存在：$BACKUP_PATH"
         exit 1
+    fi
+    
+    # 恢复配置文件（如果有）
+    local CONFIG_BACKUP=$(echo "$BACKUP_PATH" | sed 's/axis_backup/config/')
+    if [ -f "${CONFIG_BACKUP}.tar.gz" ]; then
+        log_info "正在恢复配置文件..."
+        tar -xzf "${CONFIG_BACKUP}.tar.gz" -C "$(dirname $AXIS_CONFIG_DIR)"
+        log_success "配置文件已恢复"
     fi
 }
 
@@ -121,9 +173,30 @@ show_info() {
     echo "========================================"
 }
 
+# 解析命令行参数
+parse_args() {
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -l|--list)
+                list_backups
+                exit 0
+                ;;
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            *)
+                BACKUP_PATH="$1"
+                shift
+                ;;
+        esac
+    done
+}
+
 # 主函数
 main() {
-    local BACKUP_PATH=$1
+    # 解析参数
+    parse_args "$@"
     
     echo ""
     echo "========================================"
@@ -135,7 +208,20 @@ main() {
     
     # 如果没有指定备份路径，使用最近的备份
     if [ -z "$BACKUP_PATH" ]; then
-        BACKUP_PATH=$(find_latest_backup)
+        BACKUP_PATH=$(ls -t "$BACKUP_DIR"/axis_backup_* 2>/dev/null | head -n1)
+        if [ -z "$BACKUP_PATH" ]; then
+            log_error "未找到备份文件"
+            log_info "使用 -l 参数列出可用回滚点"
+            exit 1
+        fi
+        log_info "使用最近的备份：$BACKUP_PATH"
+    fi
+    
+    # 确认回滚
+    read -p "确认回滚到 $BACKUP_PATH？[Y/n] " CONFIRM
+    if [[ "$CONFIRM" =~ ^[Nn]$ ]]; then
+        log_info "回滚已取消"
+        exit 0
     fi
     
     stop_service

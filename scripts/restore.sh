@@ -1,11 +1,14 @@
 #!/bin/bash
 #
 # Axis NAS 恢复脚本
-#
+# 
 # 用途：从备份恢复数据库和配置文件
 #
 # 使用方法：
-#   sudo ./restore.sh <备份文件>
+#   sudo ./restore.sh [选项] <备份文件>
+#
+# 选项：
+#   -h, --help           显示帮助信息
 #
 # 示例：
 #   sudo ./restore.sh /var/backup/axis/NAS.db_20260408_160000.gz
@@ -41,6 +44,20 @@ log_warning() {
 
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# 显示帮助信息
+show_help() {
+    echo "Axis NAS 恢复脚本"
+    echo ""
+    echo "用法：$0 [选项] <备份文件>"
+    echo ""
+    echo "选项:"
+    echo "  -h, --help           显示帮助信息"
+    echo ""
+    echo "示例:"
+    echo "  $0 /var/backup/axis/NAS.db_20260408_160000.gz"
+    echo "  $0 /var/backup/axis/config_20260408_160000.tar.gz"
 }
 
 # 检查 root 权限
