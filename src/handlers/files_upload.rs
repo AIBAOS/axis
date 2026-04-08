@@ -1,5 +1,6 @@
 // Phase 119 - 文件上传 API
 // POST /api/v1/files/upload — 上传文件
+// PERF-2: 流式文件上传处理，避免全量加载到内存
 
 use actix_web::{web, HttpRequest, HttpResponse, Error};
 use actix_multipart::Multipart;
@@ -8,6 +9,7 @@ use serde::Serialize;
 use std::io::Write as _;
 use std::path::PathBuf;
 use std::fs;
+use std::io::BufWriter;
 
 use crate::database::rbac_store::SqliteRbacRepository;
 use crate::services::jwt_service::JwtService;
@@ -41,6 +43,7 @@ pub struct ErrorResponse {
 // 配置常量
 const MAX_FILE_SIZE: u64 = 100 * 1024 * 1024; // 100MB
 const MIN_FILE_SIZE: u64 = 1; // 最小 1 字节，防止空文件
+const CHUNK_SIZE: usize = 64 * 1024; // 64KB 写入缓冲区
 const ALLOWED_EXTENSIONS: [&str; 10] = ["txt", "pdf", "doc", "docx", "xls", "xlsx", "jpg", "jpeg", "png", "gif"];
 
 /// 路径安全验证（防止路径遍历攻击）
@@ -130,11 +133,11 @@ fn validate_filename(filename: &str) -> Result<String, ErrorResponse> {
     Ok(safe_filename)
 }
 
-/// 上传文件（Phase 119）
+/// 上传文件（Phase 119 + PERF-2 优化）
 /// - JWT 认证，登录用户可访问
 /// - multipart/form-data 格式
 /// - 验证文件类型和大小
-/// - 保存到指定路径
+/// - 流式保存到指定路径（避免全量加载到内存）
 /// - 处理文件名冲突
 pub async fn upload_file(
     req: HttpRequest,
@@ -159,10 +162,12 @@ pub async fn upload_file(
     let username = claims.sub.clone();
 
     // 3. 解析 multipart 表单数据
-    let mut file_data: Option<Vec<u8>> = None;
     let mut filename: Option<String> = None;
     let mut content_type: Option<String> = None;
     let mut target_path: Option<String> = None;
+    let mut file_size: u64 = 0;
+    let mut final_file_path: Option<PathBuf> = None;
+    let mut buffered_writer: Option<BufWriter<fs::File>> = None;
 
     while let Some(item) = payload.next().await {
         let mut field = item?;
@@ -172,33 +177,122 @@ pub async fn upload_file(
         
         match field_name.as_deref() {
             Some("file") => {
-                let mut data = Vec::new();
-                while let Some(chunk) = field.next().await {
-                    let chunk = chunk?;
-                    data.extend_from_slice(&chunk);
-                }
-                
-                // 检查文件大小（上限）
-                if data.len() as u64 > MAX_FILE_SIZE {
-                    return Ok(HttpResponse::PayloadTooLarge().json(ErrorResponse {
+                // 获取文件名和内容类型
+                let raw_filename = file_fname.unwrap_or_default();
+                if raw_filename.is_empty() {
+                    return Ok(HttpResponse::BadRequest().json(ErrorResponse {
                         success: false,
-                        error: format!("File size exceeds limit of {} MB", MAX_FILE_SIZE / 1024 / 1024),
-                        code: "FILE_TOO_LARGE".to_string(),
+                        error: "filename is required".to_string(),
+                        code: "MISSING_FILENAME".to_string(),
                     }));
                 }
                 
-                // 检查文件大小（下限 - Bug #18 修复）
-                if (data.len() as u64) < MIN_FILE_SIZE {
+                // 4.1 验证文件名安全性（Bug #17 修复）
+                let safe_filename = match validate_filename(&raw_filename) {
+                    Ok(name) => name,
+                    Err(e) => return Ok(HttpResponse::BadRequest().json(e)),
+                };
+
+                // 5. 验证文件类型
+                let extension = safe_filename.split('.').last().unwrap_or("").to_lowercase();
+                if !ALLOWED_EXTENSIONS.contains(&extension.as_str()) {
+                    return Ok(HttpResponse::BadRequest().json(ErrorResponse {
+                        success: false,
+                        error: format!("File type '{}' not supported. Allowed types: {}", extension, ALLOWED_EXTENSIONS.join(", ")),
+                        code: "UNSUPPORTED_FILE_TYPE".to_string(),
+                    }));
+                }
+                
+                filename = Some(safe_filename.clone());
+                content_type = field.content_type().map(|ct| ct.to_string());
+                
+                // 6. 确定保存路径（默认用户主目录）
+                let raw_upload_dir = target_path
+                    .clone()
+                    .unwrap_or_else(|| format!("/users/{}", username));
+                
+                // 6.1 验证路径安全性（Bug #16 修复）
+                if let Err(e) = validate_path(&raw_upload_dir) {
+                    return Ok(HttpResponse::BadRequest().json(e));
+                }
+                let upload_dir = raw_upload_dir;
+                
+                // 7. 处理文件名冲突（自动重命名）
+                let file_path = PathBuf::from(&upload_dir).join(&safe_filename);
+                let final_path = if file_path.exists() {
+                    // 文件已存在，自动重命名
+                    let stem = safe_filename.rsplit_once('.').map(|(s, _)| s).unwrap_or(&safe_filename);
+                    let ext = safe_filename.rsplit_once('.').map(|(_, e)| e).unwrap_or("");
+                    let mut counter = 1;
+                    loop {
+                        let new_filename = if ext.is_empty() {
+                            format!("{}_{}", stem, counter)
+                        } else {
+                            format!("{}_{}.{}", stem, counter, ext)
+                        };
+                        let new_path = PathBuf::from(&upload_dir).join(&new_filename);
+                        if !new_path.exists() {
+                            break PathBuf::from(&upload_dir).join(new_filename);
+                        }
+                        counter += 1;
+                    }
+                } else {
+                    file_path
+                };
+
+                // 8. 创建目录（如果不存在）
+                if let Some(parent) = final_path.parent() {
+                    fs::create_dir_all(parent)
+                        .map_err(|e| actix_web::error::ErrorInternalServerError(format!("Failed to create directory: {}", e)))?;
+                }
+
+                // 9. 创建文件并使用缓冲写入器
+                let file = fs::File::create(&final_path)
+                    .map_err(|e| actix_web::error::ErrorInternalServerError(format!("Failed to create file: {}", e)))?;
+                
+                buffered_writer = Some(BufWriter::with_capacity(CHUNK_SIZE, file));
+                final_file_path = Some(final_path);
+                file_size = 0;
+                
+                // PERF-2: 流式写入文件，避免全量加载到内存
+                while let Some(chunk) = field.next().await {
+                    let chunk = chunk?;
+                    
+                    // 更新文件大小并检查限制
+                    file_size += chunk.len() as u64;
+                    
+                    // 检查文件大小上限
+                    if file_size > MAX_FILE_SIZE {
+                        // 清理部分写入的文件
+                        if let Some(path) = &final_file_path {
+                            let _ = fs::remove_file(path);
+                        }
+                        return Ok(HttpResponse::PayloadTooLarge().json(ErrorResponse {
+                            success: false,
+                            error: format!("File size exceeds limit of {} MB", MAX_FILE_SIZE / 1024 / 1024),
+                            code: "FILE_TOO_LARGE".to_string(),
+                        }));
+                    }
+                    
+                    // 流式写入文件
+                    if let Some(ref mut writer) = buffered_writer {
+                        writer.write_all(&chunk)
+                            .map_err(|e| actix_web::error::ErrorInternalServerError(format!("Failed to write file: {}", e)))?;
+                    }
+                }
+                
+                // 检查文件大小下限（Bug #18 修复）
+                if file_size < MIN_FILE_SIZE {
+                    // 清理部分写入的文件
+                    if let Some(path) = &final_file_path {
+                        let _ = fs::remove_file(path);
+                    }
                     return Ok(HttpResponse::BadRequest().json(ErrorResponse {
                         success: false,
                         error: "Empty files are not allowed".to_string(),
                         code: "FILE_EMPTY".to_string(),
                     }));
                 }
-                
-                file_data = Some(data);
-                filename = file_fname;
-                content_type = field.content_type().map(|ct| ct.to_string());
             }
             Some("path") => {
                 let mut data = Vec::new();
@@ -214,73 +308,22 @@ pub async fn upload_file(
         }
     }
 
-    // 4. 验证必要参数
-    let file_data = file_data.ok_or_else(|| actix_web::error::ErrorBadRequest("file is required"))?;
-    let raw_filename = filename.ok_or_else(|| actix_web::error::ErrorBadRequest("filename is required"))?;
-
-    // 4.1 验证文件名安全性（Bug #17 修复）
-    let safe_filename = match validate_filename(&raw_filename) {
-        Ok(name) => name,
-        Err(e) => return Ok(HttpResponse::BadRequest().json(e)),
-    };
-
-    // 5. 验证文件类型
-    let extension = safe_filename.split('.').last().unwrap_or("").to_lowercase();
-    if !ALLOWED_EXTENSIONS.contains(&extension.as_str()) {
-        return Ok(HttpResponse::BadRequest().json(ErrorResponse {
-            success: false,
-            error: format!("File type '{}' not supported. Allowed types: {}", extension, ALLOWED_EXTENSIONS.join(", ")),
-            code: "UNSUPPORTED_FILE_TYPE".to_string(),
-        }));
+    // 10. 刷新并关闭写入器
+    if let Some(mut writer) = buffered_writer {
+        writer.flush()
+            .map_err(|e| actix_web::error::ErrorInternalServerError(format!("Failed to flush file: {}", e)))?;
     }
 
-    // 6. 确定保存路径（默认用户主目录）
-    let raw_upload_dir = target_path
-        .unwrap_or_else(|| format!("/users/{}", username));
+    // 11. 验证文件是否成功上传
+    let final_path = final_file_path.ok_or_else(|| {
+        actix_web::error::ErrorBadRequest("file is required")
+    })?;
     
-    // 6.1 验证路径安全性（Bug #16 修复）
-    if let Err(e) = validate_path(&raw_upload_dir) {
-        return Ok(HttpResponse::BadRequest().json(e));
-    }
-    let upload_dir = raw_upload_dir;
-    
-    // 7. 处理文件名冲突（自动重命名）
-    let file_path = PathBuf::from(&upload_dir).join(&safe_filename);
-    let final_path = if file_path.exists() {
-        // 文件已存在，自动重命名
-        let stem = safe_filename.rsplit_once('.').map(|(s, _)| s).unwrap_or(&safe_filename);
-        let ext = safe_filename.rsplit_once('.').map(|(_, e)| e).unwrap_or("");
-        let mut counter = 1;
-        loop {
-            let new_filename = if ext.is_empty() {
-                format!("{}_{}", stem, counter)
-            } else {
-                format!("{}_{}.{}", stem, counter, ext)
-            };
-            let new_path = PathBuf::from(&upload_dir).join(&new_filename);
-            if !new_path.exists() {
-                break PathBuf::from(&upload_dir).join(new_filename);
-            }
-            counter += 1;
-        }
-    } else {
-        file_path
-    };
+    let safe_filename = filename.ok_or_else(|| {
+        actix_web::error::ErrorBadRequest("filename is required")
+    })?;
 
-    // 8. 创建目录（如果不存在）
-    if let Some(parent) = final_path.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|e| actix_web::error::ErrorInternalServerError(format!("Failed to create directory: {}", e)))?;
-    }
-
-    // 9. 保存文件
-    let mut file = fs::File::create(&final_path)
-        .map_err(|e| actix_web::error::ErrorInternalServerError(format!("Failed to create file: {}", e)))?;
-    
-    file.write_all(&file_data)
-        .map_err(|e| actix_web::error::ErrorInternalServerError(format!("Failed to write file: {}", e)))?;
-
-    // 10. 返回上传结果
+    // 12. 返回上传结果
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_err(|_| actix_web::error::ErrorInternalServerError("Invalid time"))?
@@ -289,7 +332,7 @@ pub async fn upload_file(
     let uploaded_file = UploadedFileInfo {
         filename: final_path.file_name().unwrap_or_default().to_string_lossy().to_string(),
         path: final_path.to_string_lossy().to_string(),
-        size_bytes: file_data.len() as u64,
+        size_bytes: file_size,
         mime_type: content_type.unwrap_or_else(|| "application/octet-stream".to_string()),
         uploaded_at: now,
     };
