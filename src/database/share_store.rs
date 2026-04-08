@@ -73,7 +73,13 @@ impl SqliteShareRepository {
                 sync INTEGER NOT NULL DEFAULT 1,
                 clients TEXT,
                 enabled INTEGER NOT NULL DEFAULT 1
-            )
+            );
+            
+            -- PERF-4: 添加索引优化高频查询
+            CREATE INDEX IF NOT EXISTS idx_shares_protocol ON shares(protocol);
+            CREATE INDEX IF NOT EXISTS idx_shares_status ON shares(status);
+            CREATE INDEX IF NOT EXISTS idx_shares_created_at ON shares(created_at);
+            CREATE INDEX IF NOT EXISTS idx_shares_name ON shares(name)
             "#,
         ).map_err(|e| format!("Create table failed: {}", e))?;
         Ok(())

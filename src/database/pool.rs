@@ -162,7 +162,10 @@ pub fn init_rbac_tables(conn: &DbConnectionType) -> Result<(), String> {
                     permissions TEXT,
                     created_at INTEGER NOT NULL,
                     updated_at INTEGER NOT NULL
-                )
+                );
+                
+                -- PERF-4: 用户表索引优化
+                CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)
             "#)?;
 
             c.execute_batch(r#"
@@ -184,7 +187,11 @@ pub fn init_rbac_tables(conn: &DbConnectionType) -> Result<(), String> {
                     action TEXT NOT NULL,
                     created_at INTEGER NOT NULL,
                     updated_at INTEGER NOT NULL
-                )
+                );
+                
+                -- PERF-4: 权限表索引优化
+                CREATE INDEX IF NOT EXISTS idx_permissions_resource ON permissions(resource);
+                CREATE INDEX IF NOT EXISTS idx_permissions_action ON permissions(action)
             "#)?;
 
             c.execute_batch(r#"
@@ -195,7 +202,11 @@ pub fn init_rbac_tables(conn: &DbConnectionType) -> Result<(), String> {
                     PRIMARY KEY (user_id, role_id),
                     FOREIGN KEY (user_id) REFERENCES users(id),
                     FOREIGN KEY (role_id) REFERENCES roles(id)
-                )
+                );
+                
+                -- PERF-4: 用户角色关系表索引优化
+                CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON user_roles(user_id);
+                CREATE INDEX IF NOT EXISTS idx_user_roles_role_id ON user_roles(role_id)
             "#)?;
 
             c.execute_batch(r#"
@@ -206,7 +217,11 @@ pub fn init_rbac_tables(conn: &DbConnectionType) -> Result<(), String> {
                     PRIMARY KEY (role_id, permission_id),
                     FOREIGN KEY (role_id) REFERENCES roles(id),
                     FOREIGN KEY (permission_id) REFERENCES permissions(id)
-                )
+                );
+                
+                -- PERF-4: 角色权限关系表索引优化
+                CREATE INDEX IF NOT EXISTS idx_roles_permissions_role_id ON roles_permissions(role_id);
+                CREATE INDEX IF NOT EXISTS idx_roles_permissions_permission_id ON roles_permissions(permission_id)
             "#)?;
 
             c.execute_batch(r#"
@@ -217,7 +232,11 @@ pub fn init_rbac_tables(conn: &DbConnectionType) -> Result<(), String> {
                     last_active INTEGER NOT NULL,
                     ip_address TEXT,
                     user_agent TEXT
-                )
+                );
+                
+                -- PERF-4: 会话表索引优化
+                CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
+                CREATE INDEX IF NOT EXISTS idx_sessions_last_active ON sessions(last_active)
             "#)?;
 
             c.execute_batch(r#"

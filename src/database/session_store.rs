@@ -25,7 +25,11 @@ impl SqliteSessionRepository {
                 last_active INTEGER NOT NULL,
                 ip_address TEXT,
                 user_agent TEXT
-            )
+            );
+            
+            -- PERF-4: 添加索引优化高频查询
+            CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
+            CREATE INDEX IF NOT EXISTS idx_sessions_last_active ON sessions(last_active)
         "#).map_err(|e| format!("Create table failed: {}", e))?;
         Ok(())
     }
