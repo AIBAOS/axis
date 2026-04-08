@@ -123,6 +123,7 @@ impl SqliteShareRepository {
     }
 
     /// 获取所有共享（分页 + 筛选）
+    /// Bug #74 修复：使用参数化查询防止 SQL 注入
     pub fn get_shares(&self, page: u32, per_page: u32, protocol: Option<String>, status: Option<String>) -> Result<Vec<Share>, String> {
         let conn = self.get_connection()?;
         
@@ -134,21 +135,32 @@ impl SqliteShareRepository {
             "#
         );
         
+        let mut param_index = 1;
+        let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
+        
         if let Some(proto) = protocol {
-            query.push_str(&format!(" AND protocol = '{}'", proto));
+            query.push_str(&format!(" AND protocol = ?{}", param_index));
+            param_index += 1;
+            params.push(Box::new(proto));
         }
         
         if let Some(st) = status {
-            query.push_str(&format!(" AND status = '{}'", st));
+            query.push_str(&format!(" AND status = ?{}", param_index));
+            param_index += 1;
+            params.push(Box::new(st));
         }
         
-        query.push_str(" ORDER BY created_at DESC LIMIT ?1 OFFSET ?2");
+        query.push_str(&format!(" ORDER BY created_at DESC LIMIT ?{} OFFSET ?{}", param_index, param_index + 1));
+        params.push(Box::new(per_page as i64));
+        params.push(Box::new(offset as i64));
+        
+        let params_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
         
         let mut stmt = conn.prepare(&query)
             .map_err(|e| format!("Prepare failed: {}", e))?;
         
         let shares = stmt
-            .query_map(params![per_page, offset], |row| {
+            .query_map(params_refs.as_slice(), |row| {
                 Ok(Share {
                     id: row.get(0)?,
                     name: row.get(1)?,
@@ -242,40 +254,54 @@ impl SqliteShareRepository {
     }
 
     /// 统计共享数量（带筛选）
+    /// Bug #74 修复：使用参数化查询防止 SQL 注入
     pub fn count_shares(&self, protocol: Option<String>, status: Option<String>) -> Result<u64, String> {
         let conn = self.get_connection()?;
         
         let mut query = String::from("SELECT COUNT(*) FROM shares WHERE 1=1");
+        let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
         
         if let Some(proto) = protocol {
-            query.push_str(&format!(" AND protocol = '{}'", proto));
+            query.push_str(" AND protocol = ?1");
+            params.push(Box::new(proto));
         }
         
         if let Some(st) = status {
-            query.push_str(&format!(" AND status = '{}'", st));
+            let idx = if params.is_empty() { 1 } else { 2 };
+            query.push_str(&format!(" AND status = ?{}", idx));
+            params.push(Box::new(st));
         }
         
-        let count: i64 = conn.query_row(&query, [], |row| row.get(0))
+        let params_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+        
+        let count: i64 = conn.query_row(&query, params_refs.as_slice(), |row| row.get(0))
             .map_err(|e| format!("Count query failed: {}", e))?;
         
         Ok(count as u64)
     }
 
     /// 统计 SMB 共享数量（带筛选）
+    /// Bug #74 修复：使用参数化查询防止 SQL 注入
     pub fn count_smb_shares(&self, status: Option<String>, path: Option<String>) -> Result<u64, String> {
         let conn = self.get_connection()?;
         
         let mut query = String::from("SELECT COUNT(*) FROM shares WHERE protocol = 'smb'");
+        let mut params: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
         
         if let Some(st) = status {
-            query.push_str(&format!(" AND status = '{}'", st));
+            query.push_str(" AND status = ?1");
+            params.push(Box::new(st));
         }
         
         if let Some(p) = path {
-            query.push_str(&format!(" AND path LIKE '%{}%'", p));
+            let idx = if params.is_empty() { 1 } else { 2 };
+            query.push_str(&format!(" AND path LIKE ?{}", idx));
+            params.push(Box::new(format!("%{}%", p)));
         }
         
-        let count: i64 = conn.query_row(&query, [], |row| row.get(0))
+        let params_refs: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+        
+        let count: i64 = conn.query_row(&query, params_refs.as_slice(), |row| row.get(0))
             .map_err(|e| format!("Count query failed: {}", e))?;
         
         Ok(count as u64)
