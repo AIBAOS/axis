@@ -6,24 +6,45 @@
         文件管理
       </h1>
       <div class="flex items-center space-x-3">
-        <button
-          @click="showUploadModal = true"
-          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-          </svg>
-          上传文件
-        </button>
-        <button
-          @click="createFolder"
-          class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
-          </svg>
-          新建文件夹
-        </button>
+        <!-- 批量操作按钮（有选中时显示） -->
+        <template v-if="selectedFiles.length > 0">
+          <button
+            @click="batchDelete"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            删除 ({{ selectedFiles.length }})
+          </button>
+          <button
+            @click="clearSelection"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            取消选择
+          </button>
+        </template>
+        <!-- 常规按钮（无选中时显示） -->
+        <template v-else>
+          <button
+            @click="showUploadModal = true"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+            </svg>
+            上传文件
+          </button>
+          <button
+            @click="createFolder"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+            </svg>
+            新建文件夹
+          </button>
+        </template>
       </div>
     </div>
 
@@ -57,8 +78,24 @@
           </button>
         </template>
       </div>
-      <div class="text-xs text-gray-400">
-        {{ sortedFiles.length }} 个项目
+      <div class="flex items-center space-x-4">
+        <!-- 全选复选框 -->
+        <label class="flex items-center text-sm text-gray-500 dark:text-gray-400 cursor-pointer">
+          <input
+            type="checkbox"
+            :checked="isAllSelected"
+            @change="toggleSelectAll"
+            class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+          />
+          <span class="ml-2">全选</span>
+        </label>
+        <!-- 项目数量统计 -->
+        <div class="text-xs text-gray-400">
+          {{ sortedFiles.length }} 个项目
+          <span v-if="selectedFiles.length > 0" class="text-indigo-600 dark:text-indigo-400">
+            (已选 {{ selectedFiles.length }})
+          </span>
+        </div>
       </div>
     </nav>
 
@@ -71,8 +108,16 @@
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
       <!-- 列表头部（可点击排序） -->
       <div class="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-500 dark:text-gray-400">
+        <div class="col-span-1 flex items-center justify-center">
+          <input
+            type="checkbox"
+            :checked="isAllSelected"
+            @change="toggleSelectAll"
+            class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+          />
+        </div>
         <div 
-          class="col-span-6 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center"
+          class="col-span-5 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center"
           @click="toggleSort('name')"
         >
           <span>名称</span>
@@ -142,8 +187,18 @@
           :class="{ 'cursor-pointer': file.type === 'dir' }"
           @dblclick="file.type === 'dir' && navigateTo(file.path)"
         >
+          <!-- 复选框 -->
+          <div class="col-span-1 flex items-center justify-center" @click.stop>
+            <input
+              type="checkbox"
+              :checked="isSelected(file)"
+              @change="toggleFileSelection(file)"
+              class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+            />
+          </div>
+
           <!-- 文件名 -->
-          <div class="col-span-6 flex items-center">
+          <div class="col-span-5 flex items-center">
             <span class="text-xl mr-3">
               {{ file.type === 'dir' ? '📁' : getFileIcon(file.name) }}
             </span>
@@ -184,7 +239,7 @@
               </svg>
             </button>
             <button
-              @click="deleteFile(file)"
+              @click.stop="deleteFile(file)"
               class="text-gray-400 hover:text-red-600 dark:hover:text-red-400"
               title="删除"
             >
@@ -228,10 +283,10 @@
               选择文件
             </button>
           </div>
-          <div v-if="selectedFiles.length > 0" class="mt-4">
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">已选择 {{ selectedFiles.length }} 个文件</p>
+          <div v-if="selectedUploadFiles.length > 0" class="mt-4">
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">已选择 {{ selectedUploadFiles.length }} 个文件</p>
             <ul class="text-sm text-gray-500 dark:text-gray-400 space-y-1 max-h-32 overflow-y-auto">
-              <li v-for="(file, idx) in selectedFiles" :key="idx" class="truncate">{{ file.name }}</li>
+              <li v-for="(file, idx) in selectedUploadFiles" :key="idx" class="truncate">{{ file.name }}</li>
             </ul>
           </div>
         </div>
@@ -244,7 +299,7 @@
           </button>
           <button
             @click="uploadFiles"
-            :disabled="selectedFiles.length === 0 || uploading"
+            :disabled="selectedUploadFiles.length === 0 || uploading"
             class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {{ uploading ? '上传中...' : '上传' }}
@@ -303,14 +358,17 @@ const showUploadModal = ref(false)
 const showRenameModalFlag = ref(false)
 const fileToRename = ref(null)
 const newFileName = ref('')
-const selectedFiles = ref([])
+const selectedUploadFiles = ref([])
 const uploading = ref(false)
+
+// 批量选择
+const selectedFiles = ref([])
 
 // Toast 通知
 const toast = ref({
   show: false,
   message: '',
-  type: 'success', // success or error
+  type: 'success',
   timer: null
 })
 
@@ -330,8 +388,8 @@ const showToast = (message, type = 'success') => {
 }
 
 // 排序状态
-const sortField = ref('name') // name, size, modified
-const sortOrder = ref('asc') // asc, desc
+const sortField = ref('name')
+const sortOrder = ref('asc')
 
 // 面包屑导航片段
 const breadcrumbSegments = computed(() => {
@@ -342,7 +400,6 @@ const breadcrumbSegments = computed(() => {
 // 排序后的文件列表
 const sortedFiles = computed(() => {
   const sorted = [...files.value].sort((a, b) => {
-    // 文件夹始终排在前面
     if (a.type === 'dir' && b.type !== 'dir') return -1
     if (a.type !== 'dir' && b.type === 'dir') return 1
     
@@ -365,9 +422,15 @@ const sortedFiles = computed(() => {
   return sorted
 })
 
+// 是否全选
+const isAllSelected = computed(() => {
+  return sortedFiles.value.length > 0 && selectedFiles.value.length === sortedFiles.value.length
+})
+
 // 导航到指定路径
 const navigateTo = (path) => {
   currentPath.value = path
+  clearSelection()
   loadFiles()
 }
 
@@ -380,6 +443,7 @@ const navigateToParent = () => {
     if (currentPath.value === '/') {
       currentPath.value = '/'
     }
+    clearSelection()
     loadFiles()
   }
 }
@@ -393,12 +457,58 @@ const navigateToBreadcrumb = (index) => {
 // 切换排序
 const toggleSort = (field) => {
   if (sortField.value === field) {
-    // 相同字段，切换顺序
     sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
   } else {
-    // 新字段，默认升序
     sortField.value = field
     sortOrder.value = 'asc'
+  }
+}
+
+// 全选/取消全选
+const toggleSelectAll = () => {
+  if (isAllSelected.value) {
+    clearSelection()
+  } else {
+    selectedFiles.value = [...sortedFiles.value]
+  }
+}
+
+// 切换文件选择
+const toggleFileSelection = (file) => {
+  const index = selectedFiles.value.findIndex(f => f.name === file.name)
+  if (index > -1) {
+    selectedFiles.value.splice(index, 1)
+  } else {
+    selectedFiles.value.push(file)
+  }
+}
+
+// 检查文件是否被选中
+const isSelected = (file) => {
+  return selectedFiles.value.some(f => f.name === file.name)
+}
+
+// 清除选择
+const clearSelection = () => {
+  selectedFiles.value = []
+}
+
+// 批量删除
+const batchDelete = async () => {
+  if (!confirm(`确定要删除选中的 ${selectedFiles.value.length} 个项目吗？`)) return
+  
+  try {
+    for (const file of selectedFiles.value) {
+      await apiClient.delete('/files/delete', {
+        params: { path: file.path }
+      })
+    }
+    clearSelection()
+    loadFiles()
+    showToast(`成功删除 ${selectedFiles.value.length} 个项目`)
+  } catch (error) {
+    console.error('Batch delete failed:', error)
+    showToast('批量删除失败', 'error')
   }
 }
 
@@ -554,16 +664,16 @@ const createFolder = async () => {
 
 // 处理文件选择
 const handleFileSelect = (event) => {
-  selectedFiles.value = Array.from(event.target.files)
+  selectedUploadFiles.value = Array.from(event.target.files)
 }
 
 // 上传文件
 const uploadFiles = async () => {
-  if (selectedFiles.value.length === 0) return
+  if (selectedUploadFiles.value.length === 0) return
   
   uploading.value = true
   try {
-    for (const file of selectedFiles.value) {
+    for (const file of selectedUploadFiles.value) {
       const formData = new FormData()
       formData.append('file', file)
       formData.append('path', currentPath.value)
@@ -574,7 +684,7 @@ const uploadFiles = async () => {
     }
     
     showUploadModal.value = false
-    selectedFiles.value = []
+    selectedUploadFiles.value = []
     loadFiles()
     showToast('上传成功')
   } catch (error) {
