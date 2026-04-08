@@ -1,21 +1,21 @@
 <template>
-  <div class="text-center py-12">
-    <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+  <div class="text-center py-8 sm:py-12 px-4">
+    <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
       Axis NAS 管理面板
     </h1>
-    <p class="text-lg text-gray-600 dark:text-gray-300 mb-8">
+    <p class="text-base sm:text-lg text-gray-600 dark:text-gray-300 mb-6 sm:mb-8">
       企业级网络存储管理系统
     </p>
     
     <!-- 版本信息 -->
-    <div class="inline-block bg-indigo-100 dark:bg-indigo-900 rounded-lg px-6 py-3">
-      <p class="text-sm text-indigo-800 dark:text-indigo-200">
+    <div class="inline-block bg-indigo-100 dark:bg-indigo-900 rounded-lg px-4 sm:px-6 py-2 sm:py-3">
+      <p class="text-xs sm:text-sm text-indigo-800 dark:text-indigo-200">
         <span class="font-semibold">版本:</span> v1.0.0
       </p>
-      <p class="text-sm text-indigo-800 dark:text-indigo-200 mt-1">
+      <p class="text-xs sm:text-sm text-indigo-800 dark:text-indigo-200 mt-1">
         <span class="font-semibold">API 状态:</span> <span class="text-green-600 dark:text-green-400">● 正常运行</span>
       </p>
-      <p class="text-sm text-indigo-800 dark:text-indigo-200 mt-1">
+      <p class="text-xs sm:text-sm text-indigo-800 dark:text-indigo-200 mt-1">
         <span class="font-semibold">Build:</span> 2026.03.28
       </p>
     </div>
@@ -52,49 +52,49 @@
     </div>
 
     <!-- 功能特性 -->
-    <div class="mt-16 text-left max-w-4xl mx-auto">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">核心功能</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="flex items-start space-x-3">
-          <span class="text-green-500">✓</span>
+    <div class="mt-12 sm:mt-16 text-left max-w-4xl mx-auto px-4 sm:px-0">
+      <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6 text-center">核心功能</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <div class="flex items-start space-x-2 sm:space-x-3">
+          <span class="text-green-500 text-sm sm:text-base">✓</span>
           <div>
-            <h4 class="font-medium text-gray-900 dark:text-white">文件管理</h4>
-            <p class="text-sm text-gray-500 dark:text-gray-400">上传、下载、分享、权限管理</p>
+            <h4 class="font-medium text-sm sm:text-base text-gray-900 dark:text-white">文件管理</h4>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">上传、下载、分享、权限管理</p>
           </div>
         </div>
-        <div class="flex items-start space-x-3">
-          <span class="text-green-500">✓</span>
+        <div class="flex items-start space-x-2 sm:space-x-3">
+          <span class="text-green-500 text-sm sm:text-base">✓</span>
           <div>
-            <h4 class="font-medium text-gray-900 dark:text-white">存储管理</h4>
-            <p class="text-sm text-gray-500 dark:text-gray-400">磁盘、存储池、卷管理</p>
+            <h4 class="font-medium text-sm sm:text-base text-gray-900 dark:text-white">存储管理</h4>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">磁盘、存储池、卷管理</p>
           </div>
         </div>
-        <div class="flex items-start space-x-3">
-          <span class="text-green-500">✓</span>
+        <div class="flex items-start space-x-2 sm:space-x-3">
+          <span class="text-green-500 text-sm sm:text-base">✓</span>
           <div>
-            <h4 class="font-medium text-gray-900 dark:text-white">用户管理</h4>
-            <p class="text-sm text-gray-500 dark:text-gray-400">用户、角色、权限配置</p>
+            <h4 class="font-medium text-sm sm:text-base text-gray-900 dark:text-white">用户管理</h4>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">用户、角色、权限配置</p>
           </div>
         </div>
-        <div class="flex items-start space-x-3">
-          <span class="text-green-500">✓</span>
+        <div class="flex items-start space-x-2 sm:space-x-3">
+          <span class="text-green-500 text-sm sm:text-base">✓</span>
           <div>
-            <h4 class="font-medium text-gray-900 dark:text-white">备份管理</h4>
-            <p class="text-sm text-gray-500 dark:text-gray-400">全量/增量备份、计划任务</p>
+            <h4 class="font-medium text-sm sm:text-base text-gray-900 dark:text-white">备份管理</h4>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">全量/增量备份、计划任务</p>
           </div>
         </div>
-        <div class="flex items-start space-x-3">
-          <span class="text-green-500">✓</span>
+        <div class="flex items-start space-x-2 sm:space-x-3">
+          <span class="text-green-500 text-sm sm:text-base">✓</span>
           <div>
-            <h4 class="font-medium text-gray-900 dark:text-white">网络共享</h4>
-            <p class="text-sm text-gray-500 dark:text-gray-400">SMB/NFS/WebDAV/FTP 支持</p>
+            <h4 class="font-medium text-sm sm:text-base text-gray-900 dark:text-white">网络共享</h4>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">SMB/NFS/WebDAV/FTP 支持</p>
           </div>
         </div>
-        <div class="flex items-start space-x-3">
-          <span class="text-green-500">✓</span>
+        <div class="flex items-start space-x-2 sm:space-x-3">
+          <span class="text-green-500 text-sm sm:text-base">✓</span>
           <div>
-            <h4 class="font-medium text-gray-900 dark:text-white">系统监控</h4>
-            <p class="text-sm text-gray-500 dark:text-gray-400">资源使用、日志、告警</p>
+            <h4 class="font-medium text-sm sm:text-base text-gray-900 dark:text-white">系统监控</h4>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">资源使用、日志、告警</p>
           </div>
         </div>
       </div>
