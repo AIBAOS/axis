@@ -1,6 +1,6 @@
 # WebUI 开发进度
 
-**更新时间：** 2026-04-09 01:30 UTC
+**更新时间：** 2026-04-09 01:45 UTC
 
 ---
 
@@ -16,6 +16,7 @@
 | SystemSettings | `/settings` | ✅ | 完成 |
 | **NetworkSettings** | `/settings/network` | ✅ | **完成** |
 | **Printers** | `/printers` | ✅ | **完成** |
+| **Backups** | `/backups` | ✅ | **完成** |
 
 ---
 
