@@ -7,6 +7,7 @@ import Storage from '../views/Storage.vue'
 import Printers from '../views/Printers.vue'
 import Backups from '../views/backups/BackupList.vue'
 import NetworkManagement from '../views/NetworkManagement.vue'
+import ShareManagement from '../views/ShareManagement.vue'
 
 const routes = [
   {
@@ -53,6 +54,12 @@ const routes = [
     path: '/network',
     name: 'NetworkManagement',
     component: NetworkManagement,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/shares',
+    name: 'ShareManagement',
+    component: ShareManagement,
     meta: { requiresAuth: true },
   },
 ]
