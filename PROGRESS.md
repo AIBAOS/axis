@@ -1,15 +1,15 @@
 # Axis 项目进度追踪
 
-> 最后更新：2026-04-09 10:00 UTC
+> 最后更新：2026-04-09 13:45 UTC
 
 ## 📌 当前状态
 
 | 项目 | 状态 |
 |------|:----:|
 | 最新 commit | [待提交] |
-| 提交时间 | 2026-04-09 10:00 UTC |
-| 当前阶段 | CONTAINER-2 Bug 修复 |
-| 状态 | ✅ 已完成（已在 CONTAINER-1 修复时一并实现） |
+| 提交时间 | 2026-04-09 13:45 UTC |
+| 当前阶段 | CONTAINER-3 Bug 修复 |
+| 状态 | ✅ 已完成 |
 | 阻塞项 | 无 |
 
 ## 📋 测试记录
@@ -129,7 +129,7 @@
 - **发现 Bug**: 3（CONTAINER-1 前端未实现 API 调用/CONTAINER-2 缺少错误处理/CONTAINER-3 缺少加载状态）
 - **CONTAINER-1**: ✅ 已修复（添加 axios API 调用：fetchContainers/createContainer/toggleContainer/deleteContainer）
 - **CONTAINER-2**: ✅ 已修复（所有 API 调用添加 try-catch + toast.error 错误处理）
-- **CONTAINER-3**: 📝 待修复（缺少加载状态）
+- **CONTAINER-3**: ✅ 已修复（列表加载/创建中/操作中显示 loading 动画，操作时禁用按钮）
 - **严重 Bug**: 0
 - **阻塞 Bug**: 0
 - **系统状态**: 🟡 可用（建议修复后生产）

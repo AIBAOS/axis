@@ -7,12 +7,17 @@
       </h1>
       <button
         @click="showCreateModal = true"
-        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        :disabled="creating || loading"
+        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg v-if="creating" class="animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <svg v-else class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
         </svg>
-        创建容器
+        {{ creating ? '创建中...' : '创建容器' }}
       </button>
     </div>
 
@@ -27,8 +32,17 @@
         <div class="col-span-2 text-right">操作</div>
       </div>
 
+      <!-- 加载状态 -->
+      <div v-if="loading" class="px-6 py-12 text-center">
+        <svg class="animate-spin h-8 w-8 text-indigo-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p class="text-sm text-gray-500 dark:text-gray-400">加载中...</p>
+      </div>
+
       <!-- 空状态 -->
-      <div v-if="containers.length === 0" class="px-6 py-12 text-center">
+      <div v-else-if="containers.length === 0" class="px-6 py-12 text-center">
         <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path>
         </svg>
@@ -66,7 +80,8 @@
           <div class="col-span-2 flex justify-end space-x-2">
             <button
               @click="viewConfig(container)"
-              class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+              :disabled="actionLoading[container.id]"
+              class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed"
               title="配置"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,17 +91,23 @@
             </button>
             <button
               @click="toggleContainer(container)"
-              class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+              :disabled="actionLoading[container.id]"
+              class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed"
               :title="container.status === 'running' ? '停止' : '启动'"
             >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg v-if="actionLoading[container.id]" class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path v-if="container.status === 'running'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m0-6l4 4m-4-4l-4 4m8 0l-4-4 4 4"></path>
                 <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
               </svg>
             </button>
             <button
               @click="deleteContainer(container)"
-              class="text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+              :disabled="actionLoading[container.id]"
+              class="text-gray-400 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
               title="删除"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -218,9 +239,14 @@
           </button>
           <button
             @click="createContainer"
-            class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+            :disabled="creating"
+            class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            创建
+            <svg v-if="creating" class="animate-spin w-4 h-4 mr-2 inline" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ creating ? '创建中...' : '创建' }}
           </button>
         </div>
       </div>
@@ -332,10 +358,12 @@ const toast = useToast()
 
 const containers = ref([])
 const loading = ref(false)
+const actionLoading = ref({}) // 跟踪每个容器的操作状态 { [containerId]: boolean }
 
 const showCreateModal = ref(false)
 const showConfigModal = ref(false)
 const selectedContainer = ref(null)
+const creating = ref(false) // 创建中状态
 
 const formData = ref({
   name: '',
@@ -405,6 +433,7 @@ const createContainer = async () => {
     return
   }
 
+  creating.value = true
   try {
     const payload = {
       name: formData.value.name,
@@ -421,6 +450,8 @@ const createContainer = async () => {
   } catch (error) {
     console.error('Failed to create container:', error)
     toast.error('创建失败：' + (error.response?.data?.error || '未知错误'))
+  } finally {
+    creating.value = false
   }
 }
 
@@ -435,6 +466,7 @@ const closeConfigModal = () => {
 }
 
 const toggleContainer = async (container) => {
+  actionLoading.value[container.id] = true
   try {
     const action = container.status === 'running' ? 'stop' : 'start'
     await axios.post(`/api/v1/containers/${container.id}/${action}`)
@@ -443,12 +475,15 @@ const toggleContainer = async (container) => {
   } catch (error) {
     console.error('Failed to toggle container:', error)
     toast.error('操作失败：' + (error.response?.data?.error || '未知错误'))
+  } finally {
+    actionLoading.value[container.id] = false
   }
 }
 
 const deleteContainer = async (container) => {
   if (!confirm(`确定要删除容器 "${container.name}" 吗？`)) return
   
+  actionLoading.value[container.id] = true
   try {
     await axios.delete(`/api/v1/containers/${container.id}`)
     toast.success('容器已删除')
@@ -456,6 +491,8 @@ const deleteContainer = async (container) => {
   } catch (error) {
     console.error('Failed to delete container:', error)
     toast.error('删除失败：' + (error.response?.data?.error || '未知错误'))
+  } finally {
+    actionLoading.value[container.id] = false
   }
 }
 
