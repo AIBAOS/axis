@@ -325,15 +325,13 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import axios from 'axios'
 import { useToast } from '../composables/useToast'
 
 const toast = useToast()
 
-const containers = ref([
-  { id: 1, name: 'nginx-web', image: 'nginx:latest', status: 'running', network: 'bridge', env: [{ key: 'TZ', value: 'Asia/Shanghai' }], volumes: [{ host: '/data/nginx', container: '/etc/nginx' }] },
-  { id: 2, name: 'mysql-db', image: 'mysql:8', status: 'stopped', network: 'bridge', env: [{ key: 'MYSQL_ROOT_PASSWORD', value: 'password' }], volumes: [{ host: '/data/mysql', container: '/var/lib/mysql' }] },
-  { id: 3, name: 'redis-cache', image: 'redis:latest', status: 'running', network: 'host', env: [], volumes: [] }
-])
+const containers = ref([])
+const loading = ref(false)
 
 const showCreateModal = ref(false)
 const showConfigModal = ref(false)
@@ -357,6 +355,21 @@ const statusLabels = {
   running: '运行中',
   stopped: '已停止',
   paused: '已暂停'
+}
+
+// 获取容器列表
+const fetchContainers = async () => {
+  loading.value = true
+  try {
+    const response = await axios.get('/api/v1/containers')
+    containers.value = response.data.data || []
+  } catch (error) {
+    console.error('Failed to fetch containers:', error)
+    toast.error('加载容器列表失败：' + (error.response?.data?.error || '未知错误'))
+    containers.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
 const addEnv = () => {
@@ -386,20 +399,29 @@ const closeCreateModal = () => {
   }
 }
 
-const createContainer = () => {
+const createContainer = async () => {
   if (!formData.value.name || !formData.value.image) {
     toast.error('请填写必填项')
     return
   }
 
-  containers.value.push({
-    id: Date.now(),
-    ...formData.value,
-    status: 'stopped'
-  })
+  try {
+    const payload = {
+      name: formData.value.name,
+      image: formData.value.image,
+      network: formData.value.network,
+      env: formData.value.env.filter(e => e.key && e.value),
+      volumes: formData.value.volumes.filter(v => v.host && v.container)
+    }
 
-  toast.success('容器已创建')
-  closeCreateModal()
+    await axios.post('/api/v1/containers', payload)
+    toast.success('容器已创建')
+    closeCreateModal()
+    fetchContainers()
+  } catch (error) {
+    console.error('Failed to create container:', error)
+    toast.error('创建失败：' + (error.response?.data?.error || '未知错误'))
+  }
 }
 
 const viewConfig = (container) => {
@@ -412,19 +434,32 @@ const closeConfigModal = () => {
   selectedContainer.value = null
 }
 
-const toggleContainer = (container) => {
-  container.status = container.status === 'running' ? 'stopped' : 'running'
-  toast.success(`容器已${container.status === 'running' ? '启动' : '停止'}`)
+const toggleContainer = async (container) => {
+  try {
+    const action = container.status === 'running' ? 'stop' : 'start'
+    await axios.post(`/api/v1/containers/${container.id}/${action}`)
+    toast.success(`容器已${container.status === 'running' ? '停止' : '启动'}`)
+    fetchContainers()
+  } catch (error) {
+    console.error('Failed to toggle container:', error)
+    toast.error('操作失败：' + (error.response?.data?.error || '未知错误'))
+  }
 }
 
-const deleteContainer = (container) => {
+const deleteContainer = async (container) => {
   if (!confirm(`确定要删除容器 "${container.name}" 吗？`)) return
   
-  containers.value = containers.value.filter(c => c.id !== container.id)
-  toast.success('容器已删除')
+  try {
+    await axios.delete(`/api/v1/containers/${container.id}`)
+    toast.success('容器已删除')
+    fetchContainers()
+  } catch (error) {
+    console.error('Failed to delete container:', error)
+    toast.error('删除失败：' + (error.response?.data?.error || '未知错误'))
+  }
 }
 
 onMounted(() => {
-  // 加载容器列表
+  fetchContainers()
 })
 </script>
