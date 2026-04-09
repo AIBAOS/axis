@@ -4,8 +4,8 @@ import Login from '../views/Login.vue'
 import Dashboard from '../views/Dashboard.vue'
 import Files from '../views/Files.vue'
 import Storage from '../views/Storage.vue'
-import PrinterList from '../views/printers/PrinterList.vue'
-import BackupList from '../views/backups/BackupList.vue'
+import Printers from '../views/Printers.vue'
+import Backups from '../views/backups/BackupList.vue'
 import NetworkSettings from '../views/NetworkSettings.vue'
 
 const routes = [
