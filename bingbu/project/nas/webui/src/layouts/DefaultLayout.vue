@@ -19,6 +19,9 @@
             <router-link to="/storage" class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">
               存储管理
             </router-link>
+            <router-link to="/printers" class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">
+              打印机
+            </router-link>
             <router-link to="/users" class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">
               用户管理
             </router-link>
@@ -68,6 +71,9 @@
         </router-link>
         <router-link to="/storage" class="block text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400" @click="showMobileMenu = false">
           存储管理
+        </router-link>
+        <router-link to="/printers" class="block text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400" @click="showMobileMenu = false">
+          打印机
         </router-link>
         <router-link to="/users" class="block text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400" @click="showMobileMenu = false">
           用户管理
