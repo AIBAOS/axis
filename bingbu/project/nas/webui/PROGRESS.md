@@ -1,6 +1,6 @@
 # WebUI 开发进度
 
-**更新时间：** 2026-04-08 23:45 UTC
+**更新时间：** 2026-04-09 00:40 UTC
 
 ---
 
@@ -28,16 +28,20 @@
 - ✅ SystemSettings.vue - 标题栏响应式
 - ✅ NetworkSettings.vue - 完整响应式
 
-### 交互优化
-- ✅ 删除确认对话框（单文件/批量）
-- ✅ Toast 通知系统
-- ✅ 加载状态显示
-- ✅ 表单验证
+### 通用组件
+- ✅ Toast.vue - 统一通知组件（success/error/warning/info）
+- ✅ LoadingSpinner.vue - 加载动画组件（sm/md/lg 尺寸）
+- ✅ SkeletonLoader.vue - 骨架屏组件
+- ✅ FormInput.vue - 表单输入组件（带验证提示）
+- ✅ PageTransition.vue - 页面过渡动画组件
+- ✅ ConfirmDialog.vue - 确认对话框组件
+- ✅ ProgressBar.vue - 进度条组件
 
-### 新增功能
-- ✅ 网络配置页面（DHCP/静态 IP 切换）
-- ✅ IP 格式验证
-- ✅ 网络信息显示
+### 交互优化
+- ✅ 删除确认对话框
+- ✅ 加载状态显示
+- ✅ 表单验证提示
+- ✅ 页面过渡动画
 
 ---
 
@@ -47,39 +51,47 @@
 ✅ pnpm build → 0 errors 0 warnings
 
 dist/index.html                   0.45 kB │ gzip:  0.29 kB
-dist/assets/index-*.css          31.92 kB │ gzip:  6.35 kB
+dist/assets/index-*.css          36.17 kB │ gzip:  7.01 kB
 dist/assets/index-*.js          194.19 kB │ gzip: 63.37 kB
 ```
 
 ---
 
-## 待推送 Commit
+## Git 推送状态
 
-| Hash | 内容 |
-|------|------|
-| `300b526` | 实现网络配置页面 |
-| `55c0235` | Home 页面响应式优化 |
-| `45af051` | Dashboard/SystemSettings 响应式优化 |
-| `c69ad38` | 登录页面响应式优化 |
-| `8378406` | 文件管理页面响应式优化 |
-| `729cd0e` | 文件管理页面添加搜索功能 |
-| `db1f294` | 文件管理页面添加批量选择功能 |
-| `cb93a1d` | 文件管理页面 UX 优化（第一轮） |
-| `623ee3e` | 文件列表页添加排序功能 |
+**状态：** ⏳ 等待网络恢复
 
-**总计：** 9 个 commit 待推送
+**待推送 commit：** 52 个
+
+**最新 10 个：**
+```
+5addb5c feat(webui): 添加 WebUI 通用组件
+0b3cbea docs: 更新 WebUI 开发进度
+51bd22d feat(webui): 实现网络配置页面
+d3a1cdf feat(webui): Home 页面响应式优化
+e8763b0 feat(webui): Dashboard/SystemSettings 响应式优化
+61f2cd0 feat(webui): 登录页面响应式优化
+9f3e90c feat(webui): 文件管理页面响应式优化
+8ce794f feat(webui): 文件管理页面添加搜索功能
+fd89885 feat(webui): 文件管理页面添加批量选择功能
+f99af1c feat(webui): 文件管理页面 UX 优化（第一轮）
+```
+
+**问题：** GitHub 连接不稳定，推送超时
+
+**解决方案：**
+1. 等待网络恢复
+2. 或分批推送（每批 10-15 个 commit）
 
 ---
 
-## 网络状态
+## 下一步计划
 
-⚠️ **推送超时**（30+ 次尝试）
-
-- GitHub 可达（curl 返回 301）
-- git push 持续超时
-- 等待网络恢复后批量推送
+1. ⏳ 等待网络恢复后推送
+2. 🔨 继续 WebUI 页面开发
+3. 📝 完善组件文档
 
 ---
 
 **兵部尚书 签发**
-2026-04-08 23:45 UTC
+2026-04-09 00:40 UTC
