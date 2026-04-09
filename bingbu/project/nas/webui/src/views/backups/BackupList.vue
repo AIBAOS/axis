@@ -120,6 +120,19 @@
             <option value="failed">失败</option>
           </select>
         </div>
+
+        <!-- 排序 -->
+        <div>
+          <select
+            v-model="sortOrder"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="newest">最新优先</option>
+            <option value="oldest">最早优先</option>
+            <option value="size_desc">大小降序</option>
+            <option value="size_asc">大小升序</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -156,7 +169,7 @@
             </tr>
           </thead>
           <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            <tr v-for="backup in filteredBackups" :key="backup.id" class="hover:bg-gray-50 dark:hover:bg-gray-700">
+            <tr v-for="backup in paginatedBackups" :key="backup.id" class="hover:bg-gray-50 dark:hover:bg-gray-700">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm font-medium text-gray-900 dark:text-white">{{ backup.name }}</div>
                 <div class="text-sm text-gray-500 dark:text-gray-400">{{ backup.description }}</div>
@@ -195,6 +208,98 @@
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- 分页 -->
+    <div v-if="totalPages > 1" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      <div class="flex items-center justify-between">
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+          显示 {{ (currentPage - 1) * pageSize + 1 }} - {{ Math.min(currentPage * pageSize, filteredBackups.length) }} 条，共 {{ filteredBackups.length }} 条
+        </div>
+        <div class="flex space-x-2">
+          <button
+            @click="currentPage = 1"
+            :disabled="currentPage === 1"
+            class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            首页
+          </button>
+          <button
+            @click="currentPage--"
+            :disabled="currentPage === 1"
+            class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            上一页
+          </button>
+          <span class="px-3 py-1 text-sm">
+            {{ currentPage }} / {{ totalPages }}
+          </span>
+          <button
+            @click="currentPage++"
+            :disabled="currentPage === totalPages"
+            class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            下一页
+          </button>
+          <button
+            @click="currentPage = totalPages"
+            :disabled="currentPage === totalPages"
+            class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            末页
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 恢复备份模态框 -->
+    <div v-if="showRestoreModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white">恢复备份</h3>
+        </div>
+        <div class="px-6 py-4">
+          <div class="mb-4">
+            <p class="text-sm text-gray-700 dark:text-gray-300 mb-2">
+              确定要恢复备份 <span class="font-medium">{{ restoreBackup?.name }}</span> 吗？
+            </p>
+            <div class="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-md">
+              <p class="text-xs text-yellow-800 dark:text-yellow-400">
+                ⚠️ 警告：恢复备份将覆盖当前系统数据，此操作不可逆。
+              </p>
+            </div>
+          </div>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">备份类型：</span>
+              <span class="text-gray-900 dark:text-white">{{ typeLabels[restoreBackup?.type || ''] }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">创建时间：</span>
+              <span class="text-gray-900 dark:text-white">{{ restoreBackup?.createdAt }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">备份大小：</span>
+              <span class="text-gray-900 dark:text-white">{{ restoreBackup?.size }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+          <button
+            @click="closeRestoreModal"
+            class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            取消
+          </button>
+          <button
+            @click="submitRestore"
+            :disabled="restoring"
+            class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {{ restoring ? '恢复中...' : '确认恢复' }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -296,9 +401,19 @@ const backups = ref([])
 const searchQuery = ref('')
 const typeFilter = ref('')
 const statusFilter = ref('')
+const sortOrder = ref('newest')
+
+// 分页
+const currentPage = ref(1)
+const pageSize = ref(10)
 
 const showDeleteConfirm = ref(false)
 const backupToDelete = ref(null)
+
+// 恢复备份
+const showRestoreModal = ref(false)
+const restoring = ref(false)
+const restoreBackup = ref(null)
 
 const stats = ref({
   total: 0,
@@ -329,14 +444,44 @@ const statusLabels = {
   failed: '失败'
 }
 
-const filteredBackups = computed(() => {
-  return backups.value.filter(backup => {
+const filteredAndSortedBackups = computed(() => {
+  let result = [...backups.value]
+  
+  // 筛选
+  result = result.filter(backup => {
     const matchSearch = backup.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
                        backup.description.toLowerCase().includes(searchQuery.value.toLowerCase())
     const matchType = !typeFilter.value || backup.type === typeFilter.value
     const matchStatus = !statusFilter.value || backup.status === statusFilter.value
     return matchSearch && matchType && matchStatus
   })
+  
+  // 排序
+  result.sort((a, b) => {
+    switch (sortOrder.value) {
+      case 'oldest':
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      case 'size_desc':
+        return (parseFloat(b.size) || 0) - (parseFloat(a.size) || 0)
+      case 'size_asc':
+        return (parseFloat(a.size) || 0) - (parseFloat(b.size) || 0)
+      case 'newest':
+      default:
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    }
+  })
+  
+  return result
+})
+
+const totalPages = computed(() => {
+  return Math.ceil(filteredAndSortedBackups.value.length / pageSize.value)
+})
+
+const paginatedBackups = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return filteredAndSortedBackups.value.slice(start, end)
 })
 
 const deleteMessage = computed(() => {
@@ -506,7 +651,42 @@ const submitCreate = async () => {
 const handleCreate = showCreateModalFunc
 
 const handleRestore = (backup) => {
-  toast.info(`恢复 "${backup.name}" 功能待实现`)
+  restoreBackup.value = backup
+  showRestoreModal.value = true
+}
+
+const closeRestoreModal = () => {
+  showRestoreModal.value = false
+  restoreBackup.value = null
+}
+
+const submitRestore = async () => {
+  if (!restoreBackup.value) return
+  
+  restoring.value = true
+  try {
+    // TODO: 调用 API 恢复备份
+    // await apiClient.post(`/api/v1/backups/${restoreBackup.value.id}/restore`)
+    
+    // 模拟 API 调用
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    
+    // 更新备份状态
+    const backup = backups.value.find(b => b.id === restoreBackup.value?.id)
+    if (backup) {
+      backup.status = 'processing'
+    }
+    
+    toast.success('备份恢复任务已启动')
+    closeRestoreModal()
+    
+    // 更新统计数据
+    stats.value.processing = backups.value.filter(b => b.status === 'processing').length
+  } catch (error) {
+    toast.error('恢复备份失败')
+  } finally {
+    restoring.value = false
+  }
 }
 
 const handleDelete = (backup) => {
