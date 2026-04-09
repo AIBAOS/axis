@@ -4,7 +4,7 @@ import Login from '../views/Login.vue'
 import Dashboard from '../views/Dashboard.vue'
 import Files from '../views/Files.vue'
 import Storage from '../views/Storage.vue'
-import Printers from '../views/Printers.vue'
+import PrinterList from '../views/printers/PrinterList.vue'
 import NetworkSettings from '../views/NetworkSettings.vue'
 
 const routes = [
@@ -39,7 +39,7 @@ const routes = [
   {
     path: '/printers',
     name: 'Printers',
-    component: Printers,
+    component: PrinterList,
     meta: { requiresAuth: true },
   },
   {
