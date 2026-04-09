@@ -198,6 +198,76 @@
       </div>
     </div>
 
+    <!-- 创建备份模态框 -->
+    <div v-if="showCreateModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white">创建备份</h3>
+        </div>
+        <div class="px-6 py-4 space-y-4">
+          <!-- 备份名称 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              备份名称 <span class="text-red-500">*</span>
+            </label>
+            <input
+              v-model="createFormData.name"
+              type="text"
+              placeholder="例如：系统备份 2026-04-09"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              :class="{ 'border-red-500': createFormErrors.name }"
+            />
+            <p v-if="createFormErrors.name" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ createFormErrors.name }}</p>
+          </div>
+
+          <!-- 备份类型 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              备份类型 <span class="text-red-500">*</span>
+            </label>
+            <select
+              v-model="createFormData.type"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              :class="{ 'border-red-500': createFormErrors.type }"
+            >
+              <option value="">请选择备份类型</option>
+              <option value="full">全量备份</option>
+              <option value="incremental">增量备份</option>
+            </select>
+            <p v-if="createFormErrors.type" class="mt-1 text-sm text-red-600 dark:text-red-400">{{ createFormErrors.type }}</p>
+          </div>
+
+          <!-- 描述 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              描述
+            </label>
+            <textarea
+              v-model="createFormData.description"
+              rows="3"
+              placeholder="例如：每日系统备份"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            ></textarea>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+          <button
+            @click="closeCreateModal"
+            class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            取消
+          </button>
+          <button
+            @click="submitCreate"
+            :disabled="creating"
+            class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {{ creating ? '创建中...' : '创建' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 删除确认对话框 -->
     <ConfirmDialog
       v-if="showDeleteConfirm"
@@ -343,9 +413,97 @@ const loadBackups = async () => {
   }
 }
 
-const handleCreate = () => {
-  toast.info('创建备份功能待实现')
+// 创建备份相关
+const showCreateModal = ref(false)
+const creating = ref(false)
+const createFormData = ref({
+  name: '',
+  type: '',
+  description: ''
+})
+const createFormErrors = ref({})
+
+const showCreateModalFunc = () => {
+  showCreateModal.value = true
+  createFormData.value = {
+    name: '',
+    type: '',
+    description: ''
+  }
+  createFormErrors.value = {}
 }
+
+const closeCreateModal = () => {
+  showCreateModal.value = false
+  createFormData.value = {
+    name: '',
+    type: '',
+    description: ''
+  }
+  createFormErrors.value = {}
+}
+
+const validateCreateForm = () => {
+  createFormErrors.value = {}
+  let isValid = true
+
+  if (!createFormData.value.name.trim()) {
+    createFormErrors.value.name = '请输入备份名称'
+    isValid = false
+  }
+
+  if (!createFormData.value.type) {
+    createFormErrors.value.type = '请选择备份类型'
+    isValid = false
+  }
+
+  return isValid
+}
+
+const submitCreate = async () => {
+  if (!validateCreateForm()) return
+
+  creating.value = true
+  try {
+    // TODO: 调用 API 创建备份
+    // const response = await apiClient.post('/api/v1/backups', createFormData.value)
+    
+    // 模拟 API 调用
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    // 添加新备份到列表
+    const newBackup = {
+      id: Date.now(),
+      name: createFormData.value.name,
+      description: createFormData.value.description || '手动创建备份',
+      type: createFormData.value.type,
+      status: 'processing',
+      size: '-',
+      createdAt: new Date().toLocaleString('zh-CN', { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      })
+    }
+    
+    backups.value.unshift(newBackup)
+    
+    // 更新统计数据
+    stats.value.total = backups.value.length
+    stats.value.processing = backups.value.filter(b => b.status === 'processing').length
+    
+    toast.success('备份任务已创建')
+    closeCreateModal()
+  } catch (error) {
+    toast.error('创建备份失败')
+  } finally {
+    creating.value = false
+  }
+}
+
+const handleCreate = showCreateModalFunc
 
 const handleRestore = (backup) => {
   toast.info(`恢复 "${backup.name}" 功能待实现`)
