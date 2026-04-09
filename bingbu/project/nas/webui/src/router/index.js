@@ -6,7 +6,7 @@ import Files from '../views/Files.vue'
 import Storage from '../views/Storage.vue'
 import Printers from '../views/Printers.vue'
 import Backups from '../views/backups/BackupList.vue'
-import NetworkSettings from '../views/NetworkSettings.vue'
+import NetworkManagement from '../views/NetworkManagement.vue'
 
 const routes = [
   {
@@ -50,9 +50,9 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
-    path: '/settings/network',
-    name: 'NetworkSettings',
-    component: NetworkSettings,
+    path: '/network',
+    name: 'NetworkManagement',
+    component: NetworkManagement,
     meta: { requiresAuth: true },
   },
 ]
