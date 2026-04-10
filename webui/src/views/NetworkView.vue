@@ -149,32 +149,32 @@
 
       <!-- 端口管理 -->
       <div v-else-if="currentTab === 'ports'" class="space-y-4">
-        <div class="flex justify-between items-center">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <h2 class="text-lg font-semibold">服务端口映射</h2>
           <button @click="showPortModal = true" class="btn-primary text-sm">添加端口</button>
         </div>
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-          <table class="w-full">
+        <div class="bg-white rounded-lg shadow overflow-hidden overflow-x-auto">
+          <table class="w-full min-w-[600px]">
             <thead class="bg-gray-50 border-b">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">服务</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">内部端口</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">外部端口</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">协议</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">操作</th>
+                <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">服务</th>
+                <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">内部端口</th>
+                <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">外部端口</th>
+                <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">协议</th>
+                <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
+                <th class="px-3 sm:px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">操作</th>
               </tr>
             </thead>
             <tbody class="divide-y">
               <tr v-for="port in servicePorts" :key="port.id" class="hover:bg-gray-50">
-                <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ port.name }}</td>
-                <td class="px-4 py-3 text-sm text-gray-600 font-mono">{{ port.internal_port }}</td>
-                <td class="px-4 py-3 text-sm text-gray-600 font-mono">{{ port.external_port }}</td>
-                <td class="px-4 py-3 text-sm text-gray-600 uppercase">{{ port.protocol }}</td>
-                <td class="px-4 py-3">
+                <td class="px-3 sm:px-4 py-3 text-sm font-medium text-gray-900 truncate max-w-[150px]">{{ port.name }}</td>
+                <td class="px-3 sm:px-4 py-3 text-sm text-gray-600 font-mono">{{ port.internal_port }}</td>
+                <td class="px-3 sm:px-4 py-3 text-sm text-gray-600 font-mono">{{ port.external_port }}</td>
+                <td class="px-3 sm:px-4 py-3 text-sm text-gray-600 uppercase">{{ port.protocol }}</td>
+                <td class="px-3 sm:px-4 py-3">
                   <span :class="port.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'" class="px-2 py-1 text-xs rounded-full">{{ port.enabled ? '已启用' : '已禁用' }}</span>
                 </td>
-                <td class="px-4 py-3 text-right">
+                <td class="px-3 sm:px-4 py-3 text-right whitespace-nowrap">
                   <button @click="togglePort(port)" class="text-sm text-primary-600 hover:text-primary-700 mr-2">{{ port.enabled ? '禁用' : '启用' }}</button>
                   <button @click="deletePort(port)" class="text-sm text-red-600 hover:text-red-700">删除</button>
                 </td>
@@ -188,30 +188,30 @@
       <div v-else-if="currentTab === 'firewall'" class="space-y-6">
         <!-- 入站规则 -->
         <div>
-          <div class="flex justify-between items-center mb-4">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
             <h2 class="text-lg font-semibold">入站规则</h2>
             <button @click="showFirewallModal = true; firewallRule.direction = 'inbound'" class="btn-primary text-sm">添加规则</button>
           </div>
-          <div class="bg-white rounded-lg shadow overflow-hidden">
-            <table class="w-full text-sm">
+          <div class="bg-white rounded-lg shadow overflow-hidden overflow-x-auto">
+            <table class="w-full text-sm min-w-[500px]">
               <thead class="bg-gray-50 border-b">
                 <tr>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">端口</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">协议</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">来源</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">动作</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500">操作</th>
+                  <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">端口</th>
+                  <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">协议</th>
+                  <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">来源</th>
+                  <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">动作</th>
+                  <th class="px-3 sm:px-4 py-3 text-right text-xs font-medium text-gray-500">操作</th>
                 </tr>
               </thead>
               <tbody class="divide-y">
                 <tr v-for="rule in inboundRules" :key="rule.id" class="hover:bg-gray-50">
-                  <td class="px-4 py-3 font-mono">{{ rule.port }}</td>
-                  <td class="px-4 py-3 uppercase">{{ rule.protocol }}</td>
-                  <td class="px-4 py-3">{{ rule.source || '任意' }}</td>
-                  <td class="px-4 py-3">
+                  <td class="px-3 sm:px-4 py-3 font-mono">{{ rule.port }}</td>
+                  <td class="px-3 sm:px-4 py-3 uppercase">{{ rule.protocol }}</td>
+                  <td class="px-3 sm:px-4 py-3 truncate max-w-[120px]">{{ rule.source || '任意' }}</td>
+                  <td class="px-3 sm:px-4 py-3">
                     <span :class="rule.action === 'allow' ? 'text-green-600' : 'text-red-600'" class="font-medium">{{ rule.action === 'allow' ? '允许' : '拒绝' }}</span>
                   </td>
-                  <td class="px-4 py-3 text-right">
+                  <td class="px-3 sm:px-4 py-3 text-right">
                     <button @click="deleteFirewallRule(rule)" class="text-red-600 hover:text-red-700">删除</button>
                   </td>
                 </tr>
@@ -222,30 +222,30 @@
 
         <!-- 出站规则 -->
         <div>
-          <div class="flex justify-between items-center mb-4">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
             <h2 class="text-lg font-semibold">出站规则</h2>
             <button @click="showFirewallModal = true; firewallRule.direction = 'outbound'" class="btn-primary text-sm">添加规则</button>
           </div>
-          <div class="bg-white rounded-lg shadow overflow-hidden">
-            <table class="w-full text-sm">
+          <div class="bg-white rounded-lg shadow overflow-hidden overflow-x-auto">
+            <table class="w-full text-sm min-w-[500px]">
               <thead class="bg-gray-50 border-b">
                 <tr>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">端口</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">协议</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">目标</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">动作</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500">操作</th>
+                  <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">端口</th>
+                  <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">协议</th>
+                  <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">目标</th>
+                  <th class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500">动作</th>
+                  <th class="px-3 sm:px-4 py-3 text-right text-xs font-medium text-gray-500">操作</th>
                 </tr>
               </thead>
               <tbody class="divide-y">
                 <tr v-for="rule in outboundRules" :key="rule.id" class="hover:bg-gray-50">
-                  <td class="px-4 py-3 font-mono">{{ rule.port }}</td>
-                  <td class="px-4 py-3 uppercase">{{ rule.protocol }}</td>
-                  <td class="px-4 py-3">{{ rule.destination || '任意' }}</td>
-                  <td class="px-4 py-3">
+                  <td class="px-3 sm:px-4 py-3 font-mono">{{ rule.port }}</td>
+                  <td class="px-3 sm:px-4 py-3 uppercase">{{ rule.protocol }}</td>
+                  <td class="px-3 sm:px-4 py-3 truncate max-w-[120px]">{{ rule.target || '任意' }}</td>
+                  <td class="px-3 sm:px-4 py-3">
                     <span :class="rule.action === 'allow' ? 'text-green-600' : 'text-red-600'" class="font-medium">{{ rule.action === 'allow' ? '允许' : '拒绝' }}</span>
                   </td>
-                  <td class="px-4 py-3 text-right">
+                  <td class="px-3 sm:px-4 py-3 text-right">
                     <button @click="deleteFirewallRule(rule)" class="text-red-600 hover:text-red-700">删除</button>
                   </td>
                 </tr>
