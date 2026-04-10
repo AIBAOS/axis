@@ -2,10 +2,10 @@
   <DefaultLayout>
     <div class="space-y-6">
       <!-- 页面标题 -->
-      <div class="flex justify-between items-center">
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">网络管理</h1>
-          <p class="text-gray-600 mt-1">管理网络接口、DNS 和网关配置</p>
+          <h1 class="text-xl sm:text-2xl font-bold text-gray-900">网络管理</h1>
+          <p class="text-gray-600 mt-1 text-sm sm:text-base">管理网络接口、DNS 和网关配置</p>
         </div>
         <div class="flex items-center space-x-3">
           <button @click="refreshAll" :disabled="loading" class="btn-secondary flex items-center space-x-1 text-sm">
@@ -16,7 +16,7 @@
       </div>
 
       <!-- 网络状态概览 -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <div class="bg-white rounded-lg shadow p-4">
           <div class="flex items-center">
             <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
@@ -64,10 +64,10 @@
       </div>
 
       <!-- 选项卡 -->
-      <div class="border-b border-gray-200">
-        <nav class="-mb-px flex space-x-8">
+      <div class="border-b border-gray-200 overflow-x-auto">
+        <nav class="-mb-px flex space-x-4 sm:space-x-8 min-w-max">
           <button v-for="tab in tabs" :key="tab.id" @click="currentTab = tab.id"
-            :class="[currentTab === tab.id ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700', 'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm']">{{ tab.name }}</button>
+            :class="[currentTab === tab.id ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700', 'whitespace-nowrap py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-sm']">{{ tab.name }}</button>
         </nav>
       </div>
 
@@ -75,7 +75,7 @@
       <div v-if="currentTab === 'interfaces'" class="space-y-4">
         <div v-if="loading" class="flex justify-center py-12"><svg class="animate-spin h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg></div>
         <div v-else-if="interfaces.length === 0" class="text-center py-12 bg-white rounded-lg shadow"><svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.156-3.905 14.06 0M1.394 9.393c5.583-5.587 14.629-5.587 20.212 0" /></svg><p class="mt-4 text-gray-600">暂无网络接口</p></div>
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <NetworkInterfaceCard v-for="iface in interfaces" :key="iface.id" :interface="iface" @edit="openEditModal" @test="testConnection" />
         </div>
       </div>
