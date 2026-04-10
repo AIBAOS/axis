@@ -173,7 +173,7 @@
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
         <h3 class="text-lg font-medium text-gray-900 dark:text-white">存储池</h3>
-        <button class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:text-indigo-300 dark:bg-indigo-900 dark:hover:bg-indigo-800">
+        <button @click="showCreatePoolModal = true" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:text-indigo-300 dark:bg-indigo-900 dark:hover:bg-indigo-800">
           + 新建存储池
         </button>
       </div>
@@ -218,7 +218,7 @@
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
         <h3 class="text-lg font-medium text-gray-900 dark:text-white">存储卷</h3>
-        <button class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:text-indigo-300 dark:bg-indigo-900 dark:hover:bg-indigo-800">
+        <button @click="showCreateVolumeModal = true" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:text-indigo-300 dark:bg-indigo-900 dark:hover:bg-indigo-800">
           + 新建存储卷
         </button>
       </div>
@@ -258,6 +258,174 @@
         <p class="text-sm text-gray-500 dark:text-gray-400">暂无存储卷</p>
       </div>
     </div>
+
+    <!-- 新建存储池模态框 -->
+    <div v-if="showCreatePoolModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 my-8">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white">新建存储池</h3>
+        </div>
+        <div class="px-6 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              存储池名称 <span class="text-red-500">*</span>
+            </label>
+            <input
+              v-model="poolForm.name"
+              @input="validatePoolName"
+              type="text"
+              required
+              :class="poolFormErrors.name ? 'border-red-500' : 'border-gray-300'"
+              class="w-full px-3 py-2 border rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            />
+            <p v-if="poolFormErrors.name" class="mt-1 text-sm text-red-600">{{ poolFormErrors.name }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              RAID 类型
+            </label>
+            <select
+              v-model="poolForm.type"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="basic">Basic</option>
+              <option value="raid0">RAID 0</option>
+              <option value="raid1">RAID 1</option>
+              <option value="raid5">RAID 5</option>
+              <option value="raid10">RAID 10</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              选择磁盘
+            </label>
+            <div class="space-y-2">
+              <div v-for="disk in availableDisks" :key="disk.id" class="flex items-center">
+                <input
+                  v-model="poolForm.disks"
+                  :value="disk.id"
+                  type="checkbox"
+                  class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <label class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                  {{ disk.name }} ({{ disk.capacity }})
+                </label>
+              </div>
+            </div>
+            <p v-if="poolFormErrors.disks" class="mt-1 text-sm text-red-600">{{ poolFormErrors.disks }}</p>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+          <button
+            @click="closeCreatePoolModal"
+            :disabled="creatingPool"
+            class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          >
+            取消
+          </button>
+          <button
+            @click="createStoragePool"
+            :disabled="creatingPool || !isPoolFormValid"
+            class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg v-if="creatingPool" class="animate-spin -ml-1 mr-2 h-4 w-4 inline" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ creatingPool ? '创建中...' : '创建' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新建存储卷模态框 -->
+    <div v-if="showCreateVolumeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 my-8">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white">新建存储卷</h3>
+        </div>
+        <div class="px-6 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              存储卷名称 <span class="text-red-500">*</span>
+            </label>
+            <input
+              v-model="volumeForm.name"
+              @input="validateVolumeName"
+              type="text"
+              required
+              :class="volumeFormErrors.name ? 'border-red-500' : 'border-gray-300'"
+              class="w-full px-3 py-2 border rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            />
+            <p v-if="volumeFormErrors.name" class="mt-1 text-sm text-red-600">{{ volumeFormErrors.name }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              存储池 <span class="text-red-500">*</span>
+            </label>
+            <select
+              v-model="volumeForm.poolId"
+              :class="volumeFormErrors.poolId ? 'border-red-500' : 'border-gray-300'"
+              class="w-full px-3 py-2 border rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="">请选择存储池</option>
+              <option v-for="pool in storagePools" :key="pool.id" :value="pool.id">
+                {{ pool.name }} ({{ pool.capacity }})
+              </option>
+            </select>
+            <p v-if="volumeFormErrors.poolId" class="mt-1 text-sm text-red-600">{{ volumeFormErrors.poolId }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              容量 (GB) <span class="text-red-500">*</span>
+            </label>
+            <input
+              v-model.number="volumeForm.capacity"
+              @input="validateVolumeCapacity"
+              type="number"
+              min="1"
+              required
+              :class="volumeFormErrors.capacity ? 'border-red-500' : 'border-gray-300'"
+              class="w-full px-3 py-2 border rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            />
+            <p v-if="volumeFormErrors.capacity" class="mt-1 text-sm text-red-600">{{ volumeFormErrors.capacity }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              文件系统
+            </label>
+            <select
+              v-model="volumeForm.filesystem"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="ext4">ext4</option>
+              <option value="xfs">XFS</option>
+              <option value="btrfs">Btrfs</option>
+            </select>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+          <button
+            @click="closeCreateVolumeModal"
+            :disabled="creatingVolume"
+            class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          >
+            取消
+          </button>
+          <button
+            @click="createStorageVolume"
+            :disabled="creatingVolume || !isVolumeFormValid"
+            class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg v-if="creatingVolume" class="animate-spin -ml-1 mr-2 h-4 w-4 inline" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ creatingVolume ? '创建中...' : '创建' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -265,10 +433,156 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import apiClient from '../api/client'
+import { useToast } from '../composables/useToast'
 
 const router = useRouter()
+const toast = useToast()
 
 const loading = ref(false)
+
+// 模态框状态
+const showCreatePoolModal = ref(false)
+const showCreateVolumeModal = ref(false)
+const creatingPool = ref(false)
+const creatingVolume = ref(false)
+
+// 存储池表单
+const poolForm = ref({
+  name: '',
+  type: 'basic',
+  disks: []
+})
+
+const poolFormErrors = ref({
+  name: '',
+  disks: ''
+})
+
+// 存储卷表单
+const volumeForm = ref({
+  name: '',
+  poolId: '',
+  capacity: null,
+  filesystem: 'ext4'
+})
+
+const volumeFormErrors = ref({
+  name: '',
+  poolId: '',
+  capacity: ''
+})
+
+// 磁盘名称验证：2-50 字符，禁止特殊字符
+const validatePoolName = () => {
+  const name = poolForm.value.name.trim()
+  
+  if (!name) {
+    poolFormErrors.value.name = '存储池名称不能为空'
+    return false
+  }
+  
+  if (name.length < 2) {
+    poolFormErrors.value.name = '存储池名称至少 2 个字符'
+    return false
+  }
+  
+  if (name.length > 50) {
+    poolFormErrors.value.name = '存储池名称最多 50 个字符'
+    return false
+  }
+  
+  // 只允许字母、数字、下划线和连字符
+  const validPattern = /^[a-zA-Z0-9_-]+$/
+  if (!validPattern.test(name)) {
+    poolFormErrors.value.name = '存储池名称只能包含字母、数字、下划线和连字符'
+    return false
+  }
+  
+  poolFormErrors.value.name = ''
+  return true
+}
+
+// 存储卷名称验证：2-50 字符，禁止特殊字符
+const validateVolumeName = () => {
+  const name = volumeForm.value.name.trim()
+  
+  if (!name) {
+    volumeFormErrors.value.name = '存储卷名称不能为空'
+    return false
+  }
+  
+  if (name.length < 2) {
+    volumeFormErrors.value.name = '存储卷名称至少 2 个字符'
+    return false
+  }
+  
+  if (name.length > 50) {
+    volumeFormErrors.value.name = '存储卷名称最多 50 个字符'
+    return false
+  }
+  
+  // 只允许字母、数字、下划线和连字符
+  const validPattern = /^[a-zA-Z0-9_-]+$/
+  if (!validPattern.test(name)) {
+    volumeFormErrors.value.name = '存储卷名称只能包含字母、数字、下划线和连字符'
+    return false
+  }
+  
+  volumeFormErrors.value.name = ''
+  return true
+}
+
+// 存储卷容量验证
+const validateVolumeCapacity = () => {
+  const capacity = volumeForm.value.capacity
+  
+  if (!capacity || capacity <= 0) {
+    volumeFormErrors.value.capacity = '容量必须大于 0'
+    return false
+  }
+  
+  if (capacity > 1048576) { // 最大 1PB
+    volumeFormErrors.value.capacity = '容量不能超过 1PB'
+    return false
+  }
+  
+  volumeFormErrors.value.capacity = ''
+  return true
+}
+
+// 存储池表单有效性
+const isPoolFormValid = computed(() => {
+  const nameValid = validatePoolName()
+  const disksValid = poolForm.value.disks.length > 0
+  
+  if (!disksValid) {
+    poolFormErrors.value.disks = '请至少选择一块磁盘'
+  } else {
+    poolFormErrors.value.disks = ''
+  }
+  
+  return nameValid && disksValid
+})
+
+// 存储卷表单有效性
+const isVolumeFormValid = computed(() => {
+  const nameValid = validateVolumeName()
+  const poolIdValid = !!volumeForm.value.poolId
+  const capacityValid = validateVolumeCapacity()
+  
+  if (!poolIdValid) {
+    volumeFormErrors.value.poolId = '请选择存储池'
+  } else {
+    volumeFormErrors.value.poolId = ''
+  }
+  
+  return nameValid && poolIdValid && capacityValid
+})
+
+// 可用磁盘列表
+const availableDisks = computed(() => {
+  return disks.value.filter(disk => disk.health === '良好' || disk.health === '健康')
+})
 
 // 存储统计数据
 const storageStats = ref({
@@ -415,6 +729,103 @@ const loadStorageData = async () => {
 // 刷新数据
 const refreshData = () => {
   loadStorageData()
+}
+
+// 关闭存储池创建模态框
+const closeCreatePoolModal = () => {
+  showCreatePoolModal.value = false
+  poolForm.value = {
+    name: '',
+    type: 'basic',
+    disks: []
+  }
+  poolFormErrors.value = {
+    name: '',
+    disks: ''
+  }
+}
+
+// 关闭存储卷创建模态框
+const closeCreateVolumeModal = () => {
+  showCreateVolumeModal.value = false
+  volumeForm.value = {
+    name: '',
+    poolId: '',
+    capacity: null,
+    filesystem: 'ext4'
+  }
+  volumeFormErrors.value = {
+    name: '',
+    poolId: '',
+    capacity: ''
+  }
+}
+
+// 创建存储池
+const createStoragePool = async () => {
+  if (!isPoolFormValid.value) {
+    toast.error('请修正表单错误')
+    return
+  }
+  
+  creatingPool.value = true
+  
+  try {
+    const payload = {
+      name: poolForm.value.name.trim(),
+      type: poolForm.value.type,
+      disk_ids: poolForm.value.disks
+    }
+    
+    const response = await apiClient.post('/storage/pools', payload)
+    
+    if (response.data.success) {
+      toast.success('存储池创建成功')
+      closeCreatePoolModal()
+      loadStorageData()
+    } else {
+      toast.error(response.data.error || '创建失败')
+    }
+  } catch (error) {
+    console.error('Failed to create storage pool:', error)
+    toast.error('创建失败：' + (error.response?.data?.error || '未知错误'))
+  } finally {
+    creatingPool.value = false
+  }
+}
+
+// 创建存储卷
+const createStorageVolume = async () => {
+  if (!isVolumeFormValid.value) {
+    toast.error('请修正表单错误')
+    return
+  }
+  
+  creatingVolume.value = true
+  
+  try {
+    const payload = {
+      name: volumeForm.value.name.trim(),
+      pool_id: volumeForm.value.poolId,
+      capacity: volumeForm.value.capacity * 1024 * 1024 * 1024, // GB 转字节
+      filesystem: volumeForm.value.filesystem
+    }
+    
+    const response = await apiClient.post('/storage/volumes', payload)
+    
+    if (response.data.success) {
+      toast.success('存储卷创建成功')
+      closeCreateVolumeModal()
+      loadStorageData()
+    } else {
+      toast.error(response.data.error || '创建失败')
+    }
+  } catch (error) {
+    console.error('Failed to create storage volume:', error)
+    toast.error('创建失败：' + (error.response?.data?.error || '未知错误'))
+  } finally {
+    creatingVolume.value = false
+  }
 }
 
 // 页面加载时检查登录状态并加载数据
