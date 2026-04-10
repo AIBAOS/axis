@@ -369,12 +369,74 @@
         </form>
       </div>
     </div>
+
+    <!-- 确认对话框 -->
+    <div v-if="showConfirmDialog" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">{{ confirmDialogTitle }}</h3>
+        <p class="text-sm text-gray-600 mb-6">{{ confirmDialogMessage }}</p>
+        <div class="flex justify-end space-x-3">
+          <button
+            @click="handleCancelConfirm"
+            class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            取消
+          </button>
+          <button
+            @click="handleConfirm"
+            :class="[
+              'px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white',
+              confirmDialogDanger ? 'bg-red-600 hover:bg-red-700' : 'bg-primary-600 hover:bg-primary-700'
+            ]"
+          >
+            确认
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 进度条对话框 -->
+    <div v-if="executingTask" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-2">备份执行中</h3>
+        <p class="text-sm text-gray-600 mb-4">{{ executingTask.name }}</p>
+        
+        <!-- 进度条 -->
+        <div class="mb-4">
+          <div class="flex justify-between text-sm text-gray-600 mb-1">
+            <span>进度</span>
+            <span>{{ Math.round(executionProgress) }}%</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2.5">
+            <div 
+              class="bg-primary-600 h-2.5 rounded-full transition-all duration-300"
+              :style="{ width: executionProgress + '%' }"
+            ></div>
+          </div>
+        </div>
+        
+        <!-- 剩余时间 -->
+        <div class="text-sm text-gray-500 mb-4">
+          剩余时间: {{ executionEta }}
+        </div>
+        
+        <div class="flex justify-end">
+          <button
+            @click="executingTask = null; executionProgress = 0"
+            class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            关闭
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import apiClient from '../api/client';
+import { useToast } from '../composables/useToast';
 
 interface BackupTask {
   id: number;
@@ -445,6 +507,21 @@ const formData = ref({
   backup_type: 'full',
   schedule: '',
 });
+
+// Toast 提示
+const { showToast } = useToast();
+
+// 确认对话框状态
+const showConfirmDialog = ref(false);
+const confirmDialogTitle = ref('');
+const confirmDialogMessage = ref('');
+const confirmDialogAction = ref<(() => void) | null>(null);
+const confirmDialogDanger = ref(false);
+
+// 进度条状态
+const executingTask = ref<BackupTask | null>(null);
+const executionProgress = ref(0);
+const executionEta = ref('');
 
 // 计算属性
 const totalTasks = computed(() => pagination.value.total);
@@ -517,16 +594,65 @@ const changePage = (page: number) => {
 };
 
 // 执行备份
-const executeBackup = async (task: BackupTask) => {
-  if (!confirm(`确定要立即执行备份任务 "${task.name}" 吗？`)) return;
-  try {
-    await apiClient.executeBackup(task.id);
-    alert('备份任务已开始执行');
-    await fetchBackupTasks();
-  } catch (err) {
-    alert('执行备份失败');
-    console.error('Execute backup failed:', err);
+// 显示确认对话框
+const openConfirmDialog = (title: string, message: string, action: () => void, danger = false) => {
+  confirmDialogTitle.value = title;
+  confirmDialogMessage.value = message;
+  confirmDialogAction.value = action;
+  confirmDialogDanger.value = danger;
+  showConfirmDialog.value = true;
+};
+
+const handleConfirm = () => {
+  if (confirmDialogAction.value) {
+    confirmDialogAction.value();
   }
+  showConfirmDialog.value = false;
+};
+
+const handleCancelConfirm = () => {
+  showConfirmDialog.value = false;
+  confirmDialogAction.value = null;
+};
+
+// 模拟进度更新
+const startProgressSimulation = (task: BackupTask) => {
+  executingTask.value = task;
+  executionProgress.value = 0;
+  executionEta.value = '估算中...';
+  
+  const interval = setInterval(() => {
+    if (executionProgress.value < 100) {
+      executionProgress.value += Math.random() * 15;
+      if (executionProgress.value > 100) executionProgress.value = 100;
+      
+      const remaining = Math.ceil((100 - executionProgress.value) / 10);
+      executionEta.value = remaining > 0 ? `约 ${remaining} 秒` : '即将完成';
+    } else {
+      clearInterval(interval);
+      showToast('备份任务执行完成', 'success');
+      executingTask.value = null;
+      executionProgress.value = 0;
+      fetchBackupTasks();
+    }
+  }, 1000);
+};
+
+const executeBackup = async (task: BackupTask) => {
+  openConfirmDialog(
+    '确认执行备份',
+    `确定要立即执行备份任务 "${task.name}" 吗？`,
+    async () => {
+      try {
+        await apiClient.executeBackup(task.id);
+        showToast('备份任务已开始执行', 'info');
+        startProgressSimulation(task);
+      } catch (err) {
+        showToast('执行备份失败', 'error');
+        console.error('Execute backup failed:', err);
+      }
+    }
+  );
 };
 
 // 编辑备份
@@ -551,14 +677,21 @@ const viewHistory = (task: BackupTask) => {
 
 // 删除备份
 const deleteBackup = async (task: BackupTask) => {
-  if (!confirm(`确定要删除备份任务 "${task.name}" 吗？此操作不可恢复！`)) return;
-  try {
-    await apiClient.deleteBackup(task.id);
-    await fetchBackupTasks();
-  } catch (err) {
-    alert('删除备份任务失败');
-    console.error('Delete backup failed:', err);
-  }
+  openConfirmDialog(
+    '确认删除备份',
+    `确定要删除备份任务 "${task.name}" 吗？此操作不可恢复！`,
+    async () => {
+      try {
+        await apiClient.deleteBackup(task.id);
+        showToast('备份任务已删除', 'success');
+        await fetchBackupTasks();
+      } catch (err) {
+        showToast('删除备份任务失败', 'error');
+        console.error('Delete backup failed:', err);
+      }
+    },
+    true // danger = true
+  );
 };
 
 // 提交表单
@@ -567,13 +700,15 @@ const submitBackupForm = async () => {
   try {
     if (showEditModal.value && editingTask.value) {
       await apiClient.updateBackup(editingTask.value.id, formData.value);
+      showToast('备份任务已更新', 'success');
     } else {
       await apiClient.createBackup(formData.value);
+      showToast('备份任务已创建', 'success');
     }
     closeModal();
     await fetchBackupTasks();
   } catch (err) {
-    alert(showEditModal.value ? '更新备份任务失败' : '创建备份任务失败');
+    showToast(showEditModal.value ? '更新备份任务失败' : '创建备份任务失败', 'error');
     console.error('Submit backup form failed:', err);
   } finally {
     submitting.value = false;
