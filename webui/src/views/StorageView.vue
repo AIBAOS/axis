@@ -53,7 +53,9 @@
 
       <!-- 磁盘列表 -->
       <template v-if="currentTab === 'disks'">
-        <div v-if="loading" class="flex justify-center py-12"><svg class="animate-spin h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg></div>
+        <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <SkeletonCard v-for="i in 6" :key="i" />
+        </div>
         <div v-else-if="disks.length === 0" class="text-center py-12 bg-white rounded-lg shadow"><svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" /></svg><p class="mt-4 text-gray-600">暂无磁盘</p></div>
         <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <DiskCard v-for="disk in disks" :key="disk.id" :disk="disk" @smart="showSmartDetails" @detail="showDiskDetail" @initialize="initializeDisk" @format="formatDisk" />
@@ -557,6 +559,12 @@ const getTempClass = (t: number) => !t ? 'text-gray-900' : t > 50 ? 'text-red-60
 const getSmartClass = (s: string) => ['healthy', 'good'].includes(s?.toLowerCase()) ? 'bg-green-100 text-green-700' : ['warning', 'caution'].includes(s?.toLowerCase()) ? 'bg-yellow-100 text-yellow-700' : ['failed', 'bad'].includes(s?.toLowerCase()) ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
 const getSmartLabel = (s: string) => ['healthy', 'good'].includes(s?.toLowerCase()) ? '健康' : ['warning', 'caution'].includes(s?.toLowerCase()) ? '警告' : ['failed', 'bad'].includes(s?.toLowerCase()) ? '故障' : '未知'
 const formatPowerOnHours = (h: number) => { if (!h) return '-'; const d = Math.floor(h / 24); return d > 365 ? `${Math.floor(d / 365)} 年 ${d % 365} 天` : d > 0 ? `${d} 天` : `${h} 小时` }
+const getProtocolClass = (p: string) => p === 'smb' ? 'bg-blue-100 text-blue-700' : p === 'nfs' ? 'bg-green-100 text-green-700' : p === 'webdav' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
+
+
+
+onMounted(() => refreshAll())
+</script>)} 年 ${d % 365} 天` : d > 0 ? `${d} 天` : `${h} 小时` }
 const getProtocolClass = (p: string) => p === 'smb' ? 'bg-blue-100 text-blue-700' : p === 'nfs' ? 'bg-green-100 text-green-700' : p === 'webdav' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
 
 
