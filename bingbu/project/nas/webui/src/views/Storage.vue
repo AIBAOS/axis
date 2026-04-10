@@ -392,16 +392,35 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              文件系统
+              文件系统 <span class="text-red-500">*</span>
             </label>
             <select
               v-model="volumeForm.filesystem"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              @change="validateVolumeFilesystem"
+              :class="volumeFormErrors.filesystem ? 'border-red-500' : 'border-gray-300'"
+              class="w-full px-3 py-2 border rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             >
+              <option value="">请选择文件系统</option>
               <option value="ext4">ext4</option>
               <option value="xfs">XFS</option>
               <option value="btrfs">Btrfs</option>
             </select>
+            <p v-if="volumeFormErrors.filesystem" class="mt-1 text-sm text-red-600">{{ volumeFormErrors.filesystem }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              挂载点路径 <span class="text-red-500">*</span>
+            </label>
+            <input
+              v-model="volumeForm.mountPoint"
+              @blur="validateVolumeMountPoint"
+              type="text"
+              required
+              placeholder="/mnt/volume1"
+              :class="volumeFormErrors.mountPoint ? 'border-red-500' : 'border-gray-300'"
+              class="w-full px-3 py-2 border rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            />
+            <p v-if="volumeFormErrors.mountPoint" class="mt-1 text-sm text-red-600">{{ volumeFormErrors.mountPoint }}</p>
           </div>
         </div>
         <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
@@ -463,13 +482,16 @@ const volumeForm = ref({
   name: '',
   poolId: '',
   capacity: null,
-  filesystem: 'ext4'
+  filesystem: '',
+  mountPoint: ''
 })
 
 const volumeFormErrors = ref({
   name: '',
   poolId: '',
-  capacity: ''
+  capacity: '',
+  filesystem: '',
+  mountPoint: ''
 })
 
 // 磁盘名称验证：2-50 字符，禁止特殊字符
@@ -550,6 +572,57 @@ const validateVolumeCapacity = () => {
   return true
 }
 
+// 文件系统验证
+const validateVolumeFilesystem = () => {
+  const filesystem = volumeForm.value.filesystem
+  const validFilesystems = ['ext4', 'xfs', 'btrfs']
+  
+  if (!filesystem) {
+    volumeFormErrors.value.filesystem = '请选择文件系统类型'
+    return false
+  }
+  
+  if (!validFilesystems.includes(filesystem)) {
+    volumeFormErrors.value.filesystem = '文件系统类型无效'
+    return false
+  }
+  
+  volumeFormErrors.value.filesystem = ''
+  return true
+}
+
+// 挂载点路径验证
+const validateVolumeMountPoint = () => {
+  const mountPoint = volumeForm.value.mountPoint.trim()
+  
+  if (!mountPoint) {
+    volumeFormErrors.value.mountPoint = '挂载点路径不能为空'
+    return false
+  }
+  
+  // 必须以 / 开头
+  if (!mountPoint.startsWith('/')) {
+    volumeFormErrors.value.mountPoint = '挂载点路径必须以 / 开头'
+    return false
+  }
+  
+  // 不能包含非法字符
+  const invalidChars = /[<>:"'|]/
+  if (invalidChars.test(mountPoint)) {
+    volumeFormErrors.value.mountPoint = '挂载点路径包含非法字符'
+    return false
+  }
+  
+  // 不能以 /.. 开头
+  if (mountPoint.startsWith('/..')) {
+    volumeFormErrors.value.mountPoint = '挂载点路径不能包含 ..'
+    return false
+  }
+  
+  volumeFormErrors.value.mountPoint = ''
+  return true
+}
+
 // 存储池表单有效性
 const isPoolFormValid = computed(() => {
   const nameValid = validatePoolName()
@@ -569,6 +642,8 @@ const isVolumeFormValid = computed(() => {
   const nameValid = validateVolumeName()
   const poolIdValid = !!volumeForm.value.poolId
   const capacityValid = validateVolumeCapacity()
+  const filesystemValid = validateVolumeFilesystem()
+  const mountPointValid = validateVolumeMountPoint()
   
   if (!poolIdValid) {
     volumeFormErrors.value.poolId = '请选择存储池'
@@ -576,7 +651,7 @@ const isVolumeFormValid = computed(() => {
     volumeFormErrors.value.poolId = ''
   }
   
-  return nameValid && poolIdValid && capacityValid
+  return nameValid && poolIdValid && capacityValid && filesystemValid && mountPointValid
 })
 
 // 可用磁盘列表
@@ -752,12 +827,15 @@ const closeCreateVolumeModal = () => {
     name: '',
     poolId: '',
     capacity: null,
-    filesystem: 'ext4'
+    filesystem: '',
+    mountPoint: ''
   }
   volumeFormErrors.value = {
     name: '',
     poolId: '',
-    capacity: ''
+    capacity: '',
+    filesystem: '',
+    mountPoint: ''
   }
 }
 
@@ -808,7 +886,8 @@ const createStorageVolume = async () => {
       name: volumeForm.value.name.trim(),
       pool_id: volumeForm.value.poolId,
       capacity: volumeForm.value.capacity * 1024 * 1024 * 1024, // GB 转字节
-      filesystem: volumeForm.value.filesystem
+      filesystem: volumeForm.value.filesystem,
+      mount_point: volumeForm.value.mountPoint.trim()
     }
     
     const response = await apiClient.post('/storage/volumes', payload)

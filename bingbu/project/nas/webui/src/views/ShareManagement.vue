@@ -196,10 +196,13 @@
             </label>
             <input
               v-model="formData.name"
+              @blur="validateShareName"
               type="text"
               required
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              :class="formErrors.name ? 'border-red-500' : 'border-gray-300'"
+              class="w-full px-3 py-2 border rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             />
+            <p v-if="formErrors.name" class="mt-1 text-sm text-red-600">{{ formErrors.name }}</p>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -207,11 +210,14 @@
             </label>
             <input
               v-model="formData.path"
+              @blur="validateSharePath"
               type="text"
               required
-              placeholder="/path/to/share"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="/srv/samba/share"
+              :class="formErrors.path ? 'border-red-500' : 'border-gray-300'"
+              class="w-full px-3 py-2 border rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             />
+            <p v-if="formErrors.path" class="mt-1 text-sm text-red-600">{{ formErrors.path }}</p>
           </div>
           <div v-if="formData.type === 'nfs'">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -252,15 +258,21 @@
         <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
           <button
             @click="closeModal"
-            class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+            :disabled="saving"
+            class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
           >
             取消
           </button>
           <button
             @click="saveShare"
-            class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+            :disabled="saving || !isFormValid"
+            class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {{ showEditModal ? '保存' : '添加' }}
+            <svg v-if="saving" class="animate-spin -ml-1 mr-2 h-4 w-4 inline" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ saving ? '保存中...' : (showEditModal ? '保存' : '添加') }}
           </button>
         </div>
       </div>
@@ -278,6 +290,7 @@ const activeTab = ref('smb')
 const showAddModal = ref(false)
 const showEditModal = ref(false)
 const editingShare = ref(null)
+const saving = ref(false)
 
 const smbShares = ref([
   { id: 1, name: '公共共享', path: '/srv/samba/public', permission: 'read', enabled: true },
@@ -297,6 +310,103 @@ const formData = ref({
   clients: '',
   permission: 'read',
   enabled: true
+})
+
+const formErrors = ref({
+  name: '',
+  path: '',
+  clients: ''
+})
+
+// 共享名验证：2-100 字符，禁止 / \ : * ? " < > |
+const validateShareName = () => {
+  const name = formData.value.name.trim()
+  
+  if (!name) {
+    formErrors.value.name = '共享名不能为空'
+    return false
+  }
+  
+  if (name.length < 2) {
+    formErrors.value.name = '共享名至少 2 个字符'
+    return false
+  }
+  
+  if (name.length > 100) {
+    formErrors.value.name = '共享名最多 100 个字符'
+    return false
+  }
+  
+  // 禁止特殊字符 / \ : * ? " < > |
+  const invalidChars = /[\/\\:*?"<>|]/
+  if (invalidChars.test(name)) {
+    formErrors.value.name = '共享名不能包含 / \\ : * ? " < > |'
+    return false
+  }
+  
+  formErrors.value.name = ''
+  return true
+}
+
+// 路径验证：合法 Unix 路径格式
+const validateSharePath = () => {
+  const path = formData.value.path.trim()
+  
+  if (!path) {
+    formErrors.value.path = '路径不能为空'
+    return false
+  }
+  
+  // 必须以 / 开头
+  if (!path.startsWith('/')) {
+    formErrors.value.path = '路径必须以 / 开头'
+    return false
+  }
+  
+  // 不能包含非法字符
+  const invalidChars = /[<>:"|]/
+  if (invalidChars.test(path)) {
+    formErrors.value.path = '路径包含非法字符'
+    return false
+  }
+  
+  formErrors.value.path = ''
+  return true
+}
+
+// NFS 客户端验证
+const validateClients = () => {
+  const clients = formData.value.clients.trim()
+  
+  // NFS 类型必填
+  if (formData.value.type === 'nfs' && !clients) {
+    formErrors.value.clients = '请输入允许的客户端'
+    return false
+  }
+  
+  // 验证格式：IP/CIDR 或 *
+  if (clients && clients !== '*') {
+    const clientList = clients.split(',').map(c => c.trim())
+    const ipPattern = /^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/
+    const valid = clientList.every(c => c === '*' || ipPattern.test(c))
+    
+    if (!valid) {
+      formErrors.value.clients = '客户端格式无效，使用 IP/CIDR 或 *'
+      return false
+    }
+  }
+  
+  formErrors.value.clients = ''
+  return true
+}
+
+// 表单有效性
+const isFormValid = computed(() => {
+  const nameValid = validateShareName()
+  const pathValid = validateSharePath()
+  const clientsValid = validateClients()
+  
+  return nameValid && pathValid && clientsValid
 })
 
 const permissionClasses = {
@@ -323,6 +433,11 @@ const closeModal = () => {
     permission: 'read',
     enabled: true
   }
+  formErrors.value = {
+    name: '',
+    path: '',
+    clients: ''
+  }
 }
 
 const editShare = (share) => {
@@ -338,11 +453,15 @@ const editShare = (share) => {
   }
 }
 
-const saveShare = () => {
-  if (!formData.value.name || !formData.value.path) {
-    toast.error('请填写必填项')
+const saveShare = async () => {
+  if (!isFormValid.value) {
+    toast.error('请修正表单错误')
     return
   }
+  
+  saving.value = true
+  
+  try {
 
   if (showEditModal.value && editingShare.value) {
     // 编辑现有共享
@@ -388,8 +507,14 @@ const saveShare = () => {
 
     toast.success('共享已添加')
   }
-
+  
   closeModal()
+  } catch (error) {
+    console.error('Failed to save share:', error)
+    toast.error('保存失败：' + (error.response?.data?.error || '未知错误'))
+  } finally {
+    saving.value = false
+  }
 }
 
 const deleteShare = (share) => {
