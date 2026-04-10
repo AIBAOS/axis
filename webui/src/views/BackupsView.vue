@@ -201,6 +201,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
+import SkeletonCard from '@/components/SkeletonCard.vue'
+import SkeletonTable from '@/components/SkeletonTable.vue'
 import { api } from '@/utils/api'
 import { useToast } from '@/composables/useToast'
 
