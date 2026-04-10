@@ -23,8 +23,8 @@
 
     <!-- 容器列表 -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <!-- 列表头部 -->
-      <div class="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-500 dark:text-gray-400">
+      <!-- 列表头部（仅桌面端） -->
+      <div class="hidden md:block grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-500 dark:text-gray-400">
         <div class="col-span-3">容器名</div>
         <div class="col-span-2">镜像</div>
         <div class="col-span-2">状态</div>
@@ -57,63 +57,149 @@
       </div>
 
       <!-- 列表 -->
-      <div v-else class="divide-y divide-gray-200 dark:divide-gray-700">
-        <div
-          v-for="container in containers"
-          :key="container.id"
-          class="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 items-center"
-        >
-          <div class="col-span-3">
-            <span class="text-sm font-medium text-gray-900 dark:text-white">{{ container.name }}</span>
+      <div v-else>
+        <!-- 桌面端表格布局 -->
+        <div class="hidden md:block divide-y divide-gray-200 dark:divide-gray-700">
+          <div
+            v-for="container in containers"
+            :key="container.id"
+            class="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 items-center"
+          >
+            <div class="col-span-3">
+              <span class="text-sm font-medium text-gray-900 dark:text-white">{{ container.name }}</span>
+            </div>
+            <div class="col-span-2">
+              <span class="text-sm text-gray-500 dark:text-gray-400">{{ container.image }}</span>
+            </div>
+            <div class="col-span-2">
+              <span :class="statusClasses[container.status]" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
+                {{ statusLabels[container.status] }}
+              </span>
+            </div>
+            <div class="col-span-3">
+              <span class="text-sm text-gray-500 dark:text-gray-400">{{ container.network }}</span>
+            </div>
+            <div class="col-span-2 flex justify-end space-x-2">
+              <button
+                @click="viewConfig(container)"
+                :disabled="actionLoading[container.id]"
+                class="p-3 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="配置"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+              </button>
+              <button
+                @click="toggleContainer(container)"
+                :disabled="actionLoading[container.id]"
+                class="p-3 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                :title="container.status === 'running' ? '停止' : '启动'"
+              >
+                <svg v-if="actionLoading[container.id]" class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path v-if="container.status === 'running'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m0-6l4 4m-4-4l-4 4m8 0l-4-4 4 4"></path>
+                  <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                </svg>
+              </button>
+              <button
+                @click="deleteContainer(container)"
+                :disabled="actionLoading[container.id]"
+                class="p-3 text-gray-400 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="删除"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+              </button>
+            </div>
           </div>
-          <div class="col-span-2">
-            <span class="text-sm text-gray-500 dark:text-gray-400">{{ container.image }}</span>
-          </div>
-          <div class="col-span-2">
-            <span :class="statusClasses[container.status]" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
-              {{ statusLabels[container.status] }}
-            </span>
-          </div>
-          <div class="col-span-3">
-            <span class="text-sm text-gray-500 dark:text-gray-400">{{ container.network }}</span>
-          </div>
-          <div class="col-span-2 flex justify-end space-x-2">
-            <button
-              @click="viewConfig(container)"
-              :disabled="actionLoading[container.id]"
-              class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="配置"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+        </div>
+
+        <!-- 移动端卡片布局 -->
+        <div class="md:hidden space-y-4 px-4 py-4">
+          <div
+            v-for="container in containers"
+            :key="container.id"
+            class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm"
+          >
+            <!-- 容器名和状态 -->
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex-1 min-w-0">
+                <h3 class="text-base font-semibold text-gray-900 dark:text-white truncate">
+                  {{ container.name }}
+                </h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {{ container.image }}
+                </p>
+              </div>
+              <span :class="statusClasses[container.status]" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ml-2 flex-shrink-0">
+                {{ statusLabels[container.status] }}
+              </span>
+            </div>
+
+            <!-- 网络信息 -->
+            <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
+              <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
               </svg>
-            </button>
-            <button
-              @click="toggleContainer(container)"
-              :disabled="actionLoading[container.id]"
-              class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed"
-              :title="container.status === 'running' ? '停止' : '启动'"
-            >
-              <svg v-if="actionLoading[container.id]" class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path v-if="container.status === 'running'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m0-6l4 4m-4-4l-4 4m8 0l-4-4 4 4"></path>
-                <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-              </svg>
-            </button>
-            <button
-              @click="deleteContainer(container)"
-              :disabled="actionLoading[container.id]"
-              class="text-gray-400 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="删除"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-              </svg>
-            </button>
+              {{ container.network }}
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <button
+                @click="viewConfig(container)"
+                :disabled="actionLoading[container.id]"
+                class="flex-1 min-h-[44px] px-4 py-2.5 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <span class="flex items-center justify-center">
+                  <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                  配置
+                </span>
+              </button>
+              <button
+                @click="toggleContainer(container)"
+                :disabled="actionLoading[container.id]"
+                :class="container.status === 'running' ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/30' : 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/30'"
+                class="flex-1 min-h-[44px] px-4 py-2.5 text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <span v-if="actionLoading[container.id]" class="flex items-center justify-center">
+                  <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </span>
+                <span v-else class="flex items-center justify-center">
+                  <svg v-if="container.status === 'running'" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m0-6l4 4m-4-4l-4 4m8 0l-4-4 4 4"></path>
+                  </svg>
+                  <svg v-else class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                  </svg>
+                  {{ container.status === 'running' ? '停止' : '启动' }}
+                </span>
+              </button>
+              <button
+                @click="deleteContainer(container)"
+                :disabled="actionLoading[container.id]"
+                class="flex-1 min-h-[44px] px-4 py-2.5 text-sm font-medium rounded-lg text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/20 hover:bg-red-200 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <span class="flex items-center justify-center">
+                  <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
+                  删除
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
