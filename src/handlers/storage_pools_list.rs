@@ -83,7 +83,7 @@ pub async fn list_pools(
 
     // 3. 解析查询参数
     let page = query.page.unwrap_or(1).max(1); // Bug #72 修复：防止整数下溢
-    let per_page = query.per_page.unwrap_or(20).min(100);
+    let per_page = query.per_page.unwrap_or(20).max(1).min(100); // Bug #83 修复
 
     // 4. 模拟存储池数据（后续连接系统 API）
     let all_pools = vec![

@@ -84,7 +84,7 @@ pub async fn list_printers(
 
     // 4. 解析分页参数
     let page = query.page.unwrap_or(1).max(1); // Bug #72 修复：防止整数下溢
-    let per_page = query.per_page.unwrap_or(20);
+    let per_page = query.per_page.unwrap_or(20).max(1); // Bug #78 修复：防止整数下溢
 
     // 5. 模拟打印机数据
     let all_printers = vec![

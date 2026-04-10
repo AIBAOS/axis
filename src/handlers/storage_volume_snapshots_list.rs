@@ -86,7 +86,7 @@ pub async fn list_volume_snapshots(
     let volume_id = path.into_inner();
 
     // 3. 解析查询参数
-    let limit = query.limit.unwrap_or(20).min(100);
+    let limit = query.limit.unwrap_or(20).max(1).min(100); // Bug #84 修复
     let offset = query.offset.unwrap_or(0);
     let status_filter = query.status.as_deref();
     let is_protected_filter = query.is_protected;

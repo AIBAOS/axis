@@ -75,7 +75,7 @@ pub async fn get_update_history(
     validate_jwt(&req, &jwt_service).await?;
 
     let page = query.page.unwrap_or(1).max(1);
-    let per_page = std::cmp::min(query.per_page.unwrap_or(20), 100);
+    let per_page = std::cmp::min(query.per_page.unwrap_or(20).max(1), 100); // Bug #88 修复
 
     match repo.get_update_history(query.status.as_deref(), page, per_page) {
         Ok((records, total)) => {

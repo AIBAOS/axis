@@ -53,7 +53,7 @@ pub async fn list_usb_devices(
     };
 
     let page = query.page.unwrap_or(1).max(1);
-    let per_page = std::cmp::min(query.per_page.unwrap_or(20), 100);
+    let per_page = std::cmp::min(query.per_page.unwrap_or(20).max(1), 100); // Bug #89 修复
 
     match repo.get_usb_devices(
         query.status.as_deref(),

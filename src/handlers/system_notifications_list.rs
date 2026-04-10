@@ -84,7 +84,7 @@ pub async fn list_notifications(
 
     // 3. 解析分页参数
     let page = query.page.unwrap_or(1).max(1);
-    let per_page = std::cmp::min(query.per_page.unwrap_or(20), 100);
+    let per_page = std::cmp::min(query.per_page.unwrap_or(20).max(1), 100); // Bug #87 修复
 
     // 4. 获取通知列表
     match repo.get_notifications(
