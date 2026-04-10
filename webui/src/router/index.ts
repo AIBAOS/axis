@@ -83,6 +83,11 @@ const router = createRouter({
       path: '/apps',
       name: 'apps',
       component: () => import('../views/AppsView.vue')
+    },
+    {
+      path: '/containers',
+      name: 'containers',
+      component: () => import('../views/ContainersView.vue')
     }
   ]
 })

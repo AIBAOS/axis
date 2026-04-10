@@ -231,5 +231,19 @@ export const api = {
     listConfig: () => apiClient.get('/api/v1/network/config'),
     getConfig: (id: number) => apiClient.get(`/api/v1/network/config/${id}`),
     updateConfig: (id: number, data: any) => apiClient.put(`/api/v1/network/config/${id}`, data)
+  },
+
+  // 容器
+  containers: {
+    list: (params?: any) => apiClient.get('/api/v1/containers', { params }),
+    get: (id: number) => apiClient.get(`/api/v1/containers/${id}`),
+    create: (data: any) => apiClient.post('/api/v1/containers', data),
+    update: (id: number, data: any) => apiClient.put(`/api/v1/containers/${id}`, data),
+    delete: (id: number) => apiClient.delete(`/api/v1/containers/${id}`),
+    start: (id: number) => apiClient.post(`/api/v1/containers/${id}/start`),
+    stop: (id: number) => apiClient.post(`/api/v1/containers/${id}/stop`),
+    restart: (id: number) => apiClient.post(`/api/v1/containers/${id}/restart`),
+    logs: (id: number) => apiClient.get(`/api/v1/containers/${id}/logs`),
+    stats: (id: number) => apiClient.get(`/api/v1/containers/${id}/stats`)
   }
 }
