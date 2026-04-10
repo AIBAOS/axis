@@ -197,8 +197,8 @@ pub async fn export_system_logs(
         .collect();
 
     // 8. 应用分页
-    let page = payload.page.unwrap_or(1);
-    let limit = payload.limit.unwrap_or(100).min(1000);
+    let page = payload.page.unwrap_or(1).max(1); // Bug #76 修复：防止整数下溢
+    let limit = payload.limit.unwrap_or(100).max(1).min(1000); // Bug #76 修复
     
     let start = ((page - 1) * limit) as usize;
     let end = (start + limit as usize).min(filtered_logs.len());

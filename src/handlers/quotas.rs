@@ -148,8 +148,8 @@ pub async fn list_quotas(
         Err(e) => return Ok(e),
     };
 
-    let page = query.get("page").and_then(|v| v.as_u64()).unwrap_or(1);
-    let page_size = query.get("page_size").and_then(|v| v.as_u64()).unwrap_or(10);
+    let page = query.get("page").and_then(|v| v.as_u64()).unwrap_or(1).max(1); // Bug #75 修复：防止整数下溢
+    let page_size = query.get("page_size").and_then(|v| v.as_u64()).unwrap_or(10).max(1); // Bug #75 修复
     
     let quotas = quota_service.list_quotas(page, page_size);
     let total = quotas.len() as u64;
