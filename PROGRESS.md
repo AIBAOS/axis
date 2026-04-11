@@ -544,13 +544,18 @@
   - 时区设置（下拉选择，支持全球主要时区）
   - 语言选择（简体/繁体中文、English、日本語）
   - 自动休眠时间设置（10min/30min/1h/从不）
+  - 启动项管理（SMB/NFS/DLNA/备份服务开机自启开关）
 - **配置项**:
   - NAS 名称：自定义设备显示名称
   - 主机名：设备在网络中的名称
   - 时区：Asia/Shanghai 等 8 个时区选项
   - 语言：zh-CN/zh-TW/en-US/ja-JP
   - 自动休眠：10 分钟/30 分钟/1 小时/从不
-- **构建验证**: pnpm build → 1.17s，259.46 KB (gzip: 76.24 KB)
+  - 启动项：SMB 服务/NFS 服务/DLNA 服务/备份服务（开关控制）
+- **响应式**: 支持移动端适配
+- **API 调用**: PUT /api/v1/system/settings
+- **保存提示**: 成功/失败 Toast 提示
+- **构建验证**: pnpm build → 1.10s，259.46 KB (gzip: 76.24 KB)
 - **编译状态**: 0 errors 0 warnings
 
 ---

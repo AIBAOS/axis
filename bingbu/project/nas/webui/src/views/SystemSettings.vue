@@ -135,6 +135,72 @@
       </div>
     </div>
 
+    <!-- 启动项管理 -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-6">启动项管理</h3>
+      <div class="space-y-4 max-w-2xl">
+        <div class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div class="flex-1">
+            <h4 class="text-sm font-medium text-gray-900 dark:text-white">SMB 服务</h4>
+            <p class="text-xs text-gray-500 dark:text-gray-400">开机自动启动 SMB 文件共享服务</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input
+              v-model="settings.autoStartSmb"
+              type="checkbox"
+              class="sr-only peer"
+            />
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div class="flex-1">
+            <h4 class="text-sm font-medium text-gray-900 dark:text-white">NFS 服务</h4>
+            <p class="text-xs text-gray-500 dark:text-gray-400">开机自动启动 NFS 文件共享服务</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input
+              v-model="settings.autoStartNfs"
+              type="checkbox"
+              class="sr-only peer"
+            />
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div class="flex-1">
+            <h4 class="text-sm font-medium text-gray-900 dark:text-white">DLNA 服务</h4>
+            <p class="text-xs text-gray-500 dark:text-gray-400">开机自动启动 DLNA 媒体服务</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input
+              v-model="settings.autoStartDlna"
+              type="checkbox"
+              class="sr-only peer"
+            />
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div class="flex-1">
+            <h4 class="text-sm font-medium text-gray-900 dark:text-white">备份服务</h4>
+            <p class="text-xs text-gray-500 dark:text-gray-400">开机自动启动定时备份服务</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input
+              v-model="settings.autoStartBackup"
+              type="checkbox"
+              class="sr-only peer"
+            />
+            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
     <!-- 电源管理 -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-6">电源管理</h3>
@@ -290,7 +356,11 @@ const settings = ref({
   hostname: '',
   timezone: 'Asia/Shanghai',
   language: 'zh-CN',
-  autoSleep: 'never'
+  autoSleep: 'never',
+  autoStartSmb: true,
+  autoStartNfs: false,
+  autoStartDlna: false,
+  autoStartBackup: true
 })
 
 const autoSleepOptions = [
@@ -336,7 +406,11 @@ const loadSettings = async () => {
         hostname: response.data.data.hostname || '',
         timezone: response.data.data.timezone || 'Asia/Shanghai',
         language: response.data.data.language || 'zh-CN',
-        autoSleep: response.data.data.autoSleep || 'never'
+        autoSleep: response.data.data.autoSleep || 'never',
+        autoStartSmb: response.data.data.autoStartSmb ?? true,
+        autoStartNfs: response.data.data.autoStartNfs ?? false,
+        autoStartDlna: response.data.data.autoStartDlna ?? false,
+        autoStartBackup: response.data.data.autoStartBackup ?? true
       }
       systemInfo.value = {
         uptime: response.data.data.uptime || '--',
@@ -351,7 +425,11 @@ const loadSettings = async () => {
       hostname: 'axis-nas',
       timezone: 'Asia/Shanghai',
       language: 'zh-CN',
-      autoSleep: 'never'
+      autoSleep: 'never',
+      autoStartSmb: true,
+      autoStartNfs: false,
+      autoStartDlna: false,
+      autoStartBackup: true
     }
     systemInfo.value = {
       uptime: '--',
@@ -370,7 +448,11 @@ const saveSettings = async () => {
       hostname: settings.value.hostname,
       timezone: settings.value.timezone,
       language: settings.value.language,
-      autoSleep: settings.value.autoSleep
+      autoSleep: settings.value.autoSleep,
+      autoStartSmb: settings.value.autoStartSmb,
+      autoStartNfs: settings.value.autoStartNfs,
+      autoStartDlna: settings.value.autoStartDlna,
+      autoStartBackup: settings.value.autoStartBackup
     })
     showSaveMessage('系统设置已保存', 'success')
     loadSettings()
