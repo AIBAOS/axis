@@ -291,65 +291,74 @@
           </div>
         </div>
         
-        <!-- 移动端列表 -->
-        <div class="sm:hidden divide-y divide-gray-200 dark:divide-gray-700">
+        <!-- 移动端卡片列表 -->
+        <div class="sm:hidden space-y-3 px-4 py-4">
           <div
             v-for="file in filteredFiles"
             :key="file.name"
-            class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700"
+            class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm"
             :class="{ 'cursor-pointer': file.type === 'dir' }"
             @click="file.type === 'dir' && navigateTo(file.path)"
           >
-            <div class="flex items-center justify-between">
-              <div class="flex items-center flex-1 min-w-0">
-                <input
-                  type="checkbox"
-                  :checked="isSelected(file)"
-                  @change.stop="toggleFileSelection(file)"
-                  class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 mr-3 flex-shrink-0"
-                />
-                <span class="text-xl mr-3 flex-shrink-0">
-                  {{ file.type === 'dir' ? '📁' : getFileIcon(file.name) }}
-                </span>
-                <div class="min-w-0 flex-1">
-                  <div class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                    {{ file.name }}
-                  </div>
-                  <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {{ file.type === 'dir' ? '文件夹' : formatFileSize(file.size) }} · {{ formatDateTime(file.modified) }}
-                  </div>
+            <!-- 文件信息和复选框 -->
+            <div class="flex items-start mb-3">
+              <input
+                type="checkbox"
+                :checked="isSelected(file)"
+                @change.stop="toggleFileSelection(file)"
+                class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 mr-3 flex-shrink-0 mt-0.5"
+              />
+              <span class="text-2xl mr-3 flex-shrink-0">
+                {{ file.type === 'dir' ? '📁' : getFileIcon(file.name) }}
+              </span>
+              <div class="min-w-0 flex-1">
+                <div class="text-base font-semibold text-gray-900 dark:text-white truncate">
+                  {{ file.name }}
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {{ file.type === 'dir' ? '文件夹' : formatFileSize(file.size) }}
+                  <span class="mx-1">·</span>
+                  {{ formatDateTime(file.modified) }}
                 </div>
               </div>
-              <div class="flex items-center space-x-2 ml-2 flex-shrink-0">
-                <button
-                  v-if="file.type === 'file'"
-                  @click.stop="downloadFile(file)"
-                  class="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
-                  title="下载"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="flex items-center justify-end space-x-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <button
+                v-if="file.type === 'file'"
+                @click.stop="downloadFile(file)"
+                class="flex-1 min-h-[44px] px-3 py-2.5 text-xs font-medium rounded-lg text-indigo-700 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/20 hover:bg-indigo-200 dark:hover:bg-indigo-900/30 transition-colors"
+              >
+                <span class="flex items-center justify-center">
+                  <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                   </svg>
-                </button>
-                <button
-                  @click.stop="showRenameModal(file)"
-                  class="text-gray-400 hover:text-yellow-600 dark:hover:text-yellow-400"
-                  title="重命名"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  下载
+                </span>
+              </button>
+              <button
+                @click.stop="showRenameModal(file)"
+                class="flex-1 min-h-[44px] px-3 py-2.5 text-xs font-medium rounded-lg text-yellow-700 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/20 hover:bg-yellow-200 dark:hover:bg-yellow-900/30 transition-colors"
+              >
+                <span class="flex items-center justify-center">
+                  <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                   </svg>
-                </button>
-                <button
-                  @click.stop="deleteFile(file)"
-                  class="text-gray-400 hover:text-red-600 dark:hover:text-red-400"
-                  title="删除"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  重命名
+                </span>
+              </button>
+              <button
+                @click.stop="deleteFile(file)"
+                class="flex-1 min-h-[44px] px-3 py-2.5 text-xs font-medium rounded-lg text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/20 hover:bg-red-200 dark:hover:bg-red-900/30 transition-colors"
+              >
+                <span class="flex items-center justify-center">
+                  <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                   </svg>
-                </button>
-              </div>
+                  删除
+                </span>
+              </button>
             </div>
           </div>
         </div>
