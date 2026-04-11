@@ -54,6 +54,19 @@
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-6">基本设置</h3>
       <div class="space-y-6 max-w-2xl">
+        <!-- NAS 名称 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">NAS 名称</label>
+          <input
+            v-model="settings.nasName"
+            type="text"
+            placeholder="My NAS"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          />
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">设备显示名称</p>
+        </div>
+
+        <!-- 主机名 -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">主机名</label>
           <input
@@ -65,6 +78,7 @@
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">设备在网络中的名称</p>
         </div>
 
+        <!-- 时区 -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">时区</label>
           <select
@@ -77,6 +91,7 @@
           </select>
         </div>
 
+        <!-- 语言 -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">语言</label>
           <select
@@ -89,6 +104,21 @@
           </select>
         </div>
 
+        <!-- 自动休眠时间 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">自动休眠时间</label>
+          <select
+            v-model="settings.autoSleep"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option v-for="sleep in autoSleepOptions" :key="sleep.value" :value="sleep.value">
+              {{ sleep.label }}
+            </option>
+          </select>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">无操作后自动进入休眠模式的时间</p>
+        </div>
+
+        <!-- 保存按钮 -->
         <div class="pt-4 flex space-x-3">
           <button
             @click="saveSettings"
@@ -256,10 +286,19 @@ const systemInfo = ref({
 })
 
 const settings = ref({
+  nasName: 'My NAS',
   hostname: '',
   timezone: 'Asia/Shanghai',
-  language: 'zh-CN'
+  language: 'zh-CN',
+  autoSleep: 'never'
 })
+
+const autoSleepOptions = [
+  { value: '10min', label: '10 分钟' },
+  { value: '30min', label: '30 分钟' },
+  { value: '1h', label: '1 小时' },
+  { value: 'never', label: '从不' }
+]
 
 const timezones = [
   { value: 'Asia/Shanghai', label: '上海 (UTC+8)' },
@@ -293,9 +332,11 @@ const loadSettings = async () => {
     const response = await apiClient.get('/system/settings')
     if (response.data.success) {
       settings.value = {
+        nasName: response.data.data.nasName || 'My NAS',
         hostname: response.data.data.hostname || '',
         timezone: response.data.data.timezone || 'Asia/Shanghai',
-        language: response.data.data.language || 'zh-CN'
+        language: response.data.data.language || 'zh-CN',
+        autoSleep: response.data.data.autoSleep || 'never'
       }
       systemInfo.value = {
         uptime: response.data.data.uptime || '--',
@@ -306,9 +347,11 @@ const loadSettings = async () => {
     console.error('Failed to load settings:', error)
     // 使用默认值
     settings.value = {
+      nasName: 'My NAS',
       hostname: 'axis-nas',
       timezone: 'Asia/Shanghai',
-      language: 'zh-CN'
+      language: 'zh-CN',
+      autoSleep: 'never'
     }
     systemInfo.value = {
       uptime: '--',
@@ -323,9 +366,11 @@ const saveSettings = async () => {
   saving.value = true
   try {
     await apiClient.put('/system/settings', {
+      nasName: settings.value.nasName,
       hostname: settings.value.hostname,
       timezone: settings.value.timezone,
-      language: settings.value.language
+      language: settings.value.language,
+      autoSleep: settings.value.autoSleep
     })
     showSaveMessage('系统设置已保存', 'success')
     loadSettings()
